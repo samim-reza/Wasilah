@@ -22,6 +22,8 @@ import type {
   QfWord,
 } from '@/lib/quran/types';
 
+import { audioBaseUrl } from '@/config/quran';
+
 import { parseVerseKey } from '../utils/verseKey';
 import { sanitizeTranslationText } from '../utils/sanitizeTranslation';
 import type {
@@ -130,12 +132,37 @@ export function mapSearchResponse(raw: QfSearchResponse): SearchResultPage {
   };
 }
 
+/**
+ * Turns an API audio path into something a player can open.
+ *
+ * The recitation endpoints return a path relative to the audio host
+ * (`"Alafasy/mp3/001001.mp3"`), while some other endpoints return a full URL.
+ * Both shapes are accepted so a change on either side cannot silently produce
+ * an unplayable track — the failure mode is a player that does nothing, with no
+ * error to explain it.
+ */
+export function resolveAudioUrl(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) return '';
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  // Protocol-relative, which some CDNs emit.
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+
+  return `${audioBaseUrl}${trimmed.replace(/^\/+/, '')}`;
+}
+
 export function mapAudioFiles(raw: QfRecitationResponse): AyahAudio[] {
-  return (raw.audio_files ?? []).map((file) => ({
-    verseKey: file.verse_key,
-    url: file.url,
-    segments: file.segments ?? null,
-  }));
+  return (
+    (raw.audio_files ?? [])
+      .map((file) => ({
+        verseKey: file.verse_key,
+        url: resolveAudioUrl(file.url),
+        segments: file.segments ?? null,
+      }))
+      // A track with no URL would fail silently in the player; drop it here.
+      .filter((track) => track.url.length > 0)
+  );
 }
 
 export function mapTranslationResource(raw: QfTranslationResource): TranslationResource {

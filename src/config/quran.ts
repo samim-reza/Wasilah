@@ -26,6 +26,16 @@ export const fallbackTranslationId = defaultTranslationIds.en;
 /** QF recitation resource ID. Mishari Rashid al-Afasy — widely available. */
 export const defaultRecitationId = 7;
 
+/**
+ * Base URL for recitation audio.
+ *
+ * The Content API returns audio paths RELATIVE to this host — `by_ayah` yields
+ * `"Alafasy/mp3/001001.mp3"`, not a URL. Handing that straight to a player does
+ * nothing, and no error explains why, so the base is resolved in the mapper
+ * (`quranMapper.mapAudioFiles`) before a track ever reaches the audio module.
+ */
+export const audioBaseUrl = 'https://verses.quran.foundation/';
+
 /** Total counts, used for progress maths and input validation. */
 export const quranStructure = {
   chapterCount: 114,
