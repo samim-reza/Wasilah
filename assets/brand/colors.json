@@ -1,0 +1,6 @@
+{
+  "_comment": "GENERATED from src/theme/tokens.ts by npm run theme:build. Do not edit.",
+  "brand": "#0F7A63",
+  "lightBackground": "#FBFAF8",
+  "darkBackground": "#0E1311"
+}

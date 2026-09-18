@@ -49,6 +49,7 @@ export function sanitizeRoute(route: unknown): string {
     '/notification-settings',
     '/reader-translations',
     '/reader-reciters',
+    '/prayer-times',
     '/search',
     '/about',
   ];

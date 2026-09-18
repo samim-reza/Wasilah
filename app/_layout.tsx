@@ -70,6 +70,7 @@ function RootNavigator() {
         <Stack.Screen name="notes" />
         <Stack.Screen name="reader-translations" />
         <Stack.Screen name="reader-reciters" />
+        <Stack.Screen name="prayer-times" />
         <Stack.Screen name="about" />
       </Stack>
     </NavigationThemeProvider>

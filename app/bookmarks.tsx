@@ -1,5 +1,9 @@
 /**
- * Saved ayahs, newest first.
+ * Saved ayahs.
+ *
+ * Sortable by when they were saved or by mushaf order, and filterable by
+ * collection once the user has made any. Collections stay invisible until then,
+ * so the screen is a plain list for everyone who does not want folders.
  */
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
@@ -14,7 +18,14 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { IconButton } from '@/components/ui/IconButton';
 import { Pressable } from '@/components/ui/Pressable';
 import { Text } from '@/components/ui/Text';
+import {
+  CollectionFilterBar,
+  type CollectionFilter,
+} from '@/features/bookmarks/components/CollectionFilterBar';
+import { CollectionPickerSheet } from '@/features/bookmarks/components/CollectionPickerSheet';
+import { useBookmarkCollections } from '@/features/bookmarks/hooks/useBookmarkCollections';
 import { useBookmarks } from '@/features/bookmarks/hooks/useBookmarks';
+import type { Bookmark } from '@/features/bookmarks/services/bookmarkService';
 import { useChapters } from '@/features/quran/hooks/useChapters';
 import { compareVerseKeys } from '@/features/quran/utils/verseKey';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -24,8 +35,12 @@ type SortOrder = 'recent' | 'mushaf';
 export default function BookmarksScreen() {
   const { t } = useTranslation();
   const bookmarks = useBookmarks();
+  const collections = useBookmarkCollections();
   const { data: chapters } = useChapters();
+
   const [sort, setSort] = useState<SortOrder>('recent');
+  const [filter, setFilter] = useState<CollectionFilter>(null);
+  const [pickerBookmark, setPickerBookmark] = useState<Bookmark | null>(null);
 
   const chapterNames = useMemo(() => {
     const map = new Map<number, string>();
@@ -33,13 +48,22 @@ export default function BookmarksScreen() {
     return map;
   }, [chapters]);
 
-  const sorted = useMemo(() => {
-    const list = [...bookmarks.bookmarks];
-    if (sort === 'mushaf') {
-      return list.sort((a, b) => compareVerseKeys(a.verseKey, b.verseKey));
-    }
-    return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [bookmarks.bookmarks, sort]);
+  const visible = useMemo(() => {
+    const filtered =
+      filter === null
+        ? bookmarks.bookmarks
+        : bookmarks.bookmarks.filter((bookmark) => bookmark.collectionId === filter);
+
+    const list = [...filtered];
+    return sort === 'mushaf'
+      ? list.sort((a, b) => compareVerseKeys(a.verseKey, b.verseKey))
+      : list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [bookmarks.bookmarks, filter, sort]);
+
+  // The collection row is pointless until there is something to organise.
+  const showCollections =
+    !collections.requiresAccount &&
+    (collections.collections.length > 0 || bookmarks.bookmarks.length > 0);
 
   return (
     <Screen edges={['top']} noPadding>
@@ -50,11 +74,19 @@ export default function BookmarksScreen() {
             <IconButton
               name="filter"
               onPress={() => setSort((current) => (current === 'recent' ? 'mushaf' : 'recent'))}
-              accessibilityLabel={t('common.search')}
+              accessibilityLabel={sort === 'recent' ? t('quran.surahs') : t('common.today')}
             />
           }
         />
       </View>
+
+      <CollectionFilterBar
+        collections={collections.collections}
+        selected={filter}
+        onSelect={setFilter}
+        onCreate={() => setPickerBookmark(bookmarks.bookmarks[0] ?? null)}
+        visible={showCollections}
+      />
 
       {bookmarks.isLoading && (
         <View className="gap-3 px-4 pt-2">
@@ -66,7 +98,7 @@ export default function BookmarksScreen() {
 
       {bookmarks.error ? <ErrorState error={bookmarks.error} /> : null}
 
-      {!bookmarks.isLoading && sorted.length === 0 && (
+      {!bookmarks.isLoading && visible.length === 0 && (
         <EmptyState
           icon="bookmark"
           title={t('bookmarks.empty')}
@@ -76,13 +108,13 @@ export default function BookmarksScreen() {
         />
       )}
 
-      {sorted.length > 0 && (
+      {visible.length > 0 && (
         <FlashList
-          data={sorted}
+          data={visible}
           keyExtractor={(bookmark) => bookmark.id}
           renderItem={({ item }) => (
             <Pressable
-              className="flex-row items-center gap-3 border-b border-border px-4 py-3"
+              className="flex-row items-center gap-2 border-b border-border px-4 py-3"
               pressedClassName="active:bg-surface-pressed"
               onPress={() => router.push(`/quran/${item.chapterId}?ayah=${item.verseNumber}`)}
               enforceMinTapTarget={false}
@@ -91,12 +123,22 @@ export default function BookmarksScreen() {
               <View className="flex-1">
                 <Text className="font-semibold" numberOfLines={1}>
                   {chapterNames.get(item.chapterId) ??
-                    `${t('quran.surahNumber', { number: item.chapterId })}`}
+                    t('quran.surahNumber', { number: item.chapterId })}
                 </Text>
                 <Text variant="caption" tone="muted">
                   {item.verseKey}
                 </Text>
               </View>
+
+              {!collections.requiresAccount && (
+                <IconButton
+                  name="collection"
+                  color={item.collectionId ? 'primary' : 'textSubtle'}
+                  size={18}
+                  onPress={() => setPickerBookmark(item)}
+                  accessibilityLabel={t('bookmarks.collections')}
+                />
+              )}
 
               <IconButton
                 name="bookmarkFilled"
@@ -109,6 +151,17 @@ export default function BookmarksScreen() {
           )}
         />
       )}
+
+      <CollectionPickerSheet
+        visible={pickerBookmark !== null}
+        collections={collections.collections}
+        currentCollectionId={pickerBookmark?.collectionId ?? null}
+        onClose={() => setPickerBookmark(null)}
+        onAssign={async (collectionId) => {
+          if (pickerBookmark) await collections.assign(pickerBookmark.id, collectionId);
+        }}
+        onCreate={collections.create}
+      />
     </Screen>
   );
 }

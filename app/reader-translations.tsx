@@ -32,10 +32,7 @@ export default function TranslationPickerScreen() {
 
   // Memoised so `toggle` keeps a stable identity across renders — the list
   // below is long and re-creating the callback would defeat its memoisation.
-  const selected = useMemo(
-    () => new Set(preferences.translationIds),
-    [preferences.translationIds],
-  );
+  const selected = useMemo(() => new Set(preferences.translationIds), [preferences.translationIds]);
 
   const toggle = useCallback(
     (id: number) => {

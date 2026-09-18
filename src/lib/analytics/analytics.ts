@@ -1,10 +1,11 @@
 /**
  * Product analytics.
  *
- * Opt-in: nothing is captured until the user turns it on in settings. The
- * client is created lazily so that a user who never opts in never loads it.
+ * Opt-in: nothing is captured until the user turns it on in settings, and the
+ * SDK itself is imported lazily — a user who never opts in never downloads,
+ * parses or runs a line of it, which keeps it off the cold-start path.
  */
-import PostHog from 'posthog-react-native';
+import type PostHog from 'posthog-react-native';
 
 import { env, isAnalyticsEnabled } from '@/config/env';
 import { logger } from '@/lib/monitoring/logger';
@@ -29,7 +30,9 @@ export async function initializeAnalytics(userOptedIn: boolean): Promise<void> {
   }
 
   try {
-    client = new PostHog(env.posthogKey as string, {
+    const { default: PostHogClient } = await import('posthog-react-native');
+
+    client = new PostHogClient(env.posthogKey as string, {
       host: env.posthogHost || 'https://us.i.posthog.com',
       // Autocapture would record screen contents and touch targets, which for
       // this app means Quran text. Every event is explicit instead.

@@ -350,8 +350,11 @@ export const en = {
     permissionDenied: 'Permission was not granted.',
     audioUnavailable: 'This recitation is unavailable right now.',
     storage: "We couldn't save that on your device.",
+    notConfigured:
+      'Quran content is not available yet. The Quran Foundation connection still needs to be set up.',
     unknown: 'Something went wrong. Please try again.',
     title: 'Something went wrong',
+    setupTitle: 'Setup incomplete',
   },
 
   notifications: {

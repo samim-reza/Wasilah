@@ -349,8 +349,11 @@ export const bn: Translation = {
     permissionDenied: 'অনুমতি দেওয়া হয়নি।',
     audioUnavailable: 'এই তিলাওয়াত এখন পাওয়া যাচ্ছে না।',
     storage: 'আপনার ডিভাইসে সংরক্ষণ করা যায়নি।',
+    notConfigured:
+      'কুরআনের বিষয়বস্তু এখনও পাওয়া যাচ্ছে না। Quran Foundation সংযোগটি এখনও সেট আপ করা বাকি।',
     unknown: 'কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।',
     title: 'কিছু একটা সমস্যা হয়েছে',
+    setupTitle: 'সেটআপ সম্পূর্ণ হয়নি',
   },
 
   notifications: {

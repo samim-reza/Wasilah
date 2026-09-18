@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs><mask id="centre-512">
+    <rect width="512" height="512" fill="white"/>
+    <circle cx="256" cy="256" r="61.44" fill="black"/>
+  </mask></defs>
+  
+  <path
+    d="M 102.4 102.4 H 409.6 V 409.6 H 102.4 Z M 256 38.7767968194926 L 473.2232031805074 256 L 256 473.2232031805074 L 38.7767968194926 256 Z"
+    fill="#0F7A63"
+    fill-rule="nonzero"
+    mask="url(#centre-512)"
+  />
+</svg>

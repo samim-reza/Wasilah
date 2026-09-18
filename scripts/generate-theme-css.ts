@@ -7,9 +7,15 @@
  * the TypeScript tokens that runtime code reads. Generating them keeps exactly
  * one source of truth.
  *
+ * It also emits `assets/brand/colors.json`. That exists because `app.config.ts`
+ * is transpiled and required in isolation by the Expo CLI, so it cannot import
+ * a TypeScript module — but it can `require` JSON. Without this bridge the
+ * native splash and adaptive-icon colours would be hand-copied literals that
+ * silently drift from the theme.
+ *
  * Run with: npm run theme:build
  */
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -68,4 +74,23 @@ ${declarationsFor('dark')}
 `;
 
 writeFileSync(join(projectRoot, 'global.css'), css, 'utf8');
-process.stdout.write('global.css regenerated from src/theme/tokens.ts\n');
+
+// Only the handful of roles the native config actually needs, so the bridge
+// file does not become a second, fuller copy of the palette.
+const brandColors = {
+  _comment: 'GENERATED from src/theme/tokens.ts by npm run theme:build. Do not edit.',
+  brand: colorSchemes.light.primary,
+  lightBackground: colorSchemes.light.background,
+  darkBackground: colorSchemes.dark.background,
+};
+
+mkdirSync(join(projectRoot, 'assets', 'brand'), { recursive: true });
+writeFileSync(
+  join(projectRoot, 'assets', 'brand', 'colors.json'),
+  `${JSON.stringify(brandColors, null, 2)}\n`,
+  'utf8',
+);
+
+process.stdout.write(
+  'global.css + assets/brand/colors.json regenerated from src/theme/tokens.ts\n',
+);

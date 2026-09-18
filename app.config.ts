@@ -8,10 +8,28 @@
  */
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
+/**
+ * Brand colours, generated from `src/theme/tokens.ts` by `npm run theme:build`.
+ *
+ * Required rather than imported: the Expo CLI transpiles this file and requires
+ * it in isolation, so it cannot resolve a TypeScript module — but JSON is fine.
+ * This keeps the native splash and adaptive-icon colours tied to the same
+ * source of truth the app renders with.
+ */
+const brandColors = require('./assets/brand/colors.json') as {
+  brand: string;
+  lightBackground: string;
+  darkBackground: string;
+};
+
 /** Bumped independently of the marketing version; drives OTA update compatibility. */
 const RUNTIME_VERSION = '1.0.0';
 
 const BUNDLE_ID = 'com.wasilah.app';
+
+const BRAND = brandColors.brand;
+const LIGHT_BACKGROUND = brandColors.lightBackground;
+const DARK_BACKGROUND = brandColors.darkBackground;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -43,7 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: BUNDLE_ID,
     adaptiveIcon: {
-      backgroundColor: '#0F7A63',
+      backgroundColor: BRAND,
       foregroundImage: './assets/android-icon-foreground.png',
       monochromeImage: './assets/android-icon-monochrome.png',
     },
@@ -79,15 +97,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         image: './assets/splash-icon.png',
         imageWidth: 180,
         resizeMode: 'contain',
-        backgroundColor: '#FBFAF8',
-        dark: { backgroundColor: '#0E1311' },
+        backgroundColor: LIGHT_BACKGROUND,
+        dark: { backgroundColor: DARK_BACKGROUND },
       },
     ],
     [
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
-        color: '#0F7A63',
+        color: BRAND,
         // Reminders are scheduled locally, so the app must be allowed to post
         // them without a network round-trip.
         defaultChannel: 'daily-reminders',

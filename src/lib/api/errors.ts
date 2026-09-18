@@ -18,6 +18,8 @@ export type AppErrorKind =
   | 'permission_denied'
   | 'audio_unavailable'
   | 'storage'
+  /** The app is running, but a required backend piece is not configured yet. */
+  | 'not_configured'
   | 'unknown';
 
 export interface AppErrorOptions {
@@ -44,6 +46,7 @@ const userMessageKeys: Record<AppErrorKind, string> = {
   permission_denied: 'errors.permissionDenied',
   audio_unavailable: 'errors.audioUnavailable',
   storage: 'errors.storage',
+  not_configured: 'errors.notConfigured',
   unknown: 'errors.unknown',
 };
 

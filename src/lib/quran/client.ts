@@ -51,6 +51,35 @@ interface ProxyErrorBody {
   error?: { code?: string; message?: string; status?: number };
 }
 
+/**
+ * Distinguishes "Quran Foundation is not set up yet" from a genuine failure.
+ *
+ * Without this the two most common first-run states — the edge function not
+ * deployed, and its credentials not set — both surface as a bare 404 or 502,
+ * which reads as a bug rather than an unfinished setup step. Getting this wrong
+ * costs whoever sets the project up next a long and pointless debugging session.
+ */
+function asConfigurationError(error: AppError, path: string): AppError {
+  // Supabase returns 404 for a function that was never deployed. A deployed
+  // proxy answers an unknown path with its own `route_not_allowed` body, and
+  // every path this client builds is allowlisted — so a plain 404 here means
+  // the function itself is missing.
+  const isFunctionMissing =
+    error.kind === 'not_found' && !error.message.includes('route_not_allowed');
+
+  // The proxy reports a missing or rejected credential as a bad gateway.
+  const isUpstreamUnconfigured =
+    error.kind === 'server' && error.message.includes('upstream_unavailable');
+
+  if (!isFunctionMissing && !isUpstreamUnconfigured) return error;
+
+  return new AppError('not_configured', error.message, {
+    cause: error,
+    context: { path },
+    retryable: false,
+  });
+}
+
 export interface QuranRequestOptions {
   /** Cancels a superseded request, e.g. a search the user has typed past. */
   signal?: AbortSignal;
@@ -84,8 +113,9 @@ export async function quranRequest<T>(
     });
   } catch (error) {
     if (error instanceof AppError) {
-      logger.warn('quran.requestFailed', { path, kind: error.kind });
-      throw error;
+      const resolved = asConfigurationError(error, path);
+      logger.warn('quran.requestFailed', { path, kind: resolved.kind });
+      throw resolved;
     }
     throw error;
   }
