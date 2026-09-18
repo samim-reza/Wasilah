@@ -337,7 +337,7 @@ Full design in [`docs/notifications.md`](docs/notifications.md).
 ## Testing
 
 ```bash
-npm test               # 171 unit + integration tests
+npm test               # 205 unit + integration tests
 npm run test:coverage  # with thresholds
 npm run e2e:android    # Maestro flows against a real build
 ```
@@ -359,6 +359,12 @@ What is actually covered:
   notification is _not_ sent
 - **Offline sync** — replay order, retry budget, abandonment, position conflicts
 - **Goals, achievements, audio queue, verse keys, translation sanitisation**
+- **Translation fallback** — the pre-live catalogue lacks the shipped English
+  default, and the API returns empty translations rather than erroring
+- **Storage key collisions and value shapes** — two regressions that no
+  typecheck or lint rule can catch, only a device can
+- **Notification import discipline** — a static `expo-notifications` import
+  crashes Expo Go on Android at launch
 
 E2E covers the journey the product exists for: onboarding → goal → reminder →
 read Today's Ayah → streak starts.
