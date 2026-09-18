@@ -22,36 +22,26 @@ would appear. That is deliberate: it is a distinct error kind
 
 ---
 
-## 1. Supabase anon key
+## Credential locations
 
-Dashboard → **Project Settings → API Keys** → copy the `anon` / `public` key.
+| Credential              | Lives in                       | Committed?                          |
+| ----------------------- | ------------------------------ | ----------------------------------- |
+| Supabase URL + anon key | `.env.local`                   | No — gitignored                     |
+| QF client ID + secret   | `supabase/.env`                | No — gitignored, `chmod 600`        |
+| QF secrets (runtime)    | Supabase edge function secrets | N/A                                 |
+| EAS project ID          | `app.config.ts`                | **Yes** — it is a public identifier |
 
-```bash
-# In .env.local
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-```
-
-This key is designed to be public — it ends up in the app bundle, and Row Level
-Security is what actually protects data. It is **not** the `service_role` key,
-which must never leave a server.
-
----
-
-## 2. Supabase access token
-
-Needed only to deploy edge functions. Create one at
-[supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens).
-
-```bash
-export SUPABASE_ACCESS_TOKEN=sbp_...
-npx supabase link --project-ref sdwfbwwrkphytuyhxvzu
-```
+The QF client secret is shown exactly once at creation. It is stored locally in
+`supabase/.env` purely so a redeploy does not require rotating it; the edge
+function reads its own copy from Supabase secrets, never from that file.
 
 ---
 
-## 3. Quran Foundation credentials
+## Re-creating the Quran Foundation credentials
 
-At [dev-console.quran.foundation](https://dev-console.quran.foundation/projects/new):
+If the secret is ever lost, rotate it at
+[dev-console.quran.foundation](https://dev-console.quran.foundation) rather than
+creating a second app. To create one from scratch:
 
 | Field            | Value                  | Why                                                                                                  |
 | ---------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -92,7 +82,7 @@ You should get a JSON list of 114 chapters.
 
 ---
 
-## 4. Run it
+## Run it
 
 ```bash
 npm start

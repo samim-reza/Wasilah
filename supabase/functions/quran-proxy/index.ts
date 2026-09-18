@@ -122,6 +122,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     if (!upstream.ok) {
       const detail = await upstream.text().catch(() => '');
+
+      // Search is a separately approved permission. Until it is granted the
+      // upstream answers with a 500, which is indistinguishable from an outage
+      // by status alone — but the consequence is the same either way: search
+      // does not work and retrying in a few seconds will not change that.
+      // Naming it stops the app offering a retry loop that can never succeed.
+      if (route.path === '/search' && upstream.status >= 500) {
+        return jsonResponse(
+          {
+            error: {
+              code: 'search_unavailable',
+              status: upstream.status,
+              message:
+                'Quran Foundation search is unavailable. If this app is new, the ' +
+                '`search` permission may still be awaiting approval in the Developer Console.',
+            },
+          },
+          { status: 503 },
+        );
+      }
+
       // Upstream 404s are expected on pre-live, which only holds Surah 1 and 2.
       const hint =
         upstream.status === 404 && resolveEnvironment() === 'prelive'

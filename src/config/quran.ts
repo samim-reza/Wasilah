@@ -7,7 +7,14 @@
  * `docs/third-party-content-and-licenses.md`.
  */
 
-/** QF translation resource IDs for the editions Wasilah ships by default. */
+/**
+ * QF translation resource IDs for the editions Wasilah ships by default.
+ *
+ * These are the PRODUCTION choices. The pre-live catalogue does not carry 131,
+ * so `resolveTranslationIds` falls back to an available edition in the same
+ * language rather than silently rendering Arabic with no translation. See
+ * `src/features/quran/utils/resolveTranslations.ts`.
+ */
 export const defaultTranslationIds = {
   en: 131, // Dr. Mustafa Khattab, The Clear Quran
   bn: 161, // Taisirul Quran

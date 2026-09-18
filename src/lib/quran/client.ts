@@ -60,6 +60,15 @@ interface ProxyErrorBody {
  * costs whoever sets the project up next a long and pointless debugging session.
  */
 function asConfigurationError(error: AppError, path: string): AppError {
+  // The proxy names this one explicitly, because retrying cannot fix it.
+  if (error.message.includes('search_unavailable')) {
+    return new AppError('search_unavailable', error.message, {
+      cause: error,
+      context: { path },
+      retryable: false,
+    });
+  }
+
   // Supabase returns 404 for a function that was never deployed. A deployed
   // proxy answers an unknown path with its own `route_not_allowed` body, and
   // every path this client builds is allowlisted — so a plain 404 here means

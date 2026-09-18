@@ -25,6 +25,7 @@ import { useNotes } from '@/features/notes/hooks/useNotes';
 import { BismillahHeader } from '@/features/quran/components/BismillahHeader';
 import { TafsirSheet } from '@/features/quran/components/TafsirSheet';
 import { useChapter } from '@/features/quran/hooks/useChapters';
+import { useResolvedTranslationIds } from '@/features/quran/hooks/useResolvedTranslations';
 import { useVerses, type VerseSource } from '@/features/quran/hooks/useVerses';
 import type { FlashListRef } from '@shopify/flash-list';
 import { shareVerse } from '@/features/quran/services/shareService';
@@ -60,8 +61,11 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
   const chapterId = source.kind === 'chapter' ? source.chapterId : null;
   const chapterQuery = useChapter(chapterId);
 
+  // Validated against the catalogue this environment actually serves.
+  const translationIds = useResolvedTranslationIds(preferences.translationIds);
+
   const versesQuery = useVerses(source, {
-    translationIds: preferences.showTranslation ? preferences.translationIds : [],
+    translationIds: preferences.showTranslation ? translationIds : [],
     includeWords: preferences.showWordByWord,
   });
 

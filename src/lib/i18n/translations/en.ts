@@ -350,6 +350,8 @@ export const en = {
     permissionDenied: 'Permission was not granted.',
     audioUnavailable: 'This recitation is unavailable right now.',
     storage: "We couldn't save that on your device.",
+    searchUnavailable:
+      'Search is unavailable right now. Everything else still works — you can browse by surah, juz or page.',
     notConfigured:
       'Quran content is not available yet. The Quran Foundation connection still needs to be set up.',
     unknown: 'Something went wrong. Please try again.',

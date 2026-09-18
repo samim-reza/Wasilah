@@ -27,6 +27,16 @@ const RUNTIME_VERSION = '1.0.0';
 
 const BUNDLE_ID = 'com.wasilah.app';
 
+/**
+ * EAS project identity.
+ *
+ * Neither value is a secret — both are embedded in every build and readable
+ * from the shipped bundle — so they are committed rather than kept in `.env`,
+ * which is also what lets a fresh clone build without extra setup.
+ */
+const EAS_PROJECT_ID = 'c96e9c4d-69d3-4712-bf3d-2a46e9c6589e';
+const EAS_ACCOUNT = 'samim101s-team';
+
 const BRAND = brandColors.brand;
 const LIGHT_BACKGROUND = brandColors.lightBackground;
 const DARK_BACKGROUND = brandColors.darkBackground;
@@ -39,6 +49,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'wasilah',
+  owner: EAS_ACCOUNT,
   // The New Architecture and edge-to-edge rendering are the only options in
   // SDK 57, so there are no longer flags for either.
   // `automatic` lets the OS drive the initial colour scheme; the in-app theme
@@ -133,9 +144,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
   },
 
+  // Over-the-air updates are served per project; `runtimeVersion` above is what
+  // stops an update reaching a binary whose native code no longer matches.
+  updates: {
+    url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+  },
+
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID,
+      // `expo-notifications` reads this to mint a push token, so a missing
+      // value shows up as "push.missingProjectId" rather than as a build error.
+      projectId: EAS_PROJECT_ID,
     },
   },
 });

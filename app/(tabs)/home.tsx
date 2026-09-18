@@ -23,6 +23,7 @@ import { GreetingHeader } from '@/features/home/components/GreetingHeader';
 import { TodaysAyahCard } from '@/features/home/components/TodaysAyahCard';
 import { useDailyAyah } from '@/features/home/hooks/useDailyAyah';
 import { useChapters } from '@/features/quran/hooks/useChapters';
+import { useResolvedTranslationIds } from '@/features/quran/hooks/useResolvedTranslations';
 import { useReaderPreferences } from '@/features/reader/hooks/useReaderPreferences';
 import { useReadingPosition } from '@/features/reader/hooks/useReadingPosition';
 import { useHabitState } from '@/features/streak/hooks/useHabitState';
@@ -45,7 +46,8 @@ export default function HomeScreen() {
   const audio = useAudio();
   const recordReading = useRecordReading();
 
-  const dailyAyah = useDailyAyah({ translationIds: preferences.translationIds });
+  const translationIds = useResolvedTranslationIds(preferences.translationIds);
+  const dailyAyah = useDailyAyah({ translationIds });
   const { playAyah } = useAyahPlayback(preferences.recitationId);
 
   const positionChapter = useMemo(

@@ -20,6 +20,8 @@ export type AppErrorKind =
   | 'storage'
   /** The app is running, but a required backend piece is not configured yet. */
   | 'not_configured'
+  /** Search specifically is unavailable; the rest of the app is fine. */
+  | 'search_unavailable'
   | 'unknown';
 
 export interface AppErrorOptions {
@@ -47,6 +49,7 @@ const userMessageKeys: Record<AppErrorKind, string> = {
   audio_unavailable: 'errors.audioUnavailable',
   storage: 'errors.storage',
   not_configured: 'errors.notConfigured',
+  search_unavailable: 'errors.searchUnavailable',
   unknown: 'errors.unknown',
 };
 
