@@ -7,8 +7,10 @@
  * one as authoritative.
  */
 import { router } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, ScrollView, View } from 'react-native';
 
+import { useToast } from '@/components/feedback/Toast';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -42,8 +44,29 @@ const rows: PrayerRowSpec[] = [
 
 export default function PrayerTimesScreen() {
   const { t } = useTranslation();
+  const toast = useToast();
   const prayer = usePrayerTimes();
   const reminders = useReminderSettings();
+
+  // Kept on screen rather than shown as a toast: the user is looking at a
+  // button that did nothing, and needs an explanation that stays put.
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const handleEnableLocation = async () => {
+    const result = await prayer.enableLocation();
+
+    if (result.ok) {
+      setLocationError(null);
+      toast.show(t('prayer.title'), { icon: 'location', tone: 'success' });
+      return;
+    }
+
+    setLocationError(
+      result.reason === 'permission_denied'
+        ? t('prayer.locationDenied')
+        : t('prayer.locationUnavailable'),
+    );
+  };
 
   return (
     <Screen edges={['top']} noPadding>
@@ -63,11 +86,25 @@ export default function PrayerTimesScreen() {
 
             <Button
               label={t('prayer.enableLocation')}
-              onPress={() => void prayer.enableLocation()}
+              onPress={() => void handleEnableLocation()}
               loading={prayer.isRequestingLocation}
               icon="location"
               fullWidth
             />
+
+            {locationError && (
+              <View className="gap-2 rounded-lg bg-warning-muted p-3">
+                <Text variant="caption" tone="warning">
+                  {locationError}
+                </Text>
+                <Button
+                  label={t('reminders.openSystemSettings')}
+                  onPress={() => void Linking.openSettings()}
+                  variant="secondary"
+                  size="sm"
+                />
+              </View>
+            )}
           </Card>
         ) : prayer.times ? (
           <>

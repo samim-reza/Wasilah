@@ -25,7 +25,15 @@ export type TextVariant =
   | 'stat';
 
 export type TextTone =
-  'default' | 'muted' | 'subtle' | 'primary' | 'accent' | 'danger' | 'success' | 'inverse';
+  | 'default'
+  | 'muted'
+  | 'subtle'
+  | 'primary'
+  | 'accent'
+  | 'danger'
+  | 'warning'
+  | 'success'
+  | 'inverse';
 
 const variantClasses: Record<TextVariant, string> = {
   display: 'text-4xl font-bold',
@@ -46,6 +54,9 @@ const toneClasses: Record<TextTone, string> = {
   primary: 'text-primary',
   accent: 'text-accent',
   danger: 'text-danger',
+  // Warning, not danger: a recoverable condition the user can act on, rather
+  // than something that went wrong.
+  warning: 'text-warning',
   success: 'text-success',
   inverse: 'text-primary-foreground',
 };

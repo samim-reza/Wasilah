@@ -302,6 +302,9 @@ export const en = {
     locationNeeded: 'Location needed',
     locationNeededBody:
       'Prayer times are calculated on your device from your approximate location. Nothing is sent anywhere.',
+    locationDenied: 'Location permission was not granted. You can allow it in system settings.',
+    locationUnavailable:
+      'Could not get your location. Check that location services are switched on, then try again.',
     enableLocation: 'Use my location',
     nextPrayer: 'Next: {{name}} at {{time}}',
   },

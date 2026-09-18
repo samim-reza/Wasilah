@@ -28,6 +28,18 @@ const defaultSettings: PrayerSettings = {
   cityLabel: null,
 };
 
+/**
+ * Why enabling location did not work.
+ *
+ * The two cases need different words: a denied permission is the user's own
+ * choice and is fixed in app settings, whereas an unavailable position usually
+ * means location services are switched off system-wide or the device has no fix
+ * yet. Collapsing them into "failed" leaves the user with no idea what to do.
+ */
+export type LocationFailure = 'permission_denied' | 'position_unavailable';
+
+export type EnableLocationResult = { ok: true } | { ok: false; reason: LocationFailure };
+
 export interface UsePrayerTimesResult {
   times: DailyPrayerTimes | null;
   next: { name: PrayerName; time: Date } | null;
@@ -35,7 +47,7 @@ export interface UsePrayerTimesResult {
   hasLocation: boolean;
   isRequestingLocation: boolean;
   /** Prompts for location and stores the coarse result. */
-  enableLocation: () => Promise<boolean>;
+  enableLocation: () => Promise<EnableLocationResult>;
   updateSettings: (patch: Partial<PrayerSettings>) => Promise<void>;
 }
 
@@ -94,12 +106,12 @@ export function usePrayerTimes(): UsePrayerTimesResult {
     [userId],
   );
 
-  const enableLocation = useCallback(async () => {
+  const enableLocation = useCallback(async (): Promise<EnableLocationResult> => {
     setIsRequestingLocation(true);
 
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return false;
+      if (status !== 'granted') return { ok: false, reason: 'permission_denied' };
 
       // `Low` accuracy is deliberate: it is enough for prayer times, it is
       // faster, and it uses far less battery than a GPS fix.
@@ -112,10 +124,12 @@ export function usePrayerTimes(): UsePrayerTimesResult {
 
       setSettings(next);
       await persist(next);
-      return true;
+      return { ok: true };
     } catch (error) {
+      // Permission was granted but no position came back — location services
+      // are off system-wide, or the device has no fix yet.
       logger.warn('prayer.locationFailed', { error });
-      return false;
+      return { ok: false, reason: 'position_unavailable' };
     } finally {
       setIsRequestingLocation(false);
     }
