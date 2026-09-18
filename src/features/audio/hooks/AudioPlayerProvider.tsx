@@ -8,12 +8,11 @@
  * This module knows nothing about the Quran API: it is handed tracks with URLs
  * and plays them. `useAyahAudio` is what turns an ayah into a track.
  *
- * `react-hooks/immutability` is disabled for this file: `AudioPlayer` is a
- * native SharedObject, and setting `player.playbackRate` or calling
- * `player.replace()` is expo-audio's documented API for controlling it. These
- * are commands to the audio engine, not React state updates.
+ * Note: this file previously carried a blanket `react-hooks/immutability`
+ * exemption to allow `player.playbackRate = x`. That rule was right and the
+ * assignment was a genuine bug — the native object has no setter. The exemption
+ * is gone; if it seems necessary again, the mutation is probably the problem.
  */
-/* eslint-disable react-hooks/immutability */
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, preload } from 'expo-audio';
 import {
   createContext,
@@ -64,6 +63,25 @@ const AudioContext = createContext<AudioControls | null>(null);
 /** How often the player reports progress. 500ms is smooth without waking JS constantly. */
 const STATUS_UPDATE_INTERVAL_MS = 500;
 
+/**
+ * Sets playback speed on the native player.
+ *
+ * `player.playbackRate = x` is typed as writable and is what expo-audio's own
+ * documentation shows, but the native SharedObject exposes only a getter — the
+ * assignment throws `Cannot assign to property 'playbackRate' which has only a
+ * getter` on a real device. `setPlaybackRate` is the working API.
+ *
+ * Pitch correction is requested at high quality deliberately. Changing speed
+ * without it shifts the reciter's pitch, which for Quran recitation sounds
+ * wrong in a way that matters more than the small extra processing cost.
+ */
+function applyPlaybackRate(
+  player: { setPlaybackRate: (rate: number, quality?: 'low' | 'medium' | 'high') => void },
+  rate: number,
+): void {
+  player.setPlaybackRate(rate, 'high');
+}
+
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const player = useAudioPlayer(undefined, { updateInterval: STATUS_UPDATE_INTERVAL_MS });
   const status = useAudioPlayerStatus(player);
@@ -100,7 +118,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       try {
         player.replace({ uri: track.url });
-        player.playbackRate = playbackRate;
+        applyPlaybackRate(player, playbackRate);
         if (autoPlay) player.play();
         setError(null);
       } catch (replaceError) {
@@ -191,7 +209,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const setPlaybackRate = useCallback(
     (rate: number) => {
       setRateState(rate);
-      player.playbackRate = rate;
+      applyPlaybackRate(player, rate);
     },
     [player],
   );
