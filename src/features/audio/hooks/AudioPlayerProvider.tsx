@@ -39,11 +39,11 @@ import {
   trackToPrefetch,
   type QueueState,
 } from '../services/audioQueue';
-import type { AudioState, AudioTrack, RepeatMode } from '../types/audio.types';
+import type { AudioState, AudioTrack, QueueId, RepeatMode } from '../types/audio.types';
 
 export interface AudioControls extends AudioState {
-  /** Loads a queue and starts at `startIndex`. */
-  playQueue: (tracks: AudioTrack[], startIndex?: number) => void;
+  /** Loads a queue and starts at `startIndex`. `id` says what the queue is. */
+  playQueue: (tracks: AudioTrack[], startIndex?: number, id?: QueueId) => void;
   /** Plays a single ayah, replacing any queue. */
   playTrack: (track: AudioTrack) => void;
   /** Jumps to an ayah already in the queue. */
@@ -88,6 +88,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const [queue, setQueue] = useState<QueueState>(emptyQueue);
   const [playbackRate, setRateState] = useState(1);
+  const [queueId, setQueueId] = useState<QueueId>(null);
   const [error, setError] = useState<unknown>(null);
 
   // Mirrors the queue for the completion and control callbacks, which must keep
@@ -130,11 +131,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const playQueue = useCallback(
-    (tracks: AudioTrack[], startIndex = 0) => {
+    (tracks: AudioTrack[], startIndex = 0, id: QueueId = null) => {
       if (tracks.length === 0) return;
 
       const index = Math.min(Math.max(0, startIndex), tracks.length - 1);
       setQueue((current) => ({ ...current, tracks, currentIndex: index }));
+      setQueueId(id);
       loadIndex(index, tracks, true);
 
       trackEvent('audio_started', { source: tracks.length > 1 ? 'queue' : 'single' });
@@ -142,7 +144,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     [loadIndex],
   );
 
-  const playTrack = useCallback((track: AudioTrack) => playQueue([track], 0), [playQueue]);
+  const playTrack = useCallback(
+    (track: AudioTrack) => playQueue([track], 0, `ayah:${track.verseKey}`),
+    [playQueue],
+  );
 
   const playVerse = useCallback(
     (verseKey: string) => {
@@ -166,6 +171,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     player.pause();
     player.seekTo(0);
     setQueue(emptyQueue);
+    setQueueId(null);
   }, [player]);
 
   const next = useCallback(() => {
@@ -244,6 +250,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const track = getCurrentTrack(queue);
 
     return {
+      queueId,
       state: error
         ? 'error'
         : status.playing
@@ -275,6 +282,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     };
   }, [
     queue,
+    queueId,
     status.playing,
     status.isBuffering,
     status.currentTime,

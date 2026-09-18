@@ -32,6 +32,8 @@ import { shareVerse } from '@/features/quran/services/shareService';
 import type { Verse } from '@/features/quran/types/quran.types';
 import { useFeatureFlag } from '@/lib/api/useFeatureFlags';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { logger } from '@/lib/monitoring/logger';
+import type { QueueId } from '@/features/audio/types/audio.types';
 
 import { ReaderHeader } from '../components/ReaderHeader';
 import { ReaderPreferencesSheet } from '../components/ReaderPreferencesSheet';
@@ -137,19 +139,33 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
     [audio, playAyah],
   );
 
+  /**
+   * The header button plays THIS surah.
+   *
+   * It only pauses or resumes when this surah's queue is the one loaded.
+   * Previously it resumed whatever was loaded, so after playing a single ayah
+   * the button silently re-toggled that one ayah and never loaded the surah —
+   * which read as the button being broken.
+   */
   const handlePlayChapter = useCallback(() => {
-    if (audio.state === 'playing') {
-      audio.pause();
-      return;
-    }
-    if (audio.currentTrack) {
+    const first = versesQuery.verses[0];
+    if (!first) return;
+
+    const thisChapterQueue: QueueId = `chapter:${first.chapterId}`;
+    const isThisChapterLoaded = audio.queueId === thisChapterQueue;
+
+    if (isThisChapterLoaded) {
       audio.toggle();
       return;
     }
 
-    const first = versesQuery.verses[0];
-    if (first) void playFrom(first.chapterId, first.verseKey);
-  }, [audio, playFrom, versesQuery.verses]);
+    // Anything else loaded (a single ayah, or another surah) is replaced.
+    void playFrom(first.chapterId, first.verseKey).catch((error: unknown) => {
+      // Previously swallowed by `void`, so a failure here was invisible.
+      logger.warn('reader.playChapterFailed', { error });
+      toast.show(t('errors.audioUnavailable'), { tone: 'error', icon: 'error' });
+    });
+  }, [audio, playFrom, versesQuery.verses, toast, t]);
 
   const handleBookmark = useCallback(
     (verse: Verse) => {
@@ -201,7 +217,11 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
         currentVerse={topVerseNumber}
         onOpenPreferences={() => setPreferencesOpen(true)}
         onPlayChapter={handlePlayChapter}
-        isPlaying={audio.state === 'playing'}
+        // Only show pause when THIS surah is the thing playing.
+        isPlaying={
+          audio.state === 'playing' &&
+          audio.queueId === `chapter:${versesQuery.verses[0]?.chapterId ?? -1}`
+        }
       />
 
       {versesQuery.isLoading ? (

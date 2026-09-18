@@ -88,7 +88,7 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
         0,
         tracks.findIndex((track) => track.verseKey === verseKey),
       );
-      audio.playQueue(tracks, startIndex);
+      audio.playQueue(tracks, startIndex, `chapter:${chapterId}`);
     },
     [recitationId, audio],
   );
