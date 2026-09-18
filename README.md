@@ -101,7 +101,7 @@ except push notifications and background audio, which need a development build.
 | Prayer times  | `adhan` (MIT)                                     | Calculated on-device; no location leaves the phone            |
 | Notifications | `expo-notifications` + Expo Push                  | Local-first, push only as a fallback                          |
 | Monitoring    | Sentry, PostHog                                   | Both opt-in, both no-ops without a key                        |
-| Testing       | Jest + RNTL, Maestro                              | 171 unit/integration tests; black-box E2E                     |
+| Testing       | Jest + RNTL, Maestro                              | 205 unit/integration tests; black-box E2E                     |
 
 **Deliberately not used:** Redux, a global state library, an ORM, a custom
 backend, Redis, a message queue. None of them earn their cost at this scale.
