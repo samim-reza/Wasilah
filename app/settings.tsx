@@ -91,6 +91,12 @@ export default function SettingsScreen() {
             onPress={() => router.push('/reader-reciters')}
           />
           <ListRow
+            label={t('quran.tafsir')}
+            value={reader.tafsirId === null ? t('common.off') : undefined}
+            icon="info"
+            onPress={() => router.push('/reader-tafsirs')}
+          />
+          <ListRow
             label={t('reader.showWordByWord')}
             icon="quran"
             accessory={

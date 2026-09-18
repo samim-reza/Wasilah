@@ -37,6 +37,7 @@ export const queryKeys = {
     search: (query: string, language: string) => ['quran', 'search', query, language] as const,
     translationResources: (language: string) =>
       ['quran', 'resources', 'translations', language] as const,
+    tafsirResources: (language: string) => ['quran', 'resources', 'tafsirs', language] as const,
     reciterResources: (language: string) => ['quran', 'resources', 'reciters', language] as const,
   },
 

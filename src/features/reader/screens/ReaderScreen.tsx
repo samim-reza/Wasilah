@@ -256,6 +256,10 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
           setPreferencesOpen(false);
           router.push('/reader-reciters');
         }}
+        onOpenTafsirPicker={() => {
+          setPreferencesOpen(false);
+          router.push('/reader-tafsirs');
+        }}
         wordByWordAvailable
       />
 

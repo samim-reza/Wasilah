@@ -27,6 +27,7 @@ export interface ReaderPreferencesSheetProps {
   onStepTranslation: (direction: 1 | -1) => Promise<void>;
   onOpenTranslationPicker: () => void;
   onOpenReciterPicker: () => void;
+  onOpenTafsirPicker: () => void;
   /** Hidden when the feature flag is off or no word data is available. */
   wordByWordAvailable: boolean;
 }
@@ -40,6 +41,7 @@ export function ReaderPreferencesSheet({
   onStepTranslation,
   onOpenTranslationPicker,
   onOpenReciterPicker,
+  onOpenTafsirPicker,
   wordByWordAvailable,
 }: ReaderPreferencesSheetProps) {
   const { t } = useTranslation();
@@ -112,6 +114,7 @@ export function ReaderPreferencesSheet({
         <View className="gap-1 pt-2">
           <PickerRow label={t('reader.selectTranslation')} onPress={onOpenTranslationPicker} />
           <PickerRow label={t('reader.selectReciter')} onPress={onOpenReciterPicker} />
+          <PickerRow label={t('quran.tafsir')} onPress={onOpenTafsirPicker} />
         </View>
       </ScrollView>
     </BottomSheet>

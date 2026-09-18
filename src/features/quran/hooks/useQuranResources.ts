@@ -11,7 +11,11 @@ import { useMemo } from 'react';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
-import { fetchReciterResources, fetchTranslationResources } from '../services/quranService';
+import {
+  fetchReciterResources,
+  fetchTafsirResources,
+  fetchTranslationResources,
+} from '../services/quranService';
 import type { ReciterResource, TranslationResource } from '../types/quran.types';
 
 const CATALOGUE_STALE_MS = 24 * 60 * 60 * 1000;
@@ -60,6 +64,16 @@ export function useTranslationResources() {
   }, [query.data, locale]);
 
   return { ...query, grouped };
+}
+
+export function useTafsirResources() {
+  const { locale } = useTranslation();
+
+  return useQuery<TranslationResource[]>({
+    queryKey: queryKeys.quran.tafsirResources(locale),
+    queryFn: () => fetchTafsirResources(locale),
+    staleTime: CATALOGUE_STALE_MS,
+  });
 }
 
 export function useReciterResources() {

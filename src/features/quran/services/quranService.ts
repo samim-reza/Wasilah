@@ -8,6 +8,7 @@
 import { readerPageSize, searchPageSize } from '@/config/quran';
 import { quranRequest, type QuranRequestOptions } from '@/lib/quran/client';
 import type {
+  QfTafsirResource,
   QfChapterResponse,
   QfChaptersResponse,
   QfJuzsResponse,
@@ -253,6 +254,20 @@ export async function fetchTranslationResources(
     options,
   );
   return (response.translations ?? []).map(mapTranslationResource);
+}
+
+export async function fetchTafsirResources(
+  language = 'en',
+  options: QuranRequestOptions = {},
+): Promise<TranslationResource[]> {
+  const response = await quranRequest<QfResourcesResponse<QfTafsirResource>>(
+    '/resources/tafsirs',
+    { language },
+    options,
+  );
+  // Tafsir resources carry the same identifying shape as translations, so the
+  // same mapper applies and the picker can reuse the translation row UI.
+  return (response.tafsirs ?? []).map(mapTranslationResource);
 }
 
 export async function fetchReciterResources(

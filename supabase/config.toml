@@ -44,5 +44,5 @@ verify_jwt = true
 [functions.daily-ayah]
 verify_jwt = false
 
-[functions.weather-context]
-verify_jwt = true
+# Weather is fetched directly from Open-Meteo by the device (no key, coarse
+# coordinates only), so it needs no edge function of its own.
