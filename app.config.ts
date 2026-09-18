@@ -111,6 +111,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     blockedPermissions: [
       'android.permission.ACCESS_BACKGROUND_LOCATION',
       'android.permission.ACCESS_FINE_LOCATION',
+      // "Display over other apps". React Native declares this in its debug
+      // source set for the dev overlay, and with expo-dev-client installed it
+      // reaches release builds too — it was present in the first preview APK.
+      //
+      // Nothing in Wasilah draws over other apps. On a Play Store listing this
+      // is a permission users are right to be suspicious of, and one Google
+      // scrutinises, so it is blocked outright rather than shipped and
+      // explained away.
+      'android.permission.SYSTEM_ALERT_WINDOW',
     ],
   },
 
