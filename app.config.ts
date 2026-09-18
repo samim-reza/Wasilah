@@ -37,6 +37,23 @@ const BUNDLE_ID = 'com.wasilah.app';
 const EAS_PROJECT_ID = 'c96e9c4d-69d3-4712-bf3d-2a46e9c6589e';
 const EAS_ACCOUNT = 'samim101s-team';
 
+/**
+ * Sentry's config plugin is only added when Sentry is actually configured.
+ *
+ * The plugin installs a Gradle task that uploads source maps on every RELEASE
+ * build. With no organization, project and auth token it runs `sentry-cli`
+ * anyway and fails the whole build — which is exactly what happened to the
+ * first preview build, ten minutes into Gradle. Development builds never run
+ * that task, so the problem is invisible until the first non-dev build.
+ *
+ * Crash reporting is opt-in throughout this app (see `lib/monitoring/sentry`),
+ * so the plugin being absent is the correct state when no DSN exists, not a
+ * degradation.
+ */
+const sentryOrganization = process.env.SENTRY_ORG;
+const sentryProject = process.env.SENTRY_PROJECT;
+const isSentryConfigured = Boolean(sentryOrganization && sentryProject);
+
 const BRAND = brandColors.brand;
 const LIGHT_BACKGROUND = brandColors.lightBackground;
 const DARK_BACKGROUND = brandColors.darkBackground;
@@ -154,13 +171,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         isAndroidBackgroundLocationEnabled: false,
       },
     ],
-    [
-      '@sentry/react-native/expo',
-      {
-        organization: process.env.SENTRY_ORG,
-        project: process.env.SENTRY_PROJECT,
-      },
-    ],
+    // Spread so the entry disappears entirely when Sentry is not configured.
+    ...(isSentryConfigured
+      ? [
+          [
+            '@sentry/react-native/expo',
+            { organization: sentryOrganization, project: sentryProject },
+          ] as [string, Record<string, unknown>],
+        ]
+      : []),
   ],
 
   experiments: {
