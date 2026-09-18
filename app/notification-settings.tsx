@@ -64,7 +64,7 @@ export default function NotificationSettingsScreen() {
               label={t('reminders.dailyReminder')}
               value={settings.preferences.dailyReminderEnabled}
               onValueChange={(value) => void settings.update({ dailyReminderEnabled: value })}
-              disabled={!settings.permissionGranted}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
           </View>
 
@@ -72,7 +72,11 @@ export default function NotificationSettingsScreen() {
             label={t('reminders.reminderTime')}
             value={settings.preferences.dailyReminderTime}
             onChange={(time) => void settings.update({ dailyReminderTime: time })}
-            disabled={!settings.preferences.dailyReminderEnabled || !settings.permissionGranted}
+            disabled={
+              !settings.preferences.dailyReminderEnabled ||
+              !settings.permissionGranted ||
+              !settings.notificationsSupported
+            }
           />
         </ListSection>
 
@@ -83,27 +87,27 @@ export default function NotificationSettingsScreen() {
               hint={t('reminders.streakReminderBody')}
               value={settings.preferences.streakReminderEnabled}
               onValueChange={(value) => void settings.update({ streakReminderEnabled: value })}
-              disabled={!settings.permissionGranted}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
             <Switch
               label={t('reminders.goalReminder')}
               hint={t('reminders.goalReminderBody')}
               value={settings.preferences.goalReminderEnabled}
               onValueChange={(value) => void settings.update({ goalReminderEnabled: value })}
-              disabled={!settings.permissionGranted}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
             <Switch
               label={t('reminders.prayerReminders')}
               value={settings.preferences.prayerRemindersEnabled}
               onValueChange={(value) => void settings.update({ prayerRemindersEnabled: value })}
-              disabled={!settings.permissionGranted}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
             <Switch
               label={t('reminders.weatherReminders')}
               hint={t('weather.body')}
               value={settings.preferences.weatherRemindersEnabled}
               onValueChange={(value) => void settings.update({ weatherRemindersEnabled: value })}
-              disabled={!settings.permissionGranted}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
           </View>
         </ListSection>

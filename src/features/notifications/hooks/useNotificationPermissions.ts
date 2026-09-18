@@ -17,6 +17,7 @@ import {
   getPermissionState,
   requestPermission,
 } from '../services/notificationService';
+import { getNotificationsAvailability } from '../services/notificationsGateway';
 import type { NotificationPermissionState } from '../types/notification.types';
 
 const initialState: NotificationPermissionState = {
@@ -29,6 +30,15 @@ export interface UseNotificationPermissionsResult extends NotificationPermission
   isLoading: boolean;
   /** True once the app has asked at least once. */
   hasAsked: boolean;
+  /**
+   * False when this runtime cannot show notifications at all, regardless of
+   * permission — Expo Go on Android. Distinct from `isBlocked`, which means the
+   * user said no: here the question cannot even be asked, so the UI must
+   * explain rather than offer a prompt that does nothing.
+   */
+  isSupported: boolean;
+  /** True specifically when a development build would fix it. */
+  needsDevelopmentBuild: boolean;
   request: () => Promise<boolean>;
   openSystemSettings: () => void;
   refresh: () => Promise<void>;
@@ -64,7 +74,13 @@ export function useNotificationPermissions(): UseNotificationPermissionsResult {
     return () => subscription.remove();
   }, [refresh]);
 
+  const availability = getNotificationsAvailability();
+
   const request = useCallback(async () => {
+    // Asking is meaningless where the module cannot load; say so rather than
+    // recording a permission request that never happened.
+    if (!availability.available) return false;
+
     trackEvent('notification_permission_requested', {});
 
     const next = await requestPermission();
@@ -79,7 +95,7 @@ export function useNotificationPermissions(): UseNotificationPermissionsResult {
     if (next.status === 'granted') await configureChannels();
 
     return next.status === 'granted';
-  }, []);
+  }, [availability.available]);
 
   const openSystemSettings = useCallback(() => {
     void Linking.openSettings().catch(() => {
@@ -87,5 +103,14 @@ export function useNotificationPermissions(): UseNotificationPermissionsResult {
     });
   }, []);
 
-  return { ...state, isLoading, hasAsked, request, openSystemSettings, refresh };
+  return {
+    ...state,
+    isLoading,
+    hasAsked,
+    isSupported: availability.available,
+    needsDevelopmentBuild: availability.reason === 'expo_go_android',
+    request,
+    openSystemSettings,
+    refresh,
+  };
 }

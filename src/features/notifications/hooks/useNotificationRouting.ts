@@ -1,21 +1,27 @@
 /**
  * Turns a notification tap into a navigation.
  *
- * Mounted once, inside the navigator. Two paths have to be handled and they are
- * easy to confuse:
+ * Mounted once, inside the navigator. Two delivery paths have to be handled and
+ * they are easy to confuse:
  *   • the app was already running — `addNotificationResponseReceivedListener`
  *   • the app was launched BY the tap — `getLastNotificationResponseAsync`,
  *     which is the only way to see a response that arrived before any listener
  *     existed.
+ *
+ * `expo-notifications` is loaded lazily here rather than imported at the top of
+ * the file. Importing it eagerly crashes Expo Go on Android — see
+ * `notificationsGateway` for why — and this hook is mounted from the root
+ * layout, so that crash took the entire app down before anything rendered.
  */
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import { trackEvent } from '@/lib/analytics/analytics';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
 
+import { loadNotifications } from '../services/notificationsGateway';
+import { configureForegroundBehaviour } from '../services/notificationService';
 import { isStaleNotification, parseNotificationData } from '../utils/notificationPayload';
 
 /** Records the open so the engine can learn what the user responds to. */
@@ -29,13 +35,20 @@ function recordOpen(historyId: string | undefined): void {
     });
 }
 
-export function useNotificationRouting(): void {
-  // Guards against the cold-start response being handled twice if the effect
-  // re-runs (React 19 strict mode double-invokes effects in development).
-  const handledColdStart = useRef(false);
+/** The payload shape the OS hands back; kept minimal to avoid importing types. */
+interface NotificationResponseLike {
+  notification: { request: { content: { data: unknown } } };
+}
 
+export function useNotificationRouting(): void {
   useEffect(() => {
-    function handleResponse(response: Notifications.NotificationResponse): void {
+    let cancelled = false;
+    let remove: (() => void) | undefined;
+    // Guards against the cold-start response also arriving through the
+    // listener, which would navigate twice.
+    let handledColdStart = false;
+
+    function handleResponse(response: NotificationResponseLike): void {
       const data = parseNotificationData(response.notification.request.content.data);
 
       trackEvent('notification_opened', { category: data.category });
@@ -53,14 +66,29 @@ export function useNotificationRouting(): void {
       router.push(data.route as never);
     }
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    void (async () => {
+      const notifications = await loadNotifications();
+      // Expo Go on Android, or a build without the native module: the rest of
+      // the app is unaffected.
+      if (!notifications || cancelled) return;
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response || handledColdStart.current) return;
-      handledColdStart.current = true;
-      handleResponse(response);
-    });
+      await configureForegroundBehaviour();
 
-    return () => subscription.remove();
+      const subscription = notifications.addNotificationResponseReceivedListener((response) =>
+        handleResponse(response as NotificationResponseLike),
+      );
+      remove = () => subscription.remove();
+
+      const initial = await notifications.getLastNotificationResponseAsync();
+      if (initial && !handledColdStart && !cancelled) {
+        handledColdStart = true;
+        handleResponse(initial as NotificationResponseLike);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      remove?.();
+    };
   }, []);
 }

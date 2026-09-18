@@ -40,6 +40,10 @@ export interface UseReminderSettingsResult {
   isLoading: boolean;
   permissionGranted: boolean;
   permissionBlocked: boolean;
+  /** False when the runtime cannot show notifications at all. */
+  notificationsSupported: boolean;
+  /** True when a development build is what would fix it. */
+  needsDevelopmentBuild: boolean;
   nextReminder: StoredScheduleEntry | null;
   update: (patch: ReminderPreferenceUpdate) => Promise<void>;
   requestPermission: () => Promise<boolean>;
@@ -172,6 +176,8 @@ export function useReminderSettings(): UseReminderSettingsResult {
     isLoading: isLoading || permissions.isLoading,
     permissionGranted: permissions.canShowAlerts,
     permissionBlocked: permissions.isBlocked,
+    notificationsSupported: permissions.isSupported,
+    needsDevelopmentBuild: permissions.needsDevelopmentBuild,
     nextReminder,
     update,
     requestPermission: permissions.request,

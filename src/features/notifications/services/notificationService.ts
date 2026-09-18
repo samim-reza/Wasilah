@@ -5,9 +5,13 @@
  * whether one is warranted — that is the reminder engine's job
  * (`src/features/reminders`). Keeping the two apart is what stops scheduling
  * rules from leaking into UI code and vice versa.
+ *
+ * Every call goes through `notificationsGateway`, so this works unchanged on a
+ * runtime where notifications are unavailable (Expo Go on Android): the
+ * functions resolve to sensible "nothing is possible" values instead of
+ * throwing.
  */
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { t } from '@/lib/i18n';
@@ -16,25 +20,23 @@ import { getPalette } from '@/theme/palette';
 
 import { notificationChannels } from '../types/notification.types';
 import type { NotificationPermissionState, PermissionStatus } from '../types/notification.types';
+import {
+  areNotificationsAvailable,
+  loadNotifications,
+  withNotifications,
+  type NotificationsModule,
+} from './notificationsGateway';
 
-/**
- * How a notification behaves while the app is open.
- *
- * Banners are suppressed in the foreground: the user is already reading, and a
- * "time to read" banner over the reader is exactly the kind of noise this app
- * is meant to avoid. The notification still lands in the tray.
- */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+/** Shape used when the module cannot be loaded at all. */
+const unavailablePermissionState: NotificationPermissionState = {
+  status: 'denied',
+  canShowAlerts: false,
+  // Not "blocked": the OS never refused, the runtime simply cannot ask.
+  isBlocked: false,
+};
 
 function toPermissionState(
-  permissions: Notifications.NotificationPermissionsStatus,
+  permissions: Awaited<ReturnType<NotificationsModule['getPermissionsAsync']>>,
 ): NotificationPermissionState {
   const status = permissions.status as PermissionStatus;
 
@@ -49,9 +51,35 @@ function toPermissionState(
   };
 }
 
+/**
+ * Installs the foreground presentation rule.
+ *
+ * Banners are suppressed while the app is open: the user is already reading,
+ * and a "time to read" banner over the reader is exactly the kind of noise this
+ * app exists to avoid. The notification still lands in the tray.
+ *
+ * Called once at startup. Previously this ran at module scope, which is what
+ * made merely importing this file fatal in Expo Go.
+ */
+export async function configureForegroundBehaviour(): Promise<void> {
+  const notifications = await loadNotifications();
+  if (!notifications) return;
+
+  notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: false,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
 export async function getPermissionState(): Promise<NotificationPermissionState> {
-  const permissions = await Notifications.getPermissionsAsync();
-  return toPermissionState(permissions);
+  return withNotifications(
+    async (notifications) => toPermissionState(await notifications.getPermissionsAsync()),
+    unavailablePermissionState,
+  );
 }
 
 /**
@@ -62,21 +90,19 @@ export async function getPermissionState(): Promise<NotificationPermissionState>
  * recover from.
  */
 export async function requestPermission(): Promise<NotificationPermissionState> {
-  const existing = await Notifications.getPermissionsAsync();
+  return withNotifications(async (notifications) => {
+    const existing = await notifications.getPermissionsAsync();
 
-  if (existing.status === 'granted') return toPermissionState(existing);
-  if (!existing.canAskAgain) return toPermissionState(existing);
+    if (existing.status === 'granted') return toPermissionState(existing);
+    if (!existing.canAskAgain) return toPermissionState(existing);
 
-  const permissions = await Notifications.requestPermissionsAsync({
-    ios: {
-      allowAlert: true,
-      allowBadge: false,
-      allowSound: true,
-    },
-  });
+    const permissions = await notifications.requestPermissionsAsync({
+      ios: { allowAlert: true, allowBadge: false, allowSound: true },
+    });
 
-  logger.info('notifications.permissionResult', { status: permissions.status });
-  return toPermissionState(permissions);
+    logger.info('notifications.permissionResult', { status: permissions.status });
+    return toPermissionState(permissions);
+  }, unavailablePermissionState);
 }
 
 /**
@@ -89,38 +115,50 @@ export async function requestPermission(): Promise<NotificationPermissionState> 
 export async function configureChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
-  const accent = getPalette('light').primary;
+  await withNotifications(async (notifications) => {
+    const accent = getPalette('light').primary;
 
-  await Notifications.setNotificationChannelAsync(notificationChannels.dailyReminders, {
-    name: t('notifications.channelDailyReminders'),
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 200],
-    lightColor: accent,
-    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-  });
+    await notifications.setNotificationChannelAsync(notificationChannels.dailyReminders, {
+      name: t('notifications.channelDailyReminders'),
+      importance: notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 200],
+      lightColor: accent,
+      lockscreenVisibility: notifications.AndroidNotificationVisibility.PUBLIC,
+    });
 
-  await Notifications.setNotificationChannelAsync(notificationChannels.streak, {
-    name: t('notifications.channelStreak'),
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 200],
-    lightColor: accent,
-  });
+    await notifications.setNotificationChannelAsync(notificationChannels.streak, {
+      name: t('notifications.channelStreak'),
+      importance: notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 200],
+      lightColor: accent,
+    });
 
-  await Notifications.setNotificationChannelAsync(notificationChannels.prayer, {
-    name: t('notifications.channelPrayer'),
-    // Lower importance: prayer-adjacent nudges should never interrupt.
-    importance: Notifications.AndroidImportance.LOW,
-    lightColor: accent,
-  });
+    await notifications.setNotificationChannelAsync(notificationChannels.prayer, {
+      name: t('notifications.channelPrayer'),
+      // Lower importance: prayer-adjacent nudges should never interrupt.
+      importance: notifications.AndroidImportance.LOW,
+      lightColor: accent,
+    });
 
-  logger.debug('notifications.channelsConfigured');
+    logger.debug('notifications.channelsConfigured');
+  }, undefined);
 }
 
-/** Simulators cannot receive push messages; local notifications still work. */
+/**
+ * Can this device receive PUSH specifically?
+ *
+ * Distinct from `areNotificationsAvailable`: a simulator supports local
+ * notifications but can never receive a push message.
+ */
 export function canReceivePush(): boolean {
-  return Device.isDevice;
+  return Device.isDevice && areNotificationsAvailable();
 }
 
 export async function dismissAll(): Promise<void> {
-  await Notifications.dismissAllNotificationsAsync();
+  await withNotifications(
+    (notifications) => notifications.dismissAllNotificationsAsync(),
+    undefined,
+  );
 }
+
+export { areNotificationsAvailable, getNotificationsAvailability } from './notificationsGateway';

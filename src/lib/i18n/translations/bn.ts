@@ -273,6 +273,10 @@ export const bn: Translation = {
     quietHoursBody: 'এই সময়ে কিছুই পাঠানো হবে না।',
     maxPerDay: 'সর্বোচ্চ রিমাইন্ডার',
     maxPerDayValue: { one: 'দিনে {{count}}টি', other: 'দিনে {{count}}টি' },
+    unsupportedTitle: 'এখানে রিমাইন্ডার পাওয়া যাচ্ছে না',
+    unsupportedExpoGoBody:
+      'অ্যান্ড্রয়েডে Expo Go নোটিফিকেশন দেখাতে পারে না। বাকি সবকিছু কাজ করছে — রিমাইন্ডার পরীক্ষা করতে ডেভেলপমেন্ট বিল্ড ব্যবহার করুন।',
+    unsupportedBody: 'এই ডিভাইস নোটিফিকেশন দেখাতে পারে না।',
     permissionRequired: 'নোটিফিকেশন বন্ধ আছে',
     permissionRequiredBody: 'রিমাইন্ডার পেতে সিস্টেম সেটিংস থেকে চালু করুন।',
     openSystemSettings: 'সেটিংস খুলুন',

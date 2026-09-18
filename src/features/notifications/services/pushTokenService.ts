@@ -8,8 +8,6 @@
  */
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { getDeviceTimezone } from '@/lib/datetime/localDate';
@@ -17,6 +15,9 @@ import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
 import type { DevicePlatform } from '@/lib/supabase/database.types';
 import { fromPostgrestError } from '@/lib/supabase/errors';
+
+import { canReceivePush } from './notificationService';
+import { withNotifications } from './notificationsGateway';
 
 function currentPlatform(): DevicePlatform {
   if (Platform.OS === 'ios') return 'ios';
@@ -27,12 +28,13 @@ function currentPlatform(): DevicePlatform {
 /**
  * Fetches the Expo push token.
  *
- * Returns null rather than throwing on a simulator or a missing project id:
- * neither is an error the user can act on, and push is an optional enhancement.
+ * Returns null rather than throwing on a simulator, in Expo Go, or with a
+ * missing project id: none of those is an error the user can act on, and push
+ * is an optional enhancement.
  */
 export async function getExpoPushToken(): Promise<string | null> {
-  if (!Device.isDevice) {
-    logger.debug('push.skippedOnSimulator');
+  if (!canReceivePush()) {
+    logger.debug('push.unavailableOnThisRuntime');
     return null;
   }
 
@@ -44,13 +46,10 @@ export async function getExpoPushToken(): Promise<string | null> {
     return null;
   }
 
-  try {
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+  return withNotifications(async (notifications) => {
+    const token = await notifications.getExpoPushTokenAsync({ projectId });
     return token.data;
-  } catch (error) {
-    logger.warn('push.tokenFetchFailed', { error });
-    return null;
-  }
+  }, null);
 }
 
 /**

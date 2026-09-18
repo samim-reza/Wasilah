@@ -275,6 +275,10 @@ export const en = {
     quietHoursBody: 'Nothing will be sent during these hours.',
     maxPerDay: 'Maximum reminders',
     maxPerDayValue: { one: '{{count}} per day', other: '{{count}} per day' },
+    unsupportedTitle: 'Reminders are not available here',
+    unsupportedExpoGoBody:
+      'Expo Go on Android cannot show notifications. Everything else works — install a development build to test reminders.',
+    unsupportedBody: 'This device cannot show notifications.',
     permissionRequired: 'Notifications are turned off',
     permissionRequiredBody: 'Turn them on in system settings to receive reminders.',
     openSystemSettings: 'Open settings',

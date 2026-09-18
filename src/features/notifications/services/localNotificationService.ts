@@ -5,14 +5,17 @@
  * server, keeps working with no connectivity, and never leaks a user's reading
  * schedule to a backend. Push is reserved for decisions that genuinely require
  * server state.
+ *
+ * All access is through `notificationsGateway`, so on a runtime where
+ * notifications are unavailable these become no-ops rather than throwing.
  */
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { logger } from '@/lib/monitoring/logger';
 
 import { categoryChannels } from '../types/notification.types';
 import type { NotificationContent } from '../types/notification.types';
+import { withNotifications } from './notificationsGateway';
 
 export interface ScheduledNotification {
   identifier: string;
@@ -40,33 +43,39 @@ export async function scheduleAt(
     return null;
   }
 
-  const identifier = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: content.title,
-      body: content.body,
-      data: { ...content.data, scheduledFor: fireAt.toISOString() },
-      sound: true,
-      ...(Platform.OS === 'android' ? { channelId: categoryChannels[content.data.category] } : {}),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: fireAt,
-    },
-  });
+  return withNotifications(async (notifications) => {
+    const identifier = await notifications.scheduleNotificationAsync({
+      content: {
+        title: content.title,
+        body: content.body,
+        data: { ...content.data, scheduledFor: fireAt.toISOString() },
+        sound: true,
+        ...(Platform.OS === 'android'
+          ? { channelId: categoryChannels[content.data.category] }
+          : {}),
+      },
+      trigger: {
+        type: notifications.SchedulableTriggerInputTypes.DATE,
+        date: fireAt,
+      },
+    });
 
-  logger.debug('notifications.scheduled', {
-    category: content.data.category,
-    fireAt: fireAt.toISOString(),
-  });
+    logger.debug('notifications.scheduled', {
+      category: content.data.category,
+      fireAt: fireAt.toISOString(),
+    });
 
-  return { identifier, category: content.data.category, scheduledFor: fireAt };
+    return { identifier, category: content.data.category, scheduledFor: fireAt };
+  }, null);
 }
 
 export async function cancel(identifier: string): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(identifier).catch((error: unknown) => {
-    // Cancelling an already-fired notification is expected, not an error.
-    logger.debug('notifications.cancelNoop', { identifier, error });
-  });
+  // Cancelling an already-fired notification is expected, not an error, so the
+  // gateway's own swallow-and-log behaviour is the right one here.
+  await withNotifications(
+    (notifications) => notifications.cancelScheduledNotificationAsync(identifier),
+    undefined,
+  );
 }
 
 export async function cancelMany(identifiers: string[]): Promise<void> {
@@ -74,11 +83,16 @@ export async function cancelMany(identifiers: string[]): Promise<void> {
 }
 
 export async function cancelAll(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  logger.debug('notifications.allCancelled');
+  await withNotifications(async (notifications) => {
+    await notifications.cancelAllScheduledNotificationsAsync();
+    logger.debug('notifications.allCancelled');
+  }, undefined);
 }
 
 /** Everything currently queued with the OS, used to reconcile after a restart. */
-export async function listScheduled(): Promise<Notifications.NotificationRequest[]> {
-  return Notifications.getAllScheduledNotificationsAsync();
+export async function listScheduled(): Promise<unknown[]> {
+  return withNotifications(
+    (notifications) => notifications.getAllScheduledNotificationsAsync(),
+    [],
+  );
 }
