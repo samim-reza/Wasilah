@@ -10,6 +10,7 @@
  * Only aggregate daily totals are kept — never which ayahs were read.
  */
 import { addLocalDays, type LocalDate } from '@/lib/datetime/localDate';
+import { isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import {
@@ -47,8 +48,13 @@ const emptySnapshot: LocalHabitSnapshot = {
   longestStreak: 0,
 };
 
+/** `days` must be a record; anything else and the streak maths would throw. */
+function isHabitSnapshot(value: unknown): value is LocalHabitSnapshot {
+  return isRecord(value) && isRecord(value['days']);
+}
+
 async function read(): Promise<LocalHabitSnapshot> {
-  const stored = await keyValueStore.get<LocalHabitSnapshot>(storageKeys.localDailyProgress);
+  const stored = await keyValueStore.get(storageKeys.localDailyProgress, isHabitSnapshot);
   if (!stored) return emptySnapshot;
 
   return {

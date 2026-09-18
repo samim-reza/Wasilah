@@ -7,6 +7,7 @@
  */
 import { parseVerseKey } from '@/features/quran/utils/verseKey';
 import { GUEST_USER_ID, enqueue } from '@/lib/offline/syncQueue';
+import { isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import { supabase } from '@/lib/supabase/client';
@@ -19,8 +20,21 @@ export interface ReadingPosition {
   updatedAt: string;
 }
 
+/**
+ * A position must carry a usable chapter and verse, or "continue reading" sends
+ * the user to `/quran/undefined`.
+ */
+function isReadingPosition(value: unknown): value is ReadingPosition {
+  return (
+    isRecord(value) &&
+    typeof value['verseKey'] === 'string' &&
+    typeof value['chapterId'] === 'number' &&
+    typeof value['verseNumber'] === 'number'
+  );
+}
+
 export async function getLocalPosition(): Promise<ReadingPosition | null> {
-  return keyValueStore.get<ReadingPosition>(storageKeys.lastReadPosition);
+  return keyValueStore.get<ReadingPosition>(storageKeys.lastReadPosition, isReadingPosition);
 }
 
 /**

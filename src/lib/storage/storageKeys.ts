@@ -14,6 +14,14 @@ export const storageKeys = {
 
   /** Where the user last stopped reading, so "Continue" works before sync. */
   lastReadPosition: `${prefix}.reader.lastPosition`,
+
+  /**
+   * Bookmarks made before signing in. Its own key, not shared with anything:
+   * this previously reused `lastReadPosition`, so saving a reading position
+   * (an object) and listing guest bookmarks (an array) fought over one slot
+   * and corrupted each other.
+   */
+  guestBookmarks: `${prefix}.bookmarks.guest`,
   readerPreferences: `${prefix}.reader.preferences`,
 
   /** Locally computed habit state; authoritative until the server confirms. */
@@ -41,6 +49,7 @@ export type StorageKey = (typeof storageKeys)[keyof typeof storageKeys];
  */
 export const userScopedStorageKeys: StorageKey[] = [
   storageKeys.lastReadPosition,
+  storageKeys.guestBookmarks,
   storageKeys.localStreak,
   storageKeys.localDailyProgress,
   storageKeys.dailyAyah,

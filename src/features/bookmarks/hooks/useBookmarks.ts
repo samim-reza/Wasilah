@@ -12,6 +12,7 @@ import { useCallback, useMemo } from 'react';
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { trackEvent } from '@/lib/analytics/analytics';
+import { isArrayOf, isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 
@@ -22,11 +23,17 @@ import {
   type Bookmark,
 } from '../services/bookmarkService';
 
+/** Guest bookmarks; adopted by the sync queue on sign-in. */
+const GUEST_BOOKMARKS_KEY = storageKeys.guestBookmarks;
+
 /**
- * Guest bookmarks live under the reading-position key's sibling in local
- * storage. They are adopted by the sync queue on sign-in.
+ * Storage is untyped at runtime. A value written by an older build — or by the
+ * key collision this key replaced — deserialises into whatever it is, and
+ * calling `.map` on it crashes the screen rather than degrading.
  */
-const GUEST_BOOKMARKS_KEY = storageKeys.lastReadPosition;
+const isBookmarkArray = isArrayOf(
+  (entry): entry is Bookmark => isRecord(entry) && typeof entry['verseKey'] === 'string',
+);
 
 export interface UseBookmarksResult {
   bookmarks: Bookmark[];
@@ -47,7 +54,8 @@ export function useBookmarks(): UseBookmarksResult {
     queryKey,
     queryFn: async () => {
       if (userId) return fetchBookmarks(userId);
-      return (await keyValueStore.get<Bookmark[]>(GUEST_BOOKMARKS_KEY)) ?? [];
+
+      return (await keyValueStore.get(GUEST_BOOKMARKS_KEY, isBookmarkArray)) ?? [];
     },
   });
 

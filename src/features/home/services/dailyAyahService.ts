@@ -9,6 +9,7 @@
 import type { LocalDate } from '@/lib/datetime/localDate';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
+import { isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 
@@ -61,7 +62,14 @@ export async function getDailyAyah(
   date: LocalDate,
   chapters: readonly ChapterVerseCount[],
 ): Promise<DailyAyahSelection | null> {
-  const cached = await keyValueStore.get<CachedSelection>(storageKeys.dailyAyah);
+  const isCachedSelection = (value: unknown): value is CachedSelection =>
+    isRecord(value) &&
+    typeof value['date'] === 'string' &&
+    typeof value['verseKey'] === 'string' &&
+    typeof value['chapterId'] === 'number' &&
+    typeof value['verseNumber'] === 'number';
+
+  const cached = await keyValueStore.get(storageKeys.dailyAyah, isCachedSelection);
   if (cached?.date === date) {
     return {
       verseKey: cached.verseKey,

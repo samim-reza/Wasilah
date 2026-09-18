@@ -22,6 +22,7 @@ import {
 import { occurrenceOn, type TimeOfDay } from '@/lib/datetime/timeOfDay';
 import { addLocalDays, type LocalDate } from '@/lib/datetime/localDate';
 import { logger } from '@/lib/monitoring/logger';
+import { isArrayOf, isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 
@@ -277,8 +278,15 @@ export interface StoredScheduleEntry {
   scheduledFor: string;
 }
 
+const isScheduleEntryArray = isArrayOf(
+  (entry): entry is StoredScheduleEntry =>
+    isRecord(entry) &&
+    typeof entry['identifier'] === 'string' &&
+    typeof entry['scheduledFor'] === 'string',
+);
+
 export async function getStoredSchedule(): Promise<StoredScheduleEntry[]> {
-  return (await keyValueStore.get<StoredScheduleEntry[]>(storageKeys.scheduledReminderIds)) ?? [];
+  return (await keyValueStore.get(storageKeys.scheduledReminderIds, isScheduleEntryArray)) ?? [];
 }
 
 /** The next reminder, for the "next reminder at…" line in settings. */
