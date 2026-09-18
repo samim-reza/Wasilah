@@ -12,6 +12,7 @@
 import { t } from '@/lib/i18n';
 
 import { routes } from '../utils/notificationRouting';
+import { getCachedTemplate } from './remoteTemplates';
 import type { NotificationTemplate, TemplateVariables } from './types';
 
 /** Chooses morning/evening wording when the caller did not specify. */
@@ -162,7 +163,34 @@ const templates: Record<string, NotificationTemplate> = {
 export type TemplateKey = keyof typeof templates;
 
 export function renderTemplate(key: string, variables: TemplateVariables = {}) {
-  return templates[key]?.build(variables) ?? null;
+  const content = templates[key]?.build(variables);
+  if (!content) return null;
+
+  // A remote row overrides the WORDING only. Category and route come from the
+  // shipped template, so a server row cannot redirect a notification or
+  // reclassify it onto a channel the user muted something else on.
+  const override = getCachedTemplate(key);
+  if (!override) return content;
+
+  return {
+    ...content,
+    title: interpolate(override.title, variables),
+    body: interpolate(override.body, variables),
+  };
+}
+
+/**
+ * Fills `{{name}}` placeholders in remote copy.
+ *
+ * Deliberately minimal: an unknown placeholder is left as written rather than
+ * replaced with "undefined", so a mistake in a server row looks like a mistake
+ * instead of looking like a bug in the app.
+ */
+function interpolate(template: string, variables: TemplateVariables): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, name: string) => {
+    const value = (variables as Record<string, unknown>)[name];
+    return value === undefined || value === null ? match : String(value);
+  });
 }
 
 export function getTemplate(key: string): NotificationTemplate | undefined {

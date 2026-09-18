@@ -5,7 +5,7 @@
  * time spent — and stops there. No comparison to other people, no projections,
  * no pressure.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { ErrorState } from '@/components/feedback/ErrorState';
@@ -17,14 +17,14 @@ import { Text } from '@/components/ui/Text';
 import { ReadingCalendar } from '@/features/streak/components/ReadingCalendar';
 import { StatTile } from '@/features/streak/components/StatTile';
 import { useHabitState } from '@/features/streak/hooks/useHabitState';
+import { useAchievements } from '@/features/streak/hooks/useAchievements';
 import { useProgressCalendar } from '@/features/streak/hooks/useProgressCalendar';
-import { achievementDefinitions, reachedAchievements } from '@/features/streak/utils/achievements';
 import { addLocalDays, startOfLocalMonth } from '@/lib/datetime/localDate';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export default function ProgressScreen() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { today } = useLocalDate();
   const habit = useHabitState();
 
@@ -40,13 +40,17 @@ export default function ProgressScreen() {
       ? t('progress.hoursShort', { count: hours })
       : t('progress.minutesShort', { count: minutes });
 
-  const unlocked = new Set(
-    reachedAchievements({
-      totalVersesRead: habit.streak.totalVersesRead,
-      currentStreak: habit.currentStreak,
-      longestStreak: habit.streak.longestStreak,
-    }),
-  );
+  const achievements = useAchievements({
+    totalVersesRead: habit.streak.totalVersesRead,
+    currentStreak: habit.currentStreak,
+    longestStreak: habit.streak.longestStreak,
+  });
+
+  // Record anything earned while offline, or before signing in. Idempotent, and
+  // a no-op once everything reached is already stored.
+  useEffect(() => {
+    void achievements.reconcile();
+  }, [achievements]);
 
   return (
     <Screen noPadding>
@@ -126,30 +130,41 @@ export default function ProgressScreen() {
           <Text className="font-semibold">{t('progress.achievements')}</Text>
 
           <View className="flex-row flex-wrap gap-2">
-            {achievementDefinitions.map((definition) => {
-              const isUnlocked = unlocked.has(definition.key);
+            {achievements.achievements.map(({ definition, reached, unlockedAt }) => {
               const count =
                 definition.kind === 'juz'
                   ? Math.round(definition.threshold / 207)
                   : definition.threshold;
+              const label = t(definition.labelKey, { count });
+
+              // The date is the meaningful half — "100 ayahs" is a number,
+              // "reached on 4 March" is a memory. Shown when we have it.
+              const reachedOn = unlockedAt
+                ? t('achievements.unlockedOn', {
+                    date: new Date(unlockedAt).toLocaleDateString(locale),
+                  })
+                : null;
 
               return (
                 <View
                   key={definition.key}
                   className={`rounded-full px-3 py-1.5 ${
-                    isUnlocked ? 'bg-primary-muted' : 'bg-surface-muted'
+                    reached ? 'bg-primary-muted' : 'bg-surface-muted'
                   }`}
                   accessible
-                  accessibilityLabel={`${t(definition.labelKey, { count })}, ${
-                    isUnlocked ? 'reached' : t('achievements.locked')
-                  }`}
+                  accessibilityLabel={`${label}, ${reachedOn ?? (reached ? 'reached' : t('achievements.locked'))}`}
                 >
                   <Text
                     variant="caption"
-                    className={isUnlocked ? 'font-semibold text-primary' : 'text-content-subtle'}
+                    className={reached ? 'font-semibold text-primary' : 'text-content-subtle'}
                   >
-                    {t(definition.labelKey, { count })}
+                    {label}
                   </Text>
+                  {reachedOn && (
+                    <Text variant="caption" tone="subtle" className="text-[10px]">
+                      {reachedOn}
+                    </Text>
+                  )}
                 </View>
               );
             })}

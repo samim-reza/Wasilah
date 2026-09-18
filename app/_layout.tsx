@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 
 import { useAuth } from '@/features/auth/hooks/AuthProvider';
 import { useNotificationRouting } from '@/features/notifications/hooks/useNotificationRouting';
+import { primeRemoteTemplates } from '@/features/notifications/templates/remoteTemplates';
 import { useOfflineSync } from '@/lib/offline/useOfflineSync';
 import { initializeMonitoring } from '@/lib/monitoring/sentry';
 import { AppProviders } from '@/providers/AppProviders';
@@ -37,6 +38,13 @@ function RootNavigator() {
   // Notification taps must be able to navigate, so routing is wired up inside
   // the navigator rather than at module scope.
   useNotificationRouting();
+
+  // Warm the remote copy overrides so the scheduler can read them without
+  // waiting on the network. Fire-and-forget: every template has shipped copy,
+  // so a failure here changes nothing the user sees.
+  useEffect(() => {
+    void primeRemoteTemplates();
+  }, []);
 
   // Flush anything the user did while offline as soon as connectivity returns.
   useOfflineSync();
