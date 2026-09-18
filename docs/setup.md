@@ -82,6 +82,31 @@ You should get a JSON list of 114 chapters.
 
 ---
 
+## Development build
+
+Expo Go on Android cannot show notifications at all, so reminders can only be
+tested in a development build.
+
+```bash
+set -a && . ./.env.eas && set +a      # EAS robot token, gitignored
+npx eas build --profile development --platform android
+```
+
+Two things that are easy to get wrong and were:
+
+- **`.env.local` never reaches EAS.** It is gitignored, so the build does not
+  receive it and the app fails its own environment validation at launch. The
+  Supabase URL and anon key are stored as EAS project variables instead, and
+  each build profile names the environment to read them from.
+- **`expo-dev-client` must be installed.** Without it EAS refuses a development
+  build outright. It is not needed for Expo Go, which is why this only appeared
+  when building.
+
+Install the resulting APK, then run `npm start` and the dev build will connect
+to it the same way Expo Go does.
+
+---
+
 ## Run it
 
 ```bash

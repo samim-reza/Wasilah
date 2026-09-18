@@ -412,6 +412,9 @@ eas update --branch production --message "Fix streak boundary at DST"
 OTA updates only work for JavaScript changes. Adding a native module, changing
 permissions or bumping `runtimeVersion` needs a new binary.
 
+They also need `expo-updates` present in the binary receiving them — a build
+made before it was installed will ignore updates entirely, without erroring.
+
 ### Before the first production release
 
 - [ ] Quran Foundation **production** access granted and `QF_ENV=production`
