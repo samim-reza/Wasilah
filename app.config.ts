@@ -88,11 +88,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     blockedPermissions: ['android.permission.ACCESS_BACKGROUND_LOCATION'],
   },
 
-  web: {
-    bundler: 'metro',
-    output: 'static',
-    favicon: './assets/favicon.png',
-  },
+  // No web target. Wasilah ships to Android and iOS, and the features that
+  // matter here — recitation audio, local notifications, secure session
+  // storage — either behave differently or not at all in a browser, so a web
+  // build would give a misleading impression of the app rather than a useful
+  // preview. Declaring the target without installing `@expo/metro-runtime` and
+  // `react-native-web` also made the dev server attempt a web prerender and
+  // fail on every start. Add those two packages and restore this block if web
+  // ever becomes a real target.
 
   plugins: [
     'expo-router',

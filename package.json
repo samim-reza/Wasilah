@@ -82,7 +82,6 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
     "theme:build": "node --experimental-strip-types --no-warnings scripts/generate-theme-css.ts",
     "prebuild": "expo prebuild --clean",
     "build:android:preview": "eas build --platform android --profile preview",

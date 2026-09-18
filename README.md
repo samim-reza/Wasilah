@@ -556,6 +556,34 @@ force `recalculate_streak` to rebuild from `daily_progress`.
 </details>
 
 <details>
+<summary><b>"Port 8081 is running this app in another window"</b></summary>
+
+A dev server is already running. Two servers are not a problem in themselves,
+but your phone is connected to whichever port it was given, so the second one on
+8082 will look dead. Stop the extra one:
+
+```bash
+pkill -f "expo start"
+npm start
+```
+
+</details>
+
+<details>
+<summary><b>"An unknown error occurred while installing React Native DevTools" (Linux)</b></summary>
+
+Harmless. Chromium's sandbox helper needs root ownership, which it does not have
+in most Linux setups. It affects only the in-browser debugger — never the app,
+the bundle or your device. Ignore it, or fix it once:
+
+```bash
+sudo chown root:root ~/.cache/dotslash/*/React\ Native\ DevTools-linux-x64/chrome-sandbox
+sudo chmod 4755 ~/.cache/dotslash/*/React\ Native\ DevTools-linux-x64/chrome-sandbox
+```
+
+</details>
+
+<details>
 <summary><b>Build fails on <code>react-native-worklets</code></b></summary>
 
 `react-native-worklets/plugin` must be **last** in `babel.config.js`, after
