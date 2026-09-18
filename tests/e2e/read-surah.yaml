@@ -1,0 +1,34 @@
+# Reading a surah, bookmarking an ayah, and finding it again.
+#
+# Exercises the reader's pagination, the bookmark write path (which goes
+# through the offline queue) and the bookmarks list.
+appId: com.wasilah.app
+name: Read a surah and bookmark an ayah
+---
+- launchApp
+
+- tapOn: 'Quran'
+- assertVisible: 'Al-Fatihah'
+
+# Al-Fatihah is present in the Quran Foundation pre-live dataset, so this flow
+# passes against development credentials as well as production ones.
+- tapOn: 'Al-Fatihah'
+- assertVisible:
+    id: 'ayah-1'
+    timeout: 15000
+
+- scroll
+- scroll
+
+# Bookmark whatever ayah is in view.
+- tapOn:
+    point: '90%,30%'
+
+- assertVisible:
+    text: 'Bookmarked'
+    timeout: 5000
+
+- back
+- tapOn: 'Profile'
+- tapOn: 'Bookmarks'
+- assertVisible: 'Al-Fatihah'

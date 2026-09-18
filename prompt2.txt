@@ -1,0 +1,705 @@
+# QURAN.COM / QURAN FOUNDATION INTEGRATION — MANDATORY
+
+The application should use the **official Quran.com / Quran Foundation ecosystem** as the primary source for Quran functionality rather than building an independent Quran content database from scratch.
+
+Quran.com maintains open-source software projects, including its web frontend and mobile applications. The official Quran Foundation developer platform provides APIs for Quran content and user-related Quran features.
+
+Official resources:
+
+* Quran.com Developer Platform
+* Quran Foundation API
+* Quran Foundation JavaScript/TypeScript SDK
+* Official Quran.com GitHub repositories
+
+Use the official APIs and official open-source repositories as architectural and implementation references.
+
+---
+
+## 1. PRIMARY QURAN DATA SOURCE
+
+Use **Quran Foundation APIs** for Quran content.
+
+Do NOT scrape Quran.com.
+
+Do NOT download or copy the Quran.com website.
+
+Do NOT create a manually maintained duplicate Quran dataset unless explicitly required and legally permitted.
+
+The application should retrieve appropriate content through the official API.
+
+Content may include:
+
+* Quran chapters
+* Quran verses
+* translations
+* tafsir
+* word-by-word translations where available
+* word-by-word transliteration where available
+* recitations
+* chapter recitations
+* Mushaf/page information where available
+* Juz
+* Hizb
+* Ruku
+* Manzil
+* Quran search
+* other officially supported Quran content
+
+Use the official API documentation to determine the correct endpoint and current API version.
+
+---
+
+# 2. USE THE OFFICIAL TYPESCRIPT SDK WHEN APPROPRIATE
+
+Because this application uses TypeScript, prefer the official Quran Foundation JavaScript/TypeScript SDK where appropriate rather than manually duplicating API client logic.
+
+Use the server-side SDK/backend integration for protected Content API requests.
+
+Keep the Quran API implementation isolated:
+
+```text
+src/
+  lib/
+    quran/
+      client/
+      config/
+      types/
+```
+
+or, if feature-based organization is preferable:
+
+```text
+src/
+  features/
+    quran/
+      api/
+      services/
+      hooks/
+      types/
+      components/
+```
+
+Do not allow React components to directly construct Quran API requests.
+
+Preferred architecture:
+
+```text
+Quran UI
+    ↓
+React Hook
+    ↓
+Quran Service
+    ↓
+Quran API Client / SDK
+    ↓
+Quran Foundation API
+```
+
+---
+
+# 3. API CREDENTIAL SECURITY
+
+Quran Foundation Content API credentials must NOT be embedded in the mobile application.
+
+The Content API uses backend authentication.
+
+Keep sensitive credentials server-side.
+
+Preferred architecture:
+
+```text
+React Native / Expo
+        ↓
+Our backend / Supabase Edge Function
+        ↓
+Quran Foundation API
+```
+
+Never put:
+
+```text
+QF_CLIENT_SECRET
+QF private credentials
+server secrets
+```
+
+inside the Expo client bundle.
+
+Use environment variables and server-side secrets.
+
+Example:
+
+```text
+QF_CLIENT_ID=
+QF_CLIENT_SECRET=
+QF_ENV=
+```
+
+The exact environment variable names may be changed, but maintain one consistent naming convention.
+
+---
+
+# 4. DEVELOPMENT / PRE-LIVE ENVIRONMENT
+
+During development, use Quran Foundation's pre-live environment.
+
+Do not assume that development credentials have access to the complete production Quran dataset.
+
+The coding agent must follow the current Quran Foundation Developer Console/API documentation for:
+
+* creating the application
+* obtaining credentials
+* configuring environments
+* requesting production access
+* authentication
+* scopes
+* rate limits
+
+Do not hardcode production credentials.
+
+---
+
+# 5. PRODUCTION API ACCESS
+
+Before production release:
+
+1. Register the application with Quran Foundation.
+2. Configure the application in the Developer Console.
+3. Request the required production permissions/scopes.
+4. Verify all required API access.
+5. Verify attribution requirements.
+6. Verify content-specific licensing requirements.
+7. Verify caching/storage rules.
+8. Verify privacy requirements.
+9. Test production API access.
+10. Document the production configuration.
+
+Do not assume that development access automatically means production access.
+
+---
+
+# 6. QURAN CONTENT MUST REMAIN AUTHORITATIVE
+
+Never modify Quran text.
+
+Never "correct" Quran text manually inside application code.
+
+Never generate Quran text using an LLM.
+
+Never use AI-generated Quran verses.
+
+Never silently substitute an unofficial Quran dataset when official content is available.
+
+If content is displayed from Quran Foundation, preserve the content and context supplied by the source.
+
+---
+
+# 7. TRANSLATIONS
+
+Translations must be treated separately from the Quran's Arabic text.
+
+The architecture should support multiple translation editions.
+
+Example:
+
+```text
+Arabic Quran
+    +
+Translation A
+    +
+Translation B
+    +
+Translation C
+```
+
+Do not hardcode one translation into the reader.
+
+The user should eventually be able to select:
+
+```text
+Translation
+    ↓
+English
+Bengali
+Urdu
+Hindi
+etc.
+```
+
+subject to the availability and licensing of each translation.
+
+Record the translation edition/source.
+
+---
+
+# 8. TAFSIR
+
+Tafsir must also remain a distinct content type.
+
+Architecture:
+
+```text
+Ayah
+ ├── Arabic
+ ├── Translation
+ └── Tafsir
+       ├── Tafsir source A
+       ├── Tafsir source B
+       └── ...
+```
+
+Do not mix tafsir text with Quran text.
+
+Clearly identify the tafsir source/edition.
+
+---
+
+# 9. AUDIO / RECITATIONS
+
+Use Quran Foundation's officially supported recitation/audio resources where appropriate.
+
+Do not scrape audio from Quran.com.
+
+Create a dedicated audio feature:
+
+```text
+features/
+  audio/
+    components/
+    hooks/
+    services/
+    types/
+    utils/
+```
+
+The Quran feature should request:
+
+```text
+surah
+ayah
+reciter
+audio URL
+```
+
+and pass the result to the audio system.
+
+The audio player itself should remain independent from the Quran API implementation.
+
+---
+
+# 10. SEARCH
+
+Use the official Quran Foundation Search APIs where appropriate.
+
+Architecture:
+
+```text
+Search Screen
+    ↓
+useQuranSearch()
+    ↓
+QuranSearchService
+    ↓
+Quran Foundation Search API
+```
+
+Support:
+
+* Arabic search
+* translation search where supported
+* search result pagination
+* debouncing
+* loading states
+* error states
+* result navigation
+
+Do not implement a second search engine unnecessarily.
+
+---
+
+# 11. QURAN.COM USER FEATURES
+
+Where appropriate, investigate and use the official Quran Foundation User APIs rather than recreating existing Quran.com functionality unnecessarily.
+
+Potential capabilities include:
+
+* bookmarks
+* collections
+* notes
+* reading sessions
+* goals
+* preferences
+* profile-related Quran features
+
+However, determine feature-by-feature whether the application should:
+
+### Option A
+
+Use Quran Foundation User APIs.
+
+### Option B
+
+Use our own Supabase database.
+
+Do NOT duplicate the same data in both systems without a clear synchronization strategy.
+
+For example, do not simultaneously maintain:
+
+```text
+Quran Foundation bookmarks
++
+Supabase bookmarks
+```
+
+unless synchronization requirements justify it.
+
+---
+
+# 12. OUR APP'S DIFFERENTIATING FEATURES
+
+Quran Foundation/Quran.com should provide the authoritative Quran experience.
+
+Our application should focus on the additional product layer:
+
+```text
+Quran Foundation
+        ↓
+Quran content / search / audio / tafsir
+        +
+Our application
+        ↓
+Habit engine
+Daily minimum
+Streaks
+Goals
+Smart reminders
+Prayer-based reminders
+Weather-based reminders
+Personalization
+Progress
+Notification engine
+Onboarding
+Beautiful habit-oriented UX
+```
+
+The application should NOT try to compete with Quran.com by unnecessarily rebuilding its entire ecosystem.
+
+Instead:
+
+> **Quran Foundation provides the Quran experience foundation; our application builds a personalized daily Quran habit layer around it.**
+
+---
+
+# 13. CACHING AND OFFLINE STORAGE
+
+Do not assume that arbitrary Quran API data can be cached indefinitely.
+
+Follow the current Quran Foundation Developer Terms.
+
+The implementation must respect the applicable content caching/storage limits.
+
+If using Content Sync APIs or another officially supported offline mechanism, implement the required synchronization behavior.
+
+For content that is not eligible for long-term storage:
+
+```text
+API
+ ↓
+short-lived cache
+ ↓
+application
+```
+
+For approved Content Sync resources:
+
+```text
+Content Sync
+ ↓
+local storage
+ ↓
+periodic synchronization
+ ↓
+apply updates
+```
+
+Do not create an unrestricted offline Quran mirror without verifying that the specific content and API path permit it.
+
+---
+
+# 14. ATTRIBUTION
+
+The application must provide appropriate attribution to Quran Foundation/Quran.com and to individual content sources where required.
+
+Include an appropriate credits/about section.
+
+For example, where applicable:
+
+> Quran data provided by Quran Foundation.
+
+Also identify:
+
+* translation source
+* tafsir source
+* reciter/source
+* other licensed content providers
+
+according to the applicable source requirements.
+
+Do not remove or obscure required attribution.
+
+---
+
+# 15. LICENSE / OPEN-SOURCE HANDLING
+
+The fact that a Quran.com software repository is open source does NOT automatically mean every piece of Quran content, translation, audio, font, image, or third-party resource has the same license.
+
+For every external resource, identify:
+
+```text
+Source
+License
+Allowed use
+Attribution requirement
+Redistribution restriction
+Commercial-use restriction
+Caching/storage restriction
+```
+
+Maintain a document:
+
+```text
+docs/
+  third-party-content-and-licenses.md
+```
+
+Example structure:
+
+```text
+Resource:
+Quran Foundation API
+
+Purpose:
+Quran content
+
+Source:
+Official Quran Foundation API
+
+License/Terms:
+Quran Foundation Developer Terms
+
+Attribution:
+Required as specified by current terms
+
+Caching:
+Follow current Developer Terms
+
+Commercial use:
+Verify current terms
+
+Notes:
+Do not redistribute raw API content
+```
+
+Do the same for translations, tafsir, audio, fonts, Mushaf images, icons, and other third-party assets.
+
+---
+
+# 16. DO NOT COPY QURAN.COM UI BLINDLY
+
+The application can be inspired by the functionality and quality of Quran.com, but it should have its own product identity.
+
+Do not simply clone:
+
+* Quran.com's branding
+* logo
+* exact visual identity
+* proprietary design assets
+* website layout
+* copyrighted illustrations
+* proprietary content presentation
+
+Instead, build an original interface optimized for our application's central concept:
+
+> **One Ayah. Every Day.**
+
+---
+
+# 17. USE QURAN.COM OPEN-SOURCE PROJECTS AS ENGINEERING REFERENCES
+
+The coding agent should inspect the official Quran.com GitHub organization and relevant repositories when useful.
+
+Official open-source repositories may provide valuable references for:
+
+* Quran rendering
+* Arabic text handling
+* Mushaf rendering
+* audio architecture
+* bookmarks
+* offline behavior
+* search
+* Quran navigation
+* data structures
+* mobile UX
+
+However:
+
+**Do not copy code automatically.**
+
+Before reusing any code:
+
+1. Identify the repository.
+2. Identify its license.
+3. Check whether the code is compatible with this project's license/distribution model.
+4. Preserve required copyright/license notices.
+5. Record the source in `docs/third-party-content-and-licenses.md`.
+6. Prefer clean-room implementation when copying would create unnecessary coupling.
+
+---
+
+# 18. OFFICIAL REFERENCES
+
+The coding agent should consult the current official documentation rather than relying on old tutorials.
+
+Use:
+
+* Quran.com Developers
+* Quran Foundation API Documentation
+* Quran Foundation API Reference
+* Quran Foundation Developer Terms
+* Quran Foundation Developer Privacy requirements
+* Official Quran.com GitHub repositories
+
+Do not rely on old `api.quran.com/api/v4` tutorials without checking the current migration documentation.
+
+---
+
+# 19. IMPORTANT LEGAL / COMPLIANCE CHECK
+
+Before production release, explicitly verify:
+
+* API terms
+* content licenses
+* translation licenses
+* tafsir licenses
+* recitation/audio licenses
+* font licenses
+* Mushaf image licenses
+* caching rules
+* attribution requirements
+* commercial-use requirements
+* privacy requirements
+* OAuth requirements if using User APIs
+
+If the coding agent cannot verify a license or permission, it must NOT assume that the resource is free for commercial redistribution.
+
+Instead:
+
+```text
+UNKNOWN LICENSE
+        ↓
+Do not ship resource
+        ↓
+Find approved alternative
+or
+Request permission
+```
+
+---
+
+# 20. IMPORTANT PRODUCT RULE
+
+The application is an **independent application using the Quran Foundation/Quran.com ecosystem**.
+
+Do not represent the application as an official Quran.com application unless explicit authorization exists.
+
+Clearly distinguish:
+
+```text
+Our application
+        ≠
+Quran.com
+```
+
+while appropriately crediting the Quran Foundation/Quran.com ecosystem and complying with its current developer requirements.
+
+---
+
+# 21. IMPLEMENTATION PRIORITY
+
+The Quran Foundation integration should be implemented before building custom Quran-content infrastructure.
+
+Build in this order:
+
+```text
+1. Quran Foundation API client
+        ↓
+2. Chapters
+        ↓
+3. Verses
+        ↓
+4. Translations
+        ↓
+5. Audio
+        ↓
+6. Search
+        ↓
+7. Reader
+        ↓
+8. Bookmarks/notes as appropriate
+        ↓
+9. Reading sessions
+        ↓
+10. Habit engine
+        ↓
+11. Notifications
+        ↓
+12. Prayer/weather personalization
+```
+
+Do not build a duplicate Quran database first and attempt to migrate later.
+
+---
+
+# 22. FINAL ARCHITECTURE
+
+The final conceptual architecture should be:
+
+```
+                     ┌─────────────────────────┐
+                     │      React Native       │
+                     │          Expo           │
+                     └────────────┬────────────┘
+                                  │
+             ┌────────────────────┼────────────────────┐
+             │                    │                    │
+             ▼                    ▼                    ▼
+       Quran Feature        Habit Engine         Notification UI
+             │                    │                    │
+             ▼                    ▼                    ▼
+     Quran API Service      Reminder Engine      Notification Service
+             │                    │                    │
+             ▼                    ▼                    ▼
+   Quran Foundation API      Supabase DB         Expo/FCM/APNs
+             │
+    ┌────────┼─────────┐
+    ▼        ▼         ▼
+  Quran   Tafsir    Recitations
+  Text
+    │
+    ▼
+```
+
+Official Content
+
+```
+
+The key principle is:
+
+> **Use Quran Foundation/Quran.com as the authoritative Quran infrastructure and build our differentiated habit, personalization, notification, and UX layer around it.**
+
+One other thing I would **definitely change from my previous prompt**: don't have the agent create a permanent local cache of the entire Quran by default. The current Quran Foundation terms limit ordinary QF Content caching to **one week**, unless an applicable Content Sync exception or other permission applies.
+
+And the current API documentation explicitly provides **Content APIs, Search APIs, User APIs, and OAuth APIs**, so we can potentially use a lot more of the existing Quran.com ecosystem rather than reinventing bookmarks, notes, goals, etc.
+
+For the actual implementation, I'd have the agent first inspect the official [Quran.com developer resources](https://quran.com/developers?utm_source=chatgpt.com) and [Quran Foundation API documentation](https://api-docs.quran.com/?utm_source=chatgpt.com), then build against the **current** API rather than an old `api.quran.com` tutorial.
+```

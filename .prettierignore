@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.expo/
+android/
+ios/
+coverage/
+package-lock.json
+# Generated from src/theme/tokens.ts — run `npm run theme:build` instead.
+global.css

@@ -1,0 +1,64 @@
+/**
+ * GENERATED FILE — do not edit by hand.
+ * Source: src/theme/tokens.ts
+ * Regenerate: npm run theme:build
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background: 251 250 248;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 242 240 234;
+    --color-surface-pressed: 233 230 222;
+    --color-border: 228 224 214;
+    --color-border-strong: 207 201 187;
+    --color-text: 26 26 23;
+    --color-text-muted: 103 102 95;
+    --color-text-subtle: 148 146 138;
+    --color-primary: 15 122 99;
+    --color-primary-foreground: 255 255 255;
+    --color-primary-muted: 226 241 237;
+    --color-primary-pressed: 11 95 77;
+    --color-accent: 192 135 47;
+    --color-accent-foreground: 255 255 255;
+    --color-accent-muted: 250 240 222;
+    --color-success: 46 125 83;
+    --color-success-muted: 228 242 234;
+    --color-warning: 176 116 27;
+    --color-warning-muted: 251 240 220;
+    --color-danger: 180 57 47;
+    --color-danger-muted: 250 231 228;
+    --color-overlay: rgba(20, 20, 18, 0.45);
+    --color-skeleton: 236 233 226;
+  }
+
+  .dark:root {
+    --color-background: 14 19 17;
+    --color-surface: 22 28 25;
+    --color-surface-muted: 29 37 33;
+    --color-surface-pressed: 38 48 43;
+    --color-border: 42 51 46;
+    --color-border-strong: 60 71 65;
+    --color-text: 236 234 228;
+    --color-text-muted: 157 164 158;
+    --color-text-subtle: 111 120 116;
+    --color-primary: 53 179 148;
+    --color-primary-foreground: 6 33 27;
+    --color-primary-muted: 18 51 41;
+    --color-primary-pressed: 42 145 121;
+    --color-accent: 223 172 92;
+    --color-accent-foreground: 36 24 4;
+    --color-accent-muted: 46 36 19;
+    --color-success: 79 190 131;
+    --color-success-muted: 18 48 31;
+    --color-warning: 223 172 92;
+    --color-warning-muted: 46 36 19;
+    --color-danger: 224 104 92;
+    --color-danger-muted: 58 27 23;
+    --color-overlay: rgba(0, 0, 0, 0.6);
+    --color-skeleton: 33 42 37;
+  }
+}

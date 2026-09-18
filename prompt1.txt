@@ -1,0 +1,2335 @@
+# Build a Production-Ready Quran Habit & Reading App
+
+You are a senior mobile architect, product engineer, UI/UX designer, and backend engineer.
+
+Build a **production-quality cross-platform Quran mobile application** inspired by the habit-forming UX principles of apps such as Duolingo, combined with the Quran reading capabilities users expect from Quran.com.
+
+The goal is NOT to make a simple Quran reader.
+
+The core product idea is:
+
+> **Make reading at least one ayah of the Quran every day extremely easy, beautiful, and habit-forming.**
+
+The application should encourage consistency through daily goals, streaks, intelligent reminders, personalized notifications, reading progress, and contextual prompts while remaining respectful and appropriate for a Quran application.
+
+---
+
+# 1. CORE PRODUCT PRINCIPLES
+
+The application should be:
+
+* Beautiful
+* Calm
+* Fast
+* Minimal
+* Reliable
+* Modular
+* Accessible
+* Respectful of Islamic content
+* Habit-oriented without making the Quran feel like a game
+* Offline-friendly where practical
+* Scalable to a large user base
+
+The application must NOT feel like a generic CRUD application.
+
+It should feel like a polished consumer mobile application.
+
+---
+
+# 2. TECHNOLOGY STACK
+
+Use the following stack unless there is a strong technical reason to change something.
+
+## Mobile
+
+* React Native
+* Expo
+* TypeScript
+* Expo Router
+
+## UI
+
+* NativeWind / Tailwind-style styling
+* Reusable design-system components
+* Responsive layouts
+* Dark mode
+* Light mode
+
+## Backend
+
+* Supabase
+* PostgreSQL
+* Supabase Auth
+* Supabase Edge Functions
+
+## Quran content
+
+Use the official Quran Foundation / Quran.com developer APIs where appropriate.
+
+Do NOT scrape Quran.com.
+
+Do NOT invent Quran text, translations, tafsir, or religious information.
+
+Treat canonical Quran content as external source data.
+
+## Notifications
+
+* Expo Notifications
+* FCM for Android
+* APNs for iOS where necessary
+
+Use local notifications whenever a notification can be scheduled locally.
+
+Use remote push notifications when server-side logic is required.
+
+## Analytics
+
+Use a privacy-conscious analytics solution such as PostHog or Firebase Analytics.
+
+## Error monitoring
+
+Use Sentry.
+
+## Web/Admin
+
+Use Next.js only if an admin dashboard is required.
+
+---
+
+# 3. IMPORTANT ARCHITECTURAL REQUIREMENT
+
+## DO NOT PUT THE ENTIRE APPLICATION IN A FEW FILES.
+
+This is extremely important.
+
+Do NOT create:
+
+* one giant `App.tsx`
+* one giant `api.ts`
+* one giant `utils.ts`
+* one giant notification file containing unrelated functionality
+* one giant component containing the entire Quran reader
+* one giant backend function containing every business rule
+
+Every major feature must have its own module.
+
+Code should be organized by **feature/domain**, not simply dumped into generic folders.
+
+For example:
+
+```text
+src/
+  features/
+    auth/
+    quran/
+    reader/
+    audio/
+    bookmarks/
+    notes/
+    streak/
+    goals/
+    reminders/
+    notifications/
+    prayer/
+    weather/
+    search/
+    profile/
+    settings/
+    onboarding/
+```
+
+Each feature should contain its own:
+
+```text
+components/
+hooks/
+services/
+types/
+utils/
+screens/
+```
+
+where appropriate.
+
+Keep related functionality together.
+
+For example:
+
+```text
+features/notifications/
+    components/
+    hooks/
+    services/
+    types/
+    utils/
+```
+
+The notification system must NOT be mixed into the Quran reader.
+
+The reminder system must NOT be mixed into the notification UI.
+
+Prayer-time calculations must NOT be mixed into weather logic.
+
+API clients must NOT be mixed into UI components.
+
+---
+
+# 4. PREFERRED PROJECT STRUCTURE
+
+Create a scalable structure similar to:
+
+```text
+quran-app/
+│
+├── app/
+│   ├── _layout.tsx
+│   ├── index.tsx
+│   │
+│   ├── (auth)/
+│   │   ├── login.tsx
+│   │   ├── signup.tsx
+│   │   └── forgot-password.tsx
+│   │
+│   ├── (onboarding)/
+│   │   ├── welcome.tsx
+│   │   ├── goals.tsx
+│   │   ├── reminders.tsx
+│   │   └── preferences.tsx
+│   │
+│   ├── (tabs)/
+│   │   ├── _layout.tsx
+│   │   ├── home.tsx
+│   │   ├── quran.tsx
+│   │   ├── progress.tsx
+│   │   └── profile.tsx
+│   │
+│   ├── quran/
+│   │   ├── [surahId].tsx
+│   │   └── [surahId]/[ayahId].tsx
+│   │
+│   ├── search.tsx
+│   ├── bookmarks.tsx
+│   ├── notes.tsx
+│   ├── settings.tsx
+│   └── notification-settings.tsx
+│
+├── src/
+│   │
+│   ├── features/
+│   │   │
+│   │   ├── auth/
+│   │   ├── onboarding/
+│   │   ├── home/
+│   │   ├── quran/
+│   │   ├── reader/
+│   │   ├── audio/
+│   │   ├── bookmarks/
+│   │   ├── notes/
+│   │   ├── search/
+│   │   ├── streak/
+│   │   ├── goals/
+│   │   ├── reminders/
+│   │   ├── notifications/
+│   │   ├── prayer/
+│   │   ├── weather/
+│   │   ├── profile/
+│   │   └── settings/
+│   │
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── layout/
+│   │   └── feedback/
+│   │
+│   ├── lib/
+│   │   ├── supabase/
+│   │   ├── api/
+│   │   ├── storage/
+│   │   └── analytics/
+│   │
+│   ├── config/
+│   ├── constants/
+│   ├── types/
+│   └── utils/
+│
+├── supabase/
+│   ├── migrations/
+│   ├── functions/
+│   │   ├── notification-engine/
+│   │   ├── weather-notifications/
+│   │   ├── daily-ayah/
+│   │   └── ...
+│   └── seed/
+│
+├── assets/
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── docs/
+│
+├── .env.example
+├── app.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+You may improve this structure if necessary, but preserve the same architectural principle.
+
+---
+
+# 5. FEATURE-BASED ARCHITECTURE
+
+Every major feature should have clear separation between:
+
+### UI
+
+React components and screens.
+
+### State
+
+Hooks/store/state management.
+
+### Business logic
+
+Pure functions and services.
+
+### API
+
+External API communication.
+
+### Persistence
+
+Database/local storage.
+
+### Types
+
+TypeScript interfaces and schemas.
+
+For example:
+
+```text
+features/reminders/
+
+components/
+    ReminderCard.tsx
+    ReminderTimePicker.tsx
+    ReminderToggle.tsx
+
+hooks/
+    useReminders.ts
+    useReminderPreferences.ts
+
+services/
+    reminderService.ts
+    reminderScheduler.ts
+
+utils/
+    reminderRules.ts
+
+types/
+    reminder.types.ts
+
+screens/
+    ReminderSettingsScreen.tsx
+```
+
+Do the same for notifications, Quran reader, audio, streaks, etc.
+
+---
+
+# 6. HOME SCREEN
+
+The home screen should be the heart of the application.
+
+Example conceptual layout:
+
+```text
+Assalamu Alaikum
+
+🔥 7 day streak
+
+Today's Ayah
+────────────────
+
+[Arabic Ayah]
+
+[Translation]
+
+▶ Listen
+
+✓ Today's minimum complete
+
+Continue Reading →
+```
+
+Additional sections:
+
+* Current streak
+* Daily goal
+* Today's progress
+* Continue reading
+* Today's ayah
+* Recommended reading
+* Recent bookmarks
+* Optional prayer/reminder information
+
+Do not overload the home screen.
+
+Prioritize the daily action.
+
+---
+
+# 7. DAILY MINIMUM
+
+The fundamental habit mechanic is:
+
+> **Read at least one ayah every day.**
+
+The user can choose a larger goal.
+
+Supported goals should include:
+
+* 1 ayah
+* 3 ayahs
+* 5 ayahs
+* 10 ayahs
+* 1 page
+* 5 minutes
+* 10 minutes
+* 1 ruku
+* Custom
+
+The minimum requirement should remain easy.
+
+Store both:
+
+```text
+daily_minimum
+daily_goal
+```
+
+The user completing the minimum should count as completing the daily habit.
+
+---
+
+# 8. STREAK SYSTEM
+
+Implement a robust streak engine.
+
+Track:
+
+* current streak
+* longest streak
+* last completed date
+* total active days
+* total ayahs read
+* total reading time
+
+The streak calculation must use the user's local timezone.
+
+Do NOT calculate streaks incorrectly because of UTC/date boundaries.
+
+Handle:
+
+* timezone changes
+* missed days
+* daylight saving time
+* device clock issues
+* duplicate completion events
+* offline reading synchronization
+
+Make the streak logic testable as pure functions.
+
+Example:
+
+```text
+calculateStreak(previousState, activityDate)
+```
+
+Do not bury streak calculations inside UI components.
+
+---
+
+# 9. READING SESSION SYSTEM
+
+Track reading sessions.
+
+Each session may contain:
+
+```text
+user_id
+start_time
+end_time
+duration
+surah_id
+start_ayah
+end_ayah
+ayahs_read
+```
+
+Use this data for:
+
+* daily progress
+* streaks
+* statistics
+* reading history
+* personalized reminders
+
+Avoid storing unnecessary sensitive data.
+
+---
+
+# 10. QURAN READER
+
+Build a high-quality Quran reading experience.
+
+Support:
+
+* Surah list
+* Juz
+* Hizb
+* Ayah navigation
+* Arabic text
+* Translation
+* Tafsir where available
+* Audio
+* Bookmark
+* Notes
+* Share
+* Continue reading
+* Search
+* Font-size adjustment
+* Translation selection
+* Reciter selection
+* Reading mode
+* Mushaf mode if practical
+
+The reader should support pagination where appropriate.
+
+Do NOT load thousands of ayahs into one React render tree unnecessarily.
+
+Use virtualization/pagination.
+
+For example:
+
+```text
+QuranReader
+    ↓
+ReaderViewport
+    ↓
+VirtualizedAyahList
+    ↓
+AyahCard
+```
+
+Do not create a massive DOM/render tree.
+
+---
+
+# 11. PAGINATION
+
+Pagination must be implemented deliberately.
+
+For API-based data:
+
+```text
+page
+limit
+offset/cursor
+```
+
+Use the API's native pagination mechanism when available.
+
+For the Quran reader:
+
+* Load only the required portion.
+* Prefetch the next portion.
+* Cache previously loaded content.
+* Preserve scroll position.
+* Avoid unnecessary network requests.
+
+For search:
+
+* Paginate search results.
+* Debounce search input.
+* Cancel stale requests where appropriate.
+
+Do not fetch the entire Quran on every app launch.
+
+---
+
+# 12. OFFLINE SUPPORT
+
+The app should remain useful when the user has poor/no internet.
+
+Cache appropriate Quran content locally.
+
+At minimum consider caching:
+
+* recently viewed surahs
+* current reading location
+* translations
+* bookmarks
+* reading history waiting to sync
+
+Offline reading should not destroy the user's streak.
+
+When the network returns:
+
+```text
+Local activity
+      ↓
+Sync queue
+      ↓
+Supabase
+      ↓
+Conflict resolution
+```
+
+Design synchronization explicitly.
+
+Do not simply overwrite server data blindly.
+
+---
+
+# 13. AUDIO SYSTEM
+
+Create a dedicated audio module.
+
+Do NOT put audio logic inside Quran components.
+
+Structure:
+
+```text
+features/audio/
+
+components/
+    AudioPlayer.tsx
+    MiniPlayer.tsx
+    AudioProgress.tsx
+
+services/
+    audioService.ts
+    audioQueue.ts
+
+hooks/
+    useAudioPlayer.ts
+    useAudioQueue.ts
+
+types/
+    audio.types.ts
+```
+
+Support:
+
+* play
+* pause
+* resume
+* seek
+* next ayah
+* previous ayah
+* playback speed
+* selected reciter
+* background playback where supported
+* audio caching where appropriate
+
+Use a proper mobile audio implementation compatible with Expo.
+
+---
+
+# 14. BOOKMARKS
+
+Users should be able to bookmark ayahs.
+
+Support:
+
+* Add bookmark
+* Remove bookmark
+* Bookmark collections
+* Notes attached to bookmarks
+* Bookmark list
+* Search/filter bookmarks
+
+Separate:
+
+```text
+bookmark
+note
+collection
+```
+
+as different domain concepts.
+
+---
+
+# 15. NOTES
+
+Allow users to attach personal notes to ayahs.
+
+Notes should be private by default.
+
+Support:
+
+```text
+Ayah
+  ↓
+Personal Note
+```
+
+Never present an AI-generated interpretation as though it were the user's own note.
+
+---
+
+# 16. SEARCH
+
+Implement Quran search.
+
+Support:
+
+* Arabic search
+* Translation search
+* Surah search
+* Ayah search
+* Search suggestions
+* Debounced input
+* Paginated results
+
+Search should be its own feature.
+
+Do not put search logic directly inside the reader.
+
+---
+
+# 17. TODAY'S AYAH
+
+Create a dedicated daily ayah system.
+
+Every day the user gets a selected ayah.
+
+The selection system should be deterministic or properly randomized.
+
+Do not randomly choose content on every app refresh.
+
+For example:
+
+```text
+date + user_id
+        ↓
+stable daily selection
+        ↓
+Today's Ayah
+```
+
+Or use a server-generated daily ayah.
+
+The user should see the same Today's Ayah throughout the day.
+
+Support:
+
+* Arabic
+* Translation
+* Audio
+* Bookmark
+* Share
+* Read completion
+
+---
+
+# 18. REMINDER SYSTEM
+
+Create a completely independent reminder module.
+
+The reminder system is responsible for:
+
+* user reminder preferences
+* reminder schedules
+* reminder types
+* quiet hours
+* timezone handling
+* scheduling/canceling local notifications
+* deciding when a reminder is appropriate
+
+Example:
+
+```text
+features/reminders/
+
+components/
+    ReminderCard.tsx
+    ReminderTimePicker.tsx
+    QuietHoursPicker.tsx
+
+services/
+    reminderService.ts
+    reminderScheduler.ts
+
+hooks/
+    useReminders.ts
+
+utils/
+    reminderRules.ts
+
+types/
+    reminder.types.ts
+```
+
+The reminder module may call the notification module.
+
+It must NOT implement notification delivery itself.
+
+---
+
+# 19. NOTIFICATION SYSTEM
+
+Create a separate notification module.
+
+Notification module responsibilities:
+
+* permission handling
+* device token registration
+* local notification scheduling
+* remote push handling
+* notification categories
+* notification routing
+* notification payload parsing
+* notification analytics
+* cancellation
+* deep linking
+
+Example:
+
+```text
+features/notifications/
+
+services/
+    notificationService.ts
+    pushTokenService.ts
+    localNotificationService.ts
+    remoteNotificationService.ts
+
+hooks/
+    useNotifications.ts
+    useNotificationPermissions.ts
+
+types/
+    notification.types.ts
+
+utils/
+    notificationPayload.ts
+    notificationRouting.ts
+```
+
+Reminder logic decides:
+
+> "The user should be reminded."
+
+Notification logic decides:
+
+> "How should that notification be delivered?"
+
+Keep those responsibilities separate.
+
+---
+
+# 20. NOTIFICATION TYPES
+
+Support multiple notification categories.
+
+### Daily reminder
+
+```text
+🌙 Your daily ayah is waiting.
+```
+
+### Goal reminder
+
+```text
+You have 2 ayahs left to complete today's goal.
+```
+
+### Streak reminder
+
+```text
+🔥 Your 12-day journey is waiting.
+```
+
+### Morning
+
+```text
+🌅 Start your morning with one ayah.
+```
+
+### Night
+
+```text
+🌙 Take a quiet moment with the Quran.
+```
+
+### Today's Ayah
+
+```text
+Today's Ayah is ready.
+```
+
+### Weather-based
+
+Only if the user enables weather notifications.
+
+### Prayer-time contextual reminder
+
+Only if the user enables prayer-related reminders.
+
+Do not spam the user.
+
+---
+
+# 21. SMART NOTIFICATION ENGINE
+
+Build the notification system so it can evolve into personalization.
+
+Example inputs:
+
+```text
+user preference
+current time
+timezone
+day of week
+streak
+daily progress
+last reading time
+notification history
+prayer time
+weather
+user engagement
+quiet hours
+```
+
+Then determine whether a notification should be sent.
+
+Example:
+
+```text
+if user already completed daily minimum:
+    do not send minimum reminder
+
+if quiet_hours:
+    do not send
+
+if too_many_notifications_recently:
+    suppress
+
+if user usually reads at 8 PM:
+    prefer 8 PM
+
+if user ignored several recent reminders:
+    reduce frequency
+```
+
+Keep this logic in a dedicated service.
+
+Do not put it in React components.
+
+---
+
+# 22. NOTIFICATION FATIGUE
+
+This is important.
+
+Do NOT send notifications simply because they can be sent.
+
+Implement:
+
+* notification frequency limits
+* quiet hours
+* notification cooldown
+* duplicate prevention
+* user-controlled categories
+* adaptive frequency
+* streak protection reminders
+* minimum interval between notifications
+
+The user should feel helped, not harassed.
+
+---
+
+# 23. WEATHER INTEGRATION
+
+Weather is an optional contextual feature.
+
+If enabled, the application can use weather information to create contextual reminders.
+
+Examples:
+
+Rain:
+
+```text
+🌧️ A quiet moment with the Quran?
+```
+
+Morning:
+
+```text
+☀️ Start your day with one ayah.
+```
+
+The weather should influence the wording/context only.
+
+Do NOT imply that a particular weather event has a specific religious meaning unless there is an authoritative source.
+
+Weather notifications must be:
+
+* optional
+* configurable
+* rate-limited
+* location/privacy conscious
+
+Do not continuously track precise user location.
+
+Use coarse location or locally calculated weather where practical.
+
+---
+
+# 24. PRAYER TIME INTEGRATION
+
+Support optional prayer-based reminders.
+
+Allow users to select:
+
+* Fajr
+* Dhuhr
+* Asr
+* Maghrib
+* Isha
+
+Options:
+
+```text
+Before prayer
+After prayer
+Custom offset
+```
+
+Prayer calculations should be isolated in:
+
+```text
+features/prayer/
+```
+
+Do not mix prayer calculations with notification code.
+
+Allow the user to choose a calculation method where required.
+
+---
+
+# 25. LOCATION AND PRIVACY
+
+Location should be optional.
+
+Do not require precise location simply to use the Quran reader.
+
+Only request location when the user enables a feature that genuinely requires it, such as:
+
+* prayer times
+* weather
+
+Explain why permission is needed.
+
+Avoid unnecessary collection of precise location.
+
+---
+
+# 26. ONBOARDING
+
+Create a short onboarding flow.
+
+Do NOT make onboarding long.
+
+Suggested:
+
+### Screen 1
+
+```text
+Welcome to [APP NAME]
+
+One ayah every day.
+A small habit that can last.
+```
+
+### Screen 2
+
+Choose daily goal:
+
+```text
+1 ayah
+3 ayahs
+5 ayahs
+10 ayahs
+1 page
+5 minutes
+10 minutes
+Custom
+```
+
+### Screen 3
+
+Reminder:
+
+```text
+When would you like your reminder?
+
+Morning
+After prayer
+Evening
+Custom
+```
+
+### Screen 4
+
+Optional:
+
+```text
+Enable contextual reminders?
+
+Weather
+Prayer time
+Streak
+```
+
+Allow all permissions to be skipped.
+
+---
+
+# 27. PROFILE
+
+Profile should show:
+
+```text
+Current streak
+Longest streak
+Total ayahs
+Total reading time
+Days completed
+Current goal
+```
+
+Do not turn this into a competitive leaderboard unless explicitly added later.
+
+---
+
+# 28. PROGRESS
+
+Create a visually pleasing progress screen.
+
+Potential sections:
+
+```text
+🔥 Current streak
+
+🏆 Longest streak
+
+📖 Ayahs read
+
+⏱ Reading time
+
+📅 Reading calendar
+```
+
+Calendar:
+
+```text
+Mon Tue Wed Thu Fri Sat Sun
+
+✓   ✓   ✓   ✓   ·   ✓   ✓
+```
+
+Use calm visual design.
+
+---
+
+# 29. ACHIEVEMENTS
+
+Use milestones rather than excessive game mechanics.
+
+Examples:
+
+```text
+10 ayahs
+50 ayahs
+100 ayahs
+500 ayahs
+1,000 ayahs
+1 Juz
+5 Juz
+10 Juz
+30 Juz
+```
+
+These should represent reading activity, not religious merit.
+
+Avoid assigning spiritual "points" to worship.
+
+---
+
+# 30. DESIGN SYSTEM
+
+Create a reusable design system.
+
+Components should include:
+
+```text
+Button
+IconButton
+Card
+AyahCard
+Badge
+ProgressBar
+ProgressRing
+BottomSheet
+Modal
+Toast
+Skeleton
+Avatar
+Divider
+Tabs
+SegmentedControl
+Switch
+Slider
+EmptyState
+ErrorState
+LoadingState
+```
+
+Do not repeatedly implement these components inside feature files.
+
+Create them once and reuse them.
+
+---
+
+# 31. THEMING
+
+Support:
+
+* Light
+* Dark
+* System
+
+Create centralized theme tokens:
+
+```text
+colors
+spacing
+radius
+typography
+shadows
+animation
+```
+
+Do not hardcode styling values everywhere.
+
+---
+
+# 32. TYPOGRAPHY
+
+Arabic Quran text requires special attention.
+
+Support:
+
+* high-quality Arabic font
+* appropriate line height
+* font scaling
+* RTL layout
+* proper Arabic rendering
+* Bengali translations
+* English translations
+* other translations where API licensing permits
+
+Never distort Quran text because of an inappropriate font or layout.
+
+---
+
+# 33. RTL
+
+The Quran reader must properly support RTL.
+
+Test:
+
+* Arabic
+* Arabic + English
+* Arabic + Bengali
+* mixed RTL/LTR UI
+* navigation
+* search
+* text selection
+* sharing
+
+Do not assume normal LTR layout will work.
+
+---
+
+# 34. DATA MODEL
+
+Create proper Supabase migrations.
+
+Suggested tables:
+
+```text
+profiles
+
+user_preferences
+
+reading_sessions
+
+daily_progress
+
+streaks
+
+goals
+
+reminder_preferences
+
+notification_preferences
+
+notification_history
+
+push_tokens
+
+bookmarks
+
+bookmark_collections
+
+notes
+
+reading_history
+
+user_quran_preferences
+```
+
+Use:
+
+* UUID primary keys
+* timestamps
+* foreign keys
+* indexes
+* constraints
+* unique constraints where appropriate
+
+---
+
+# 35. ROW LEVEL SECURITY
+
+Enable RLS.
+
+Users should only be able to access their own private data.
+
+For example:
+
+```text
+reading_sessions
+bookmarks
+notes
+preferences
+streaks
+notification history
+```
+
+must not be publicly readable.
+
+Do not rely only on frontend checks.
+
+Security must be enforced at the database layer.
+
+---
+
+# 36. API LAYER
+
+Never call external APIs directly from every component.
+
+Create centralized API clients.
+
+For example:
+
+```text
+lib/api/quranApi.ts
+lib/api/weatherApi.ts
+```
+
+or feature-specific services.
+
+Components should call services/hooks rather than directly constructing HTTP requests.
+
+Bad:
+
+```text
+Component
+   ↓
+fetch(...)
+```
+
+Preferred:
+
+```text
+Component
+   ↓
+Hook
+   ↓
+Service
+   ↓
+API client
+```
+
+---
+
+# 37. ERROR HANDLING
+
+Every external operation must have proper error handling.
+
+Handle:
+
+* no internet
+* timeout
+* API errors
+* authentication expiration
+* rate limits
+* malformed API response
+* notification permission denial
+* unavailable audio
+* database failure
+
+Do not silently swallow errors.
+
+Use user-friendly messages.
+
+Log technical errors to monitoring.
+
+---
+
+# 38. LOADING STATES
+
+Every asynchronous screen needs an intentional loading state.
+
+Use skeletons where appropriate.
+
+Avoid:
+
+```text
+Loading...
+```
+
+everywhere.
+
+Create reusable:
+
+```text
+Skeleton
+LoadingState
+ErrorState
+EmptyState
+```
+
+components.
+
+---
+
+# 39. AUTHENTICATION
+
+Support:
+
+* Email/password
+* Google/Apple if practical
+* anonymous/local use where practical
+
+Do not force account creation before the user can read the Quran.
+
+Ideally allow:
+
+```text
+Open app
+↓
+Read Quran
+↓
+Create account later to sync
+```
+
+---
+
+# 40. ANALYTICS
+
+Track product events without collecting unnecessary personal information.
+
+Examples:
+
+```text
+app_opened
+ayah_viewed
+ayah_completed
+reading_session_started
+reading_session_completed
+goal_completed
+streak_extended
+bookmark_created
+search_performed
+audio_started
+notification_received
+notification_opened
+notification_dismissed
+```
+
+Do not collect Quran reading data unnecessarily for advertising.
+
+Keep privacy in mind.
+
+---
+
+# 41. PERFORMANCE
+
+The application should:
+
+* launch quickly
+* avoid unnecessary rerenders
+* virtualize long lists
+* cache API data
+* prefetch intelligently
+* minimize network requests
+* optimize images
+* avoid memory leaks
+* handle long Quran reading sessions smoothly
+
+Use memoization only where it provides actual value.
+
+Do not overuse React.memo blindly.
+
+---
+
+# 42. SECURITY
+
+Never put secrets inside the mobile application.
+
+Never commit:
+
+```text
+API keys
+service role keys
+private credentials
+Supabase service role key
+```
+
+Use:
+
+```text
+.env
+.env.local
+```
+
+and provide:
+
+```text
+.env.example
+```
+
+Server-only secrets must stay server-side.
+
+---
+
+# 43. ENVIRONMENT CONFIGURATION
+
+Create:
+
+```text
+.env.example
+```
+
+with placeholders such as:
+
+```text
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
+QURAN_API_KEY=
+
+WEATHER_API_KEY=
+
+SENTRY_DSN=
+
+POSTHOG_KEY=
+```
+
+Never hardcode real credentials.
+
+---
+
+# 44. TESTING
+
+Do not consider the project complete without tests.
+
+Implement:
+
+## Unit tests
+
+Test:
+
+* streak calculation
+* daily ayah selection
+* reminder rules
+* notification suppression
+* date handling
+* timezone handling
+* pagination logic
+* progress calculation
+
+## Integration tests
+
+Test:
+
+* authentication
+* Quran API
+* reading session persistence
+* bookmark creation
+* synchronization
+* notification scheduling
+
+## E2E
+
+At minimum test:
+
+```text
+Launch
+↓
+Onboarding
+↓
+Set goal
+↓
+Set reminder
+↓
+Open Today's Ayah
+↓
+Read ayah
+↓
+Complete daily minimum
+↓
+Streak updates
+```
+
+---
+
+# 45. DATE AND TIME HANDLING
+
+This application heavily depends on dates.
+
+Use a proper date/time library.
+
+Never casually use:
+
+```text
+new Date().toISOString().slice(0, 10)
+```
+
+for user-local daily streak calculations.
+
+All daily calculations must explicitly account for:
+
+```text
+user timezone
+local date
+UTC storage
+DST
+midnight boundaries
+```
+
+Write tests for this.
+
+---
+
+# 46. DEEP LINKING
+
+Notifications should deep-link to the correct location.
+
+Examples:
+
+```text
+notification
+   ↓
+Today's Ayah
+
+notification
+   ↓
+Quran 2:255
+
+notification
+   ↓
+Continue Reading
+
+notification
+   ↓
+Progress
+```
+
+Create a dedicated routing/deep-link system.
+
+Do not scatter navigation logic throughout notification handlers.
+
+---
+
+# 47. REMINDER SETTINGS UI
+
+Give the user granular control.
+
+Example:
+
+```text
+Daily Reminder       ON
+
+Reminder Time
+8:00 PM
+
+Streak Reminder      ON
+
+Prayer Reminders     OFF
+
+Weather Reminders    OFF
+
+Quiet Hours
+10:30 PM — 7:00 AM
+
+Maximum reminders
+2 per day
+```
+
+Users must be able to disable categories.
+
+---
+
+# 48. NOTIFICATION CONTENT ENGINE
+
+Do not hardcode notification strings inside the notification delivery code.
+
+Create a notification content/template system.
+
+For example:
+
+```text
+notificationTemplates/
+    dailyReminder.ts
+    streakReminder.ts
+    goalReminder.ts
+    weatherReminder.ts
+    prayerReminder.ts
+```
+
+Templates should support variables:
+
+```text
+streakDays
+ayahReference
+remainingAyahs
+timeOfDay
+weatherCondition
+```
+
+This makes future localization easier.
+
+---
+
+# 49. LOCALIZATION
+
+Design the application for localization from the beginning.
+
+Initially support:
+
+* English
+* Bengali
+
+Architecture should allow future:
+
+* Arabic
+* Urdu
+* Hindi
+* Malay
+* Turkish
+* Indonesian
+* etc.
+
+Never hardcode UI strings directly inside components.
+
+Use an i18n system.
+
+---
+
+# 50. ACCESSIBILITY
+
+Support:
+
+* screen readers
+* dynamic font sizes
+* sufficient contrast
+* large tap targets
+* semantic labels
+* reduced motion where appropriate
+
+Arabic reading should remain accessible at large font sizes.
+
+---
+
+# 51. SHARING
+
+Allow users to share an ayah.
+
+Generate a clean share card containing:
+
+* Arabic
+* translation
+* surah/ayah reference
+* app branding
+
+Do not alter Quran text.
+
+Do not add misleading claims.
+
+---
+
+# 52. AI FEATURES — FUTURE-READY
+
+Do not make AI the foundation of the application.
+
+However, architect the system so future AI features can be added safely.
+
+Possible future feature:
+
+```text
+Ask about this ayah
+```
+
+The AI should retrieve authoritative source material first.
+
+Potential architecture:
+
+```text
+User question
+      ↓
+Retrieval
+      ↓
+Quran / Tafsir sources
+      ↓
+LLM
+      ↓
+Answer with source references
+```
+
+Never present an AI hallucination as Quran or tafsir.
+
+Keep AI functionality isolated in its own feature/module.
+
+---
+
+# 53. ADMIN DASHBOARD
+
+Design the backend so a future admin dashboard can manage:
+
+* notification templates
+* daily ayah configuration
+* translations
+* feature flags
+* app announcements
+* analytics
+* system health
+
+Do not expose sensitive admin functionality to normal users.
+
+---
+
+# 54. FEATURE FLAGS
+
+Create a simple feature flag system.
+
+Examples:
+
+```text
+weather_notifications
+prayer_notifications
+ai_assistant
+new_reader
+experimental_home
+```
+
+This allows features to be released gradually.
+
+---
+
+# 55. LOGGING
+
+Create structured logging.
+
+Development:
+
+```text
+debug
+info
+warn
+error
+```
+
+Production should avoid logging:
+
+* personal notes
+* private user data
+* authentication credentials
+* unnecessary location data
+
+---
+
+# 56. README
+
+Create an excellent README.
+
+It must contain:
+
+* project overview
+* architecture
+* stack
+* folder structure
+* local setup
+* environment variables
+* Supabase setup
+* database migration instructions
+* Expo setup
+* notification setup
+* testing
+* build instructions
+* deployment
+* troubleshooting
+
+Also create:
+
+```text
+docs/
+    architecture.md
+    notifications.md
+    database.md
+    quran-api.md
+    offline-sync.md
+```
+
+---
+
+# 57. DEVELOPMENT PROCESS
+
+Do not attempt to write the entire project blindly in one step.
+
+Work in phases.
+
+## Phase 1 — Foundation
+
+Build:
+
+* Expo project
+* TypeScript
+* routing
+* design system
+* Supabase
+* authentication
+* database schema
+* environment configuration
+
+## Phase 2 — Quran
+
+Build:
+
+* Quran API integration
+* Surah list
+* reader
+* pagination
+* caching
+* translations
+* audio
+
+## Phase 3 — Habit system
+
+Build:
+
+* daily goal
+* daily minimum
+* reading sessions
+* progress
+* streak engine
+
+## Phase 4 — Notifications
+
+Build:
+
+* notification permissions
+* push tokens
+* local notifications
+* reminder engine
+* notification templates
+* deep linking
+* notification history
+
+## Phase 5 — Personalization
+
+Build:
+
+* prayer integration
+* weather integration
+* notification frequency control
+* smart reminders
+
+## Phase 6 — Polish
+
+Build:
+
+* animations
+* accessibility
+* offline behavior
+* error states
+* analytics
+* Sentry
+* performance optimization
+
+## Phase 7 — Testing
+
+Run:
+
+* unit tests
+* integration tests
+* E2E tests
+* TypeScript checks
+* lint
+* formatting
+* build verification
+
+---
+
+# 58. IMPORTANT CODING RULES
+
+Follow these rules throughout the project.
+
+### Rule 1
+
+Do not create giant files.
+
+If a file becomes unnecessarily large, split it.
+
+### Rule 2
+
+One module should have one clear responsibility.
+
+### Rule 3
+
+UI components should not contain business logic.
+
+### Rule 4
+
+Business logic should be testable without React.
+
+### Rule 5
+
+API calls should not be scattered through UI components.
+
+### Rule 6
+
+Notification delivery and reminder decisions must remain separate.
+
+### Rule 7
+
+Prayer calculations and weather calculations must remain separate.
+
+### Rule 8
+
+Audio must remain a separate feature.
+
+### Rule 9
+
+Streak calculations must be pure/testable.
+
+### Rule 10
+
+Use TypeScript strictly.
+
+Avoid unnecessary `any`.
+
+### Rule 11
+
+Do not duplicate code.
+
+Extract reusable utilities/components.
+
+### Rule 12
+
+Do not prematurely abstract every tiny function.
+
+Use abstractions when there is a clear responsibility or reuse case.
+
+### Rule 13
+
+Do not install libraries unnecessarily.
+
+Prefer the simplest reliable solution.
+
+### Rule 14
+
+Do not expose secrets.
+
+### Rule 15
+
+Do not fake API responses and pretend they are production-ready.
+
+If an API requires configuration, clearly document the requirement.
+
+---
+
+# 59. CODE QUALITY STANDARD
+
+Every production module should have:
+
+* clear naming
+* strict types
+* error handling
+* appropriate comments
+* no dead code
+* no unused imports
+* no duplicated logic
+* no magic numbers where configuration is appropriate
+
+Comments should explain WHY, not simply WHAT.
+
+Bad:
+
+```ts
+// Set notification time
+setNotificationTime(time);
+```
+
+Good:
+
+```ts
+// Schedule using the user's local timezone because daily reminders
+// must remain stable when the device changes UTC offset.
+```
+
+---
+
+# 60. DO NOT OVERENGINEER
+
+The first version should be maintainable by a small team.
+
+Do NOT introduce:
+
+* microservices
+* Kubernetes
+* complex event buses
+* unnecessary Redis
+* unnecessary message queues
+* complicated state management
+* custom backend infrastructure
+
+unless there is a real requirement.
+
+Start with:
+
+```text
+Expo
++
+React Native
++
+Supabase
++
+PostgreSQL
++
+Quran API
+```
+
+and scale later.
+
+---
+
+# 61. FINAL PRODUCT EXPERIENCE
+
+The user should be able to:
+
+```text
+Install app
+      ↓
+Open app
+      ↓
+Choose "1 ayah a day"
+      ↓
+Choose reminder time
+      ↓
+See Today's Ayah
+      ↓
+Read
+      ↓
+Complete daily minimum
+      ↓
+🔥 Streak increases
+      ↓
+Come back tomorrow
+```
+
+The entire experience should feel effortless.
+
+---
+
+# 62. PRODUCT IDENTITY
+
+The working name is:
+
+**Ayahly**
+
+Potential tagline:
+
+> **One ayah. Every day.**
+
+However, treat the name as provisional.
+
+Do not hardcode the brand name throughout the application.
+
+Create:
+
+```text
+config/branding.ts
+```
+
+so the name can easily be changed later.
+
+---
+
+# 63. ACCEPTANCE CRITERIA
+
+The project is NOT complete simply because it runs.
+
+Before declaring completion, verify:
+
+### Architecture
+
+* [ ] Feature-based modules
+* [ ] No giant files
+* [ ] Separation of UI/business/API logic
+* [ ] Notification and reminder systems separated
+* [ ] Audio isolated
+* [ ] Streak engine isolated
+* [ ] Prayer and weather isolated
+
+### Quran
+
+* [ ] Quran API works
+* [ ] Reader works
+* [ ] Arabic RTL works
+* [ ] Translation works
+* [ ] Pagination/virtualization works
+* [ ] Audio works
+* [ ] Bookmarks work
+* [ ] Search works
+* [ ] Continue reading works
+
+### Habit
+
+* [ ] Daily minimum
+* [ ] Daily goal
+* [ ] Reading sessions
+* [ ] Streak calculation
+* [ ] Progress
+* [ ] History
+
+### Notifications
+
+* [ ] Permission flow
+* [ ] Local notifications
+* [ ] Push notifications
+* [ ] Reminder scheduling
+* [ ] Quiet hours
+* [ ] Frequency limits
+* [ ] Deep links
+* [ ] Notification templates
+
+### Personalization
+
+* [ ] Prayer reminders
+* [ ] Weather reminders
+* [ ] Smart suppression
+* [ ] User preferences
+
+### Engineering
+
+* [ ] TypeScript passes
+* [ ] Lint passes
+* [ ] Tests pass
+* [ ] Build succeeds
+* [ ] No secrets committed
+* [ ] README complete
+* [ ] `.env.example` included
+* [ ] Database migrations included
+
+---
+
+# 64. HOW YOU SHOULD WORK AS THE CODING AGENT
+
+Before writing substantial code:
+
+1. Inspect the existing repository.
+2. Determine whether this is a new project or an existing project.
+3. Inspect package versions and configuration.
+4. Create an architecture plan.
+5. Identify dependencies.
+6. Implement the foundation first.
+7. Implement features incrementally.
+8. Run tests after each major feature.
+9. Run TypeScript/lint checks.
+10. Fix errors rather than ignoring them.
+11. Keep the project runnable after each phase.
+12. Do not rewrite working code unnecessarily.
+13. Keep documentation updated as architecture evolves.
+
+When you encounter a design decision, prefer:
+
+```text
+simple
+modular
+testable
+maintainable
+scalable
+```
+
+in that order.
+
+---
+
+# 65. FIRST TASK
+
+Start by analyzing the repository and producing:
+
+1. Proposed architecture
+2. Proposed folder structure
+3. Required dependencies
+4. Database schema
+5. API integration plan
+6. Notification architecture
+7. Offline/cache strategy
+8. Development phases
+9. Potential technical risks
+10. Exact implementation plan
+
+Then begin implementation.
+
+Do NOT dump the entire application into a single file.
+
+Build the application as a collection of clean, independently understandable modules.
+
+The final codebase should be something another senior engineer can open six months later and immediately understand where:
+
+* Quran functionality lives
+* reader functionality lives
+* audio functionality lives
+* streak functionality lives
+* reminder functionality lives
+* notification functionality lives
+* prayer functionality lives
+* weather functionality lives
+* API integrations live
+* database logic lives
+* UI components live
+* business logic lives
+
+The architecture and maintainability of the codebase are as important as the visible UI.

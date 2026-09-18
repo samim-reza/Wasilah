@@ -1,0 +1,65 @@
+# The core habit loop, end to end.
+#
+# Run with: npm run e2e:android  (needs Maestro: https://maestro.dev)
+#
+# Covers the single journey the product exists for — install, choose a goal,
+# set a reminder, read today's ayah, and see the streak start. If this flow
+# breaks, nothing else in the app matters.
+appId: com.wasilah.app
+name: Onboarding through first streak
+---
+- launchApp:
+    clearState: true
+
+# --- Welcome -------------------------------------------------------------
+- assertVisible: 'Welcome to Wasilah'
+- tapOn: 'Continue'
+
+# --- Goal ----------------------------------------------------------------
+- assertVisible:
+    text: 'What feels doable every day?'
+# "1 ayah" is the default and the product's core promise; picking it
+# explicitly guards against the default silently changing.
+- tapOn: '1 ayah'
+- tapOn: 'Continue'
+
+# --- Reminder ------------------------------------------------------------
+- assertVisible:
+    text: 'When should we remind you?'
+- tapOn: 'Evening'
+- tapOn: 'Continue'
+
+# The OS permission dialog is outside the app; allow it if it appears and
+# carry on if notifications were already granted or the prompt is suppressed.
+- runFlow:
+    when:
+      visible: 'Allow'
+    commands:
+      - tapOn: 'Allow'
+
+# --- Optional extras -----------------------------------------------------
+- assertVisible:
+    text: 'Anything else?'
+- tapOn: 'Start reading'
+
+# --- Home ----------------------------------------------------------------
+- assertVisible: 'Assalamu Alaikum'
+- assertVisible: "Today's Ayah"
+# No reading yet, so the streak has not begun.
+- assertVisible: 'Start your streak today'
+
+# --- Complete the day ----------------------------------------------------
+- tapOn: 'Mark as read'
+- assertVisible:
+    text: 'Streak extended'
+    timeout: 10000
+
+# The home screen must now reflect a completed day and a one-day streak.
+- assertVisible: "Today's reading is complete"
+- assertVisible: '1 day'
+
+# --- Progress ------------------------------------------------------------
+- tapOn: 'Progress'
+- assertVisible: 'Current streak'
+- assertVisible:
+    text: '1'
