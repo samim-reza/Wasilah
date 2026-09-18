@@ -100,7 +100,8 @@
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "functions:serve": "supabase functions serve --env-file supabase/.env",
-    "verify": "npm run theme:build && npm run typecheck && npm run lint && npm run test"
+    "verify": "npm run theme:build && npm run typecheck && npm run lint && npm run test",
+    "store:assets": "node --experimental-strip-types --no-warnings scripts/generate-store-assets.ts"
   },
   "private": true
 }

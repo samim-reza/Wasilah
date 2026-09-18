@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <mask id="hole">
+      <rect width="1024" height="500" fill="white"/>
+      <circle cx="250" cy="250" r="36.800000000000004" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="1024" height="500" fill="#0F7A63"/>
+  <path d="M 158 158 H 342 V 342 H 158 Z M 250 119.89235226167526 L 380.1076477383248 250 L 250 380.1076477383248 L 119.89235226167526 250 Z" fill="#FBFAF8" mask="url(#hole)" fill-opacity="0.95"/>
+  <text x="470" y="228" font-family="DejaVu Sans, Arial, sans-serif" font-size="82" font-weight="700" fill="#FBFAF8">Wasilah</text>
+  <text x="470" y="298" font-family="DejaVu Sans, Arial, sans-serif" font-size="38" fill="#FBFAF8" fill-opacity="0.85">One ayah. Every day.</text>
+</svg>

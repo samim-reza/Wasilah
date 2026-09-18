@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <mask id="hole">
+      <rect width="512" height="512" fill="white"/>
+      <circle cx="256" cy="256" r="53.248000000000005" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" fill="#0F7A63"/>
+  <path d="M 122.88 122.88 H 389.12 V 389.12 H 122.88 Z M 256 67.73989057689357 L 444.2601094231064 256 L 256 444.2601094231064 L 67.73989057689357 256 Z" fill="#FBFAF8" mask="url(#hole)"/>
+</svg>
