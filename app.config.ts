@@ -85,7 +85,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     // Location is opt-in and only requested when the user turns on prayer times
     // or weather, so it is declared but never requested at launch.
-    blockedPermissions: ['android.permission.ACCESS_BACKGROUND_LOCATION'],
+    //
+    // FINE location is blocked outright. expo-location adds it unconditionally,
+    // but coarse is all this app can use: coordinates are rounded to ~11km
+    // before they are stored, and the column type enforces that. Shipping a
+    // precise-location permission we deliberately never exercise would be a
+    // claim on the store listing that the code contradicts.
+    blockedPermissions: [
+      'android.permission.ACCESS_BACKGROUND_LOCATION',
+      'android.permission.ACCESS_FINE_LOCATION',
+    ],
   },
 
   // No web target. Wasilah ships to Android and iOS, and the features that
@@ -102,7 +111,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-sqlite',
     'expo-localization',
-    'expo-audio',
+    [
+      'expo-audio',
+      {
+        // Wasilah never records. The plugin adds RECORD_AUDIO by default, and a
+        // Quran app asking for the microphone is a trust-destroying surprise on
+        // the Play Store listing — and a claim we would have to justify on the
+        // Data safety form for a capability we do not use.
+        recordAudioAndroid: false,
+        enableBackgroundRecording: false,
+        // Recitation must survive the screen locking.
+        enableBackgroundPlayback: true,
+      },
+    ],
     'expo-font',
     'expo-image',
     [
