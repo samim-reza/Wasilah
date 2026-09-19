@@ -108,27 +108,18 @@ export function mapPagination(raw: QfPagination | undefined): PageInfo {
 }
 
 export function mapSearchResponse(raw: QfSearchResponse): SearchResultPage {
-  const search = raw.search;
+  const verses = raw.result?.verses ?? [];
+  const pagination = mapPagination(raw.pagination);
 
   return {
-    query: search.query,
-    totalResults: search.total_results,
-    currentPage: search.current_page,
-    totalPages: search.total_pages,
-    results: search.results.map((result) => {
-      const address = parseVerseKey(result.verse_key);
-      const firstTranslation = result.translations?.[0];
-
-      return {
-        verseKey: result.verse_key,
-        chapterId: address?.chapterId ?? 0,
-        verseNumber: address?.verseNumber ?? 0,
-        arabicText: result.text,
-        highlighted: result.highlighted ?? null,
-        translationText: firstTranslation ? sanitizeTranslationText(firstTranslation.text) : null,
-        translationName: firstTranslation?.name ?? null,
-      };
-    }),
+    query: '',
+    // Only keys come back; the caller resolves their content.
+    verseKeys: verses
+      .filter((verse) => verse.result_type === 'ayah')
+      .map((verse) => verse.key),
+    totalResults: pagination.totalRecords,
+    currentPage: pagination.currentPage,
+    totalPages: pagination.totalPages,
   };
 }
 

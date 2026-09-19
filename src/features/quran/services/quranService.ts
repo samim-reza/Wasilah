@@ -229,7 +229,11 @@ export async function searchQuran(
   const response = await quranRequest<QfSearchResponse>(
     '/search',
     {
-      q: query,
+      // The search service uses `query` and `mode`, not the Content API's `q`.
+      // `advanced` is the paginated mode; `quick` returns a fixed small set
+      // intended for a type-ahead.
+      mode: 'advanced',
+      query,
       size: options.size ?? searchPageSize,
       page: options.page ?? 1,
       language: options.language ?? 'en',
@@ -239,7 +243,7 @@ export async function searchQuran(
     { ...options, timeoutMs: options.timeoutMs ?? 8_000 },
   );
 
-  return mapSearchResponse(response);
+  return { ...mapSearchResponse(response), query };
 }
 
 // --- Resource catalogues ----------------------------------------------------

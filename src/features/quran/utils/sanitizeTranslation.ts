@@ -39,34 +39,3 @@ export function sanitizeTranslationText(raw: string): string {
       .trim()
   );
 }
-
-/**
- * Splits search-result text containing `<em>` highlight markers into runs, so
- * the UI can style matches without an HTML renderer.
- */
-export interface TextRun {
-  text: string;
-  highlighted: boolean;
-}
-
-export function parseHighlightedText(raw: string): TextRun[] {
-  const runs: TextRun[] = [];
-  const pattern = /<em>(.*?)<\/em>/gi;
-
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = pattern.exec(raw)) !== null) {
-    if (match.index > lastIndex) {
-      runs.push({ text: raw.slice(lastIndex, match.index), highlighted: false });
-    }
-    runs.push({ text: match[1] ?? '', highlighted: true });
-    lastIndex = pattern.lastIndex;
-  }
-
-  if (lastIndex < raw.length) {
-    runs.push({ text: raw.slice(lastIndex), highlighted: false });
-  }
-
-  return runs.filter((run) => run.text.length > 0);
-}

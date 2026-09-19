@@ -52,3 +52,12 @@ export function getCredentials(): { clientId: string; clientSecret: string } {
 
 /** The Content API is versioned in the path; kept here so it changes in one place. */
 export const CONTENT_API_PREFIX = '/content/api/v4';
+
+/**
+ * Search is a separate service with its own prefix and version.
+ *
+ * It is not `/content/api/v4/search`. That path exists and answers 500, which
+ * is a considerably worse failure than a 404 — it looks like an outage rather
+ * than a wrong address.
+ */
+export const SEARCH_API_PREFIX = '/search/api/v1';

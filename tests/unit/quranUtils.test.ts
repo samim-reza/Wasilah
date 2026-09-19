@@ -5,10 +5,7 @@ import {
   parseVerseKey,
   versesBetween,
 } from '@/features/quran/utils/verseKey';
-import {
-  parseHighlightedText,
-  sanitizeTranslationText,
-} from '@/features/quran/utils/sanitizeTranslation';
+import { sanitizeTranslationText } from '@/features/quran/utils/sanitizeTranslation';
 
 describe('parseVerseKey', () => {
   it('parses a well-formed key', () => {
@@ -96,30 +93,5 @@ describe('sanitizeTranslationText', () => {
   it('leaves ordinary text untouched', () => {
     const plain = 'All praise is for Allah, Lord of all worlds.';
     expect(sanitizeTranslationText(plain)).toBe(plain);
-  });
-});
-
-describe('parseHighlightedText', () => {
-  it('splits matches into styled runs', () => {
-    expect(parseHighlightedText('the <em>mercy</em> of Allah')).toEqual([
-      { text: 'the ', highlighted: false },
-      { text: 'mercy', highlighted: true },
-      { text: ' of Allah', highlighted: false },
-    ]);
-  });
-
-  it('handles several matches', () => {
-    const runs = parseHighlightedText('<em>a</em> and <em>b</em>');
-    expect(runs.filter((run) => run.highlighted).map((run) => run.text)).toEqual(['a', 'b']);
-  });
-
-  it('returns a single run when nothing matched', () => {
-    expect(parseHighlightedText('no markers here')).toEqual([
-      { text: 'no markers here', highlighted: false },
-    ]);
-  });
-
-  it('drops empty runs', () => {
-    expect(parseHighlightedText('<em>only</em>')).toEqual([{ text: 'only', highlighted: true }]);
   });
 });

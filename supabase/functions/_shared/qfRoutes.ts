@@ -10,6 +10,8 @@
  * no value here may exceed that without a documented Content Sync exception.
  */
 
+import { CONTENT_API_PREFIX, SEARCH_API_PREFIX } from './qfConfig.ts';
+
 const ONE_HOUR = 60 * 60;
 const ONE_DAY = 24 * ONE_HOUR;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -21,6 +23,15 @@ export interface RouteRule {
   readonly cacheSeconds: number;
   /** Query parameters that may be forwarded. Everything else is dropped. */
   readonly allowedParams: readonly string[];
+  /**
+   * Upstream prefix for this route.
+   *
+   * Not every Quran Foundation API lives under the Content prefix: search is a
+   * separate service at `/search/api/v1`, with its own scope and its own
+   * parameter names. Assuming one prefix for everything is what made the search
+   * endpoint return 500 while the content endpoints worked.
+   */
+  readonly prefix?: string;
 }
 
 /** Parameters every content endpoint accepts. */
@@ -120,14 +131,37 @@ export const routeRules: readonly RouteRule[] = [
     allowedParams: COMMON_PARAMS,
   },
 
-  // --- Search: results are query-dependent and short-lived. ---
-  { pattern: /^\/search$/, cacheSeconds: 10 * 60, allowedParams: [...COMMON_PARAMS, 'q', 'size'] },
+  // --- Search ---
+  //
+  // A separate Quran Foundation service, not part of the Content API: its own
+  // path prefix, its own `search` OAuth scope, and `query`/`mode` rather than
+  // `q`. It returns verse KEYS only, so the app fetches the text for the page
+  // of results it is about to show.
+  {
+    pattern: /^\/search$/,
+    cacheSeconds: 10 * 60,
+    allowedParams: [
+      'query',
+      'mode',
+      'page',
+      'size',
+      'translation_ids',
+      'exact_matches_only',
+      'navigationalResultsNumber',
+      'versesResultsNumber',
+      'language',
+      'locale',
+    ],
+    prefix: SEARCH_API_PREFIX,
+  },
 ];
 
 export interface ResolvedRoute {
   path: string;
   cacheSeconds: number;
   allowedParams: readonly string[];
+  /** Upstream prefix; defaults to the Content API. */
+  prefix: string;
 }
 
 /**
@@ -144,7 +178,12 @@ export function resolveRoute(rawPath: string): ResolvedRoute | null {
   const rule = routeRules.find((candidate) => candidate.pattern.test(path));
   if (!rule) return null;
 
-  return { path, cacheSeconds: rule.cacheSeconds, allowedParams: rule.allowedParams };
+  return {
+    path,
+    cacheSeconds: rule.cacheSeconds,
+    allowedParams: rule.allowedParams,
+    prefix: rule.prefix ?? CONTENT_API_PREFIX,
+  };
 }
 
 /** Drops any query parameter the matched route does not declare. */

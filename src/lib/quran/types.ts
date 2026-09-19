@@ -104,23 +104,28 @@ export interface QfVerseResponse {
   verse: QfVerse;
 }
 
+/**
+ * A search hit.
+ *
+ * The Search API returns verse KEYS and nothing else — no text, no translation,
+ * no highlight, regardless of the parameters passed. Displaying results
+ * therefore takes a second step: fetch the content for the page of keys about
+ * to be shown.
+ */
 export interface QfSearchResultVerse {
-  verse_key: string;
-  verse_id: number;
-  text: string;
-  /** The matched span wrapped in `<em>`; rendered as a highlight, never as HTML. */
-  highlighted?: string;
-  translations?: { text: string; name: string }[];
+  key: string;
+  result_type: string;
+  isArabic: boolean;
+  isTransliteration: boolean;
 }
 
 export interface QfSearchResponse {
-  search: {
-    query: string;
-    total_results: number;
-    current_page: number;
-    total_pages: number;
-    results: QfSearchResultVerse[];
+  result: {
+    /** Chapter/juz/page matches, e.g. searching a surah name. */
+    navigation: { key: string; result_type: string }[];
+    verses: QfSearchResultVerse[];
   };
+  pagination: QfPagination;
 }
 
 export interface QfAudioFile {

@@ -39,7 +39,11 @@ async function requestToken(): Promise<CachedToken> {
     },
     body: new URLSearchParams({
       grant_type: 'client_credentials',
-      scope: 'content',
+      // Search is a separate scope on a separate service. Requesting only
+      // `content` yields a token the search endpoint rejects — and it rejects
+      // it with an empty result rather than a 401, so the failure looks like
+      // "no matches" instead of "wrong token".
+      scope: 'content search',
     }).toString(),
   });
 

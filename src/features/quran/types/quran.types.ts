@@ -85,20 +85,25 @@ export interface VersePage {
   page: PageInfo;
 }
 
+/**
+ * One search hit, after its content has been resolved.
+ *
+ * `arabicText` and `translationText` are null while the second fetch is in
+ * flight, so the list can render the reference immediately rather than waiting.
+ */
 export interface SearchResult {
   verseKey: VerseKey;
   chapterId: number;
   verseNumber: number;
-  arabicText: string;
-  /** The matched span marked with `<em>`; parsed into runs, never rendered as HTML. */
-  highlighted: string | null;
+  arabicText: string | null;
   translationText: string | null;
   translationName: string | null;
 }
 
 export interface SearchResultPage {
   query: string;
-  results: SearchResult[];
+  /** Verse keys, in relevance order, before content is fetched. */
+  verseKeys: VerseKey[];
   totalResults: number;
   currentPage: number;
   totalPages: number;

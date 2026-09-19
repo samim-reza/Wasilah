@@ -3,9 +3,16 @@
  *
  * Debounced, paginated and cancellable — all handled by `useQuranSearch`, so
  * this screen is presentation only.
+ *
+ * Results arrive in two stages (see the hook): references first, then the text
+ * of each ayah. A row therefore renders its reference immediately and fills in
+ * Arabic and translation when they land, rather than the list appearing all at
+ * once after both round-trips. That keeps the perceived response tied to the
+ * search itself, which is the fast half.
  */
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { ActivityIndicator, TextInput, View } from 'react-native';
 
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -14,7 +21,7 @@ import { Screen } from '@/components/layout/Screen';
 import { IconButton } from '@/components/ui/IconButton';
 import { Pressable } from '@/components/ui/Pressable';
 import { Text } from '@/components/ui/Text';
-import { parseHighlightedText } from '@/features/quran/utils/sanitizeTranslation';
+import { useChapters } from '@/features/quran/hooks/useChapters';
 import type { SearchResult } from '@/features/quran/types/quran.types';
 import { useQuranSearch } from '@/features/search/hooks/useQuranSearch';
 import { trackEvent } from '@/lib/analytics/analytics';
@@ -25,6 +32,15 @@ export default function SearchScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const search = useQuranSearch();
+  const chaptersQuery = useChapters();
+
+  // The surah list is cached for a day and usually already on disk, so naming
+  // the surah in each result costs nothing.
+  const chapterNames = useMemo(() => {
+    const names = new Map<number, string>();
+    for (const chapter of chaptersQuery.data ?? []) names.set(chapter.id, chapter.nameSimple);
+    return names;
+  }, [chaptersQuery.data]);
 
   const openResult = (result: SearchResult, position: number) => {
     trackEvent('search_result_opened', { position });
@@ -86,7 +102,11 @@ export default function SearchScreen() {
             onEndReachedThreshold={1}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item, index }) => (
-              <SearchResultRow result={item} onPress={() => openResult(item, index)} />
+              <SearchResultRow
+                result={item}
+                chapterName={chapterNames.get(item.chapterId)}
+                onPress={() => openResult(item, index)}
+              />
             )}
             ListFooterComponent={
               search.isFetchingNextPage ? (
@@ -102,10 +122,20 @@ export default function SearchScreen() {
   );
 }
 
-function SearchResultRow({ result, onPress }: { result: SearchResult; onPress: () => void }) {
-  // The API marks matches with <em>; rendering those as styled runs avoids
-  // needing an HTML renderer and avoids injecting markup into the UI.
-  const runs = parseHighlightedText(result.highlighted ?? result.translationText ?? '');
+function SearchResultRow({
+  result,
+  chapterName,
+  onPress,
+}: {
+  result: SearchResult;
+  chapterName?: string;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  // Null while the ayah's text is still being fetched. The row stays tappable
+  // throughout: the reference alone is enough to act on.
+  const isLoadingText = result.arabicText === null;
+  const reference = chapterName ? `${chapterName} ${result.verseKey}` : result.verseKey;
 
   return (
     <Pressable
@@ -113,33 +143,35 @@ function SearchResultRow({ result, onPress }: { result: SearchResult; onPress: (
       pressedClassName="active:bg-surface-pressed"
       onPress={onPress}
       enforceMinTapTarget={false}
-      accessibilityLabel={`${result.verseKey}. ${result.translationText ?? ''}`}
+      accessibilityLabel={
+        isLoadingText ? reference : `${reference}. ${result.translationText ?? ''}`
+      }
     >
       <Text variant="caption" tone="primary" className="mb-1 font-semibold">
-        {result.verseKey}
+        {reference}
       </Text>
 
-      <Text
-        className="font-arabic text-content"
-        style={{ fontSize: 20, lineHeight: 40, writingDirection: 'rtl', textAlign: 'right' }}
-        allowFontScaling={false}
-        numberOfLines={2}
-      >
-        {result.arabicText}
-      </Text>
-
-      {runs.length > 0 && (
-        <Text variant="caption" tone="muted" className="mt-2" numberOfLines={3}>
-          {runs.map((run, index) => (
-            <Text
-              key={index}
-              variant="caption"
-              className={run.highlighted ? 'font-semibold text-content' : 'text-content-muted'}
-            >
-              {run.text}
-            </Text>
-          ))}
+      {isLoadingText ? (
+        <Text variant="caption" tone="subtle">
+          {t('common.loading')}
         </Text>
+      ) : (
+        <>
+          <Text
+            className="font-arabic text-content"
+            style={{ fontSize: 20, lineHeight: 40, writingDirection: 'rtl', textAlign: 'right' }}
+            allowFontScaling={false}
+            numberOfLines={2}
+          >
+            {result.arabicText}
+          </Text>
+
+          {result.translationText ? (
+            <Text variant="caption" tone="muted" className="mt-2" numberOfLines={3}>
+              {result.translationText}
+            </Text>
+          ) : null}
+        </>
       )}
     </Pressable>
   );

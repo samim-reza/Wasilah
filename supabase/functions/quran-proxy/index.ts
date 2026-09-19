@@ -18,7 +18,7 @@
  * the Supabase anon key is still required, and a per-IP limiter caps abuse.
  */
 import { errorResponse, handlePreflight, jsonResponse } from '../_shared/cors.ts';
-import { CONTENT_API_PREFIX, getEndpoints, resolveEnvironment } from '../_shared/qfConfig.ts';
+import { getEndpoints, resolveEnvironment } from '../_shared/qfConfig.ts';
 import { filterParams, resolveRoute } from '../_shared/qfRoutes.ts';
 import { getAccessToken, invalidateToken } from '../_shared/qfToken.ts';
 
@@ -116,7 +116,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const { apiBaseUrl } = getEndpoints();
     const params = filterParams(requestUrl.searchParams, route.allowedParams);
     const query = params.toString();
-    const upstreamUrl = `${apiBaseUrl}${CONTENT_API_PREFIX}${route.path}${query ? `?${query}` : ''}`;
+    const upstreamUrl = `${apiBaseUrl}${route.prefix}${route.path}${query ? `?${query}` : ''}`;
 
     const upstream = await callQuranFoundation(upstreamUrl);
 
