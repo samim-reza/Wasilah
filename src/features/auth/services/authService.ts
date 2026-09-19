@@ -4,9 +4,9 @@
  * Every function returns or throws an `AppError`, so screens never see a
  * Supabase error shape. Nothing here touches React.
  */
+import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 
-import { branding } from '@/config/branding';
 import { AppError } from '@/lib/api/errors';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
@@ -15,13 +15,30 @@ import { getDeviceTimezone } from '@/lib/datetime/localDate';
 
 import type { SignInInput, SignUpInput } from '../types/auth.types';
 
+/**
+ * Where Supabase should send the user back to.
+ *
+ * Built with `Linking.createURL` rather than hardcoding the scheme, because
+ * the right answer differs per runtime: a release build wants
+ * `wasilah://auth/callback`, while a dev client or Expo Go needs the
+ * `exp://host:port/--/auth/callback` form. Hardcoding it meant the link was
+ * only ever correct in one of them.
+ *
+ * Whatever this returns must also be on the Supabase redirect allowlist. When
+ * it is not, Supabase silently falls back to the project's Site URL — which is
+ * exactly how a confirmation email ends up pointing at localhost.
+ */
+export function authRedirectUrl(path: string): string {
+  return Linking.createURL(path);
+}
+
 export async function signUp(input: SignUpInput): Promise<Session | null> {
   const { data, error } = await supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
       data: { display_name: input.displayName?.trim() || null },
-      emailRedirectTo: `${branding.scheme}://auth/callback`,
+      emailRedirectTo: authRedirectUrl('auth/callback'),
     },
   });
 
@@ -56,7 +73,7 @@ export async function signOut(): Promise<void> {
 
 export async function requestPasswordReset(email: string): Promise<void> {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-    redirectTo: `${branding.scheme}://auth/reset-password`,
+    redirectTo: authRedirectUrl('auth/reset-password'),
   });
 
   if (error) throw fromAuthError(error);

@@ -20,7 +20,11 @@ port = 54323
 enabled = true
 site_url = "wasilah://"
 # Deep links the auth flow is allowed to redirect back into.
-additional_redirect_urls = ["wasilah://auth/callback", "http://localhost:8081"]
+# `exp://` covers Expo Go and dev clients, whose host and port change per
+# machine; `wasilah://` is the release build. A redirect that is not on this
+# list is silently replaced by site_url, which is how a confirmation email
+# ends up pointing at localhost.
+additional_redirect_urls = ["wasilah://**", "exp://**", "http://localhost:8081"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10

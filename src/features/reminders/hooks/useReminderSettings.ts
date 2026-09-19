@@ -29,6 +29,8 @@ import {
   defaultReminderPreferences,
   fetchNotificationHistory,
   fetchReminderPreferences,
+  loadLocalReminderPreferences,
+  saveLocalReminderPreferences,
   updateReminderPreferences,
   type ReminderPreferenceUpdate,
 } from '../services/reminderService';
@@ -67,10 +69,21 @@ export function useReminderSettings(): UseReminderSettingsResult {
     let cancelled = false;
 
     void (async () => {
+      // The device copy always loads, signed in or not. It is the only store a
+      // guest has, and for a signed-in user it means the screen is correct
+      // immediately rather than after a round-trip.
+      const local = await loadLocalReminderPreferences();
+      if (!cancelled) setPreferences(local);
+
       if (userId) {
         try {
           const loaded = await fetchReminderPreferences(userId);
-          if (!cancelled) setPreferences(loaded);
+          if (!cancelled) {
+            setPreferences(loaded);
+            // Keep the device copy in step, so a later offline start shows
+            // what the account actually holds.
+            await saveLocalReminderPreferences(loaded);
+          }
         } catch (error) {
           logger.warn('reminders.loadFailed', { error });
         }
@@ -158,12 +171,19 @@ export function useReminderSettings(): UseReminderSettingsResult {
       const next = { ...preferences, ...patch };
       setPreferences(next);
 
+      // Written first and unconditionally. This is what makes a change stick
+      // for a guest, and what stops a failed network write from throwing the
+      // change away for everyone else.
+      await saveLocalReminderPreferences(next);
+
       if (patch.dailyReminderTime) trackEvent('reminder_time_changed', {});
 
       if (userId) {
         try {
           await updateReminderPreferences(userId, patch);
         } catch (error) {
+          // The device copy above still holds the change, so the user does not
+          // lose it; the account copy catches up on the next successful write.
           logger.warn('reminders.updateFailed', { error });
         }
       }

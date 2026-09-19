@@ -6,6 +6,9 @@
  */
 import { formatTimeOfDay, parseTimeOfDay, type TimeOfDay } from '@/lib/datetime/timeOfDay';
 import { logger } from '@/lib/monitoring/logger';
+import { isRecord } from '@/lib/storage/guards';
+import { keyValueStore } from '@/lib/storage/keyValueStore';
+import { storageKeys } from '@/lib/storage/storageKeys';
 import { supabase } from '@/lib/supabase/client';
 import type { ReminderPreferencesRow } from '@/lib/supabase/database.types';
 import { fromPostgrestError } from '@/lib/supabase/errors';
@@ -21,6 +24,9 @@ export const defaultReminderPreferences: ReminderPreferences = {
   todaysAyahEnabled: true,
   prayerRemindersEnabled: false,
   weatherRemindersEnabled: false,
+  duaRemindersEnabled: false,
+  sleepDuaEnabled: false,
+  sleepTime: { hour: 23, minute: 0 },
   quietHoursEnabled: true,
   quietHoursStart: { hour: 22, minute: 30 },
   quietHoursEnd: { hour: 7, minute: 0 },
@@ -46,6 +52,9 @@ export function toReminderPreferences(row: ReminderPreferencesRow): ReminderPref
     todaysAyahEnabled: row.todays_ayah_enabled,
     prayerRemindersEnabled: row.prayer_reminders_enabled,
     weatherRemindersEnabled: row.weather_reminders_enabled,
+    duaRemindersEnabled: row.dua_reminders_enabled,
+    sleepDuaEnabled: row.sleep_dua_enabled,
+    sleepTime: timeOrDefault(row.sleep_time, defaultReminderPreferences.sleepTime),
     quietHoursEnabled: row.quiet_hours_enabled,
     quietHoursStart: timeOrDefault(
       row.quiet_hours_start,
@@ -56,6 +65,27 @@ export function toReminderPreferences(row: ReminderPreferencesRow): ReminderPref
     minMinutesBetweenNotifications: row.min_minutes_between_notifications,
     adaptiveFrequencyEnabled: row.adaptive_frequency_enabled,
   };
+}
+
+/**
+ * Reads the device's copy of the preferences.
+ *
+ * Merged over the defaults rather than trusted wholesale, so a value written
+ * by an older build that lacked today's fields still loads.
+ */
+export async function loadLocalReminderPreferences(): Promise<ReminderPreferences> {
+  const stored = await keyValueStore.get<Partial<ReminderPreferences>>(
+    storageKeys.reminderPreferences,
+    isRecord,
+  );
+  if (!stored) return defaultReminderPreferences;
+  return { ...defaultReminderPreferences, ...stored };
+}
+
+export async function saveLocalReminderPreferences(
+  preferences: ReminderPreferences,
+): Promise<void> {
+  await keyValueStore.set(storageKeys.reminderPreferences, preferences);
 }
 
 export async function fetchReminderPreferences(userId: string): Promise<ReminderPreferences> {
@@ -91,6 +121,10 @@ export async function updateReminderPreferences(
     row.prayer_reminders_enabled = update.prayerRemindersEnabled;
   if (update.weatherRemindersEnabled !== undefined)
     row.weather_reminders_enabled = update.weatherRemindersEnabled;
+  if (update.duaRemindersEnabled !== undefined)
+    row.dua_reminders_enabled = update.duaRemindersEnabled;
+  if (update.sleepDuaEnabled !== undefined) row.sleep_dua_enabled = update.sleepDuaEnabled;
+  if (update.sleepTime) row.sleep_time = formatTimeOfDay(update.sleepTime);
   if (update.quietHoursEnabled !== undefined) row.quiet_hours_enabled = update.quietHoursEnabled;
   if (update.quietHoursStart) row.quiet_hours_start = formatTimeOfDay(update.quietHoursStart);
   if (update.quietHoursEnd) row.quiet_hours_end = formatTimeOfDay(update.quietHoursEnd);

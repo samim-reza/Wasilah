@@ -31,6 +31,15 @@ export const storageKeys = {
   /** Today's Ayah selection, keyed by local date to survive restarts. */
   dailyAyah: `${prefix}.dailyAyah`,
 
+  /**
+   * Reminder preferences held on the device.
+   *
+   * Written for every user, signed in or not. Guest mode has no row to save
+   * to, so without this a guest's settings vanished the moment the screen
+   * unmounted; and for a signed-in user it means a failed network write no
+   * longer silently discards the change.
+   */
+  reminderPreferences: `${prefix}.reminders.preferences`,
   notificationPermissionAsked: `${prefix}.notifications.permissionAsked`,
   scheduledReminderIds: `${prefix}.notifications.scheduledIds`,
   notificationLog: `${prefix}.notifications.log`,
