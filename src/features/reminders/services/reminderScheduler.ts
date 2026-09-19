@@ -14,6 +14,8 @@ import type { DailyPrayerTimes } from '@/features/prayer/types/prayer.types';
 import type { WeatherSnapshot } from '@/features/weather/types/weather.types';
 import { isNotableCondition } from '@/features/weather/services/weatherService';
 import { renderTemplate } from '@/features/notifications/templates';
+import { findOccasion } from '@/features/duas/data/duaCatalogue';
+import { buildDuaNotification } from '@/features/duas/utils/duaNotification';
 import {
   cancelAll,
   scheduleAt,
@@ -33,6 +35,7 @@ import {
   resolveDailyReminderTime,
 } from '../utils/reminderRules';
 import { planPrayerReminders, type PrayerReminderRule } from './prayerReminderPlanner';
+import { planDuaReminders } from './duaReminderPlanner';
 import type { PlannedReminder, ReminderContext } from '../types/reminder.types';
 
 /**
@@ -46,6 +49,8 @@ export interface PersonalisationContext {
   prayerRules?: readonly PrayerReminderRule[];
   /** Current weather; only ever changes a reminder's wording. */
   weather?: WeatherSnapshot | null;
+  /** Dua occasions shown recently, so the nightly prompt keeps moving. */
+  recentDuaOccasionIds?: readonly string[];
 }
 
 /**
@@ -135,6 +140,21 @@ export function planReminders(
       }),
     );
   }
+
+  // Dua reminders are planned before the cap so they compete for the same
+  // daily budget as everything else. A contextual dua must not be a way to
+  // exceed a limit the user set.
+  planned.push(
+    ...planDuaReminders({
+      preferences,
+      now: context.now,
+      timezone,
+      today,
+      horizonDays: SCHEDULE_HORIZON_DAYS,
+      weather: personalisation.weather,
+      recentlyShownIds: personalisation.recentDuaOccasionIds ?? [],
+    }),
+  );
 
   // Enforce the per-day cap at planning time as well as at send time, so the
   // OS tray never fills with notifications that will be suppressed anyway.
@@ -232,6 +252,19 @@ export interface ScheduleVariables {
   weatherCondition?: WeatherSnapshot['condition'];
 }
 
+/**
+ * Content for a dua reminder.
+ *
+ * Returns null when the occasion no longer exists — a schedule can outlive the
+ * build that made it, and an id removed from the catalogue is an ordinary
+ * state rather than an error, handled exactly like a template that declines.
+ */
+function duaContentFor(occasionId: string) {
+  const occasion = findOccasion(occasionId);
+  if (!occasion) return null;
+  return buildDuaNotification(occasion);
+}
+
 export async function applySchedule(
   planned: PlannedReminder[],
   variables: ScheduleVariables = {},
@@ -241,14 +274,16 @@ export async function applySchedule(
   const scheduled: ScheduledNotification[] = [];
 
   for (const reminder of planned) {
-    const content = renderTemplate(reminder.templateKey, {
-      ...variables,
-      // A prayer reminder's dedupe key carries which prayer it belongs to.
-      prayerName:
-        reminder.category === 'prayer_reminder'
-          ? reminder.dedupeKey.split(':').pop()
-          : variables.prayerName,
-    });
+    const content = reminder.duaOccasionId
+      ? duaContentFor(reminder.duaOccasionId)
+      : renderTemplate(reminder.templateKey, {
+          ...variables,
+          // A prayer reminder's dedupe key carries which prayer it belongs to.
+          prayerName:
+            reminder.category === 'prayer_reminder'
+              ? reminder.dedupeKey.split(':').pop()
+              : variables.prayerName,
+        });
 
     if (!content) {
       logger.debug('reminders.templateDeclined', { templateKey: reminder.templateKey });

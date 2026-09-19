@@ -78,6 +78,10 @@ export type ReminderPreferencesRow = {
   max_notifications_per_day: number;
   min_minutes_between_notifications: number;
   adaptive_frequency_enabled: boolean;
+  dua_reminders_enabled: boolean;
+  sleep_dua_enabled: boolean;
+  /** 'HH:MM:SS' in the user's local time. */
+  sleep_time: string;
   created_at: string;
   updated_at: string;
 };

@@ -12,6 +12,13 @@ export interface ReminderPreferences {
   prayerRemindersEnabled: boolean;
   weatherRemindersEnabled: boolean;
 
+  /** Contextual duas: rain, the new crescent, Friday. */
+  duaRemindersEnabled: boolean;
+  /** The nightly "do you know the dua for…?" prompt. */
+  sleepDuaEnabled: boolean;
+  /** When the user says they sleep; the prompt fires before it. */
+  sleepTime: TimeOfDay;
+
   quietHoursEnabled: boolean;
   quietHoursStart: TimeOfDay;
   quietHoursEnd: TimeOfDay;
@@ -84,4 +91,11 @@ export interface PlannedReminder {
   fireAt: Date;
   /** Prevents the same reminder being queued twice for one day. */
   dedupeKey: string;
+  /**
+   * Set when this reminder carries a dua rather than a template.
+   *
+   * `applySchedule` builds its content from the catalogue instead of calling
+   * the template engine, so `templateKey` is only an analytics label here.
+   */
+  duaOccasionId?: string;
 }

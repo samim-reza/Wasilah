@@ -43,6 +43,7 @@ export function sanitizeRoute(route: unknown): string {
   const knownPrefixes = [
     '/(tabs)',
     '/quran/',
+    '/dua/',
     '/bookmarks',
     '/notes',
     '/settings',

@@ -112,6 +112,36 @@ export default function NotificationSettingsScreen() {
           </View>
         </ListSection>
 
+        <ListSection title={t('reminders.duas')}>
+          <View className="gap-4 px-4">
+            <Switch
+              label={t('reminders.duaReminders')}
+              hint={t('reminders.duaRemindersBody')}
+              value={settings.preferences.duaRemindersEnabled}
+              onValueChange={(value) => void settings.update({ duaRemindersEnabled: value })}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
+            />
+            <Switch
+              label={t('reminders.sleepDua')}
+              hint={t('reminders.sleepDuaBody')}
+              value={settings.preferences.sleepDuaEnabled}
+              onValueChange={(value) => void settings.update({ sleepDuaEnabled: value })}
+              disabled={!settings.permissionGranted || !settings.notificationsSupported}
+            />
+          </View>
+
+          {/*
+            The time only matters once the nightly prompt is on, so it stays
+            disabled until then rather than asking for an answer nothing uses.
+          */}
+          <TimePickerRow
+            label={t('reminders.sleepTime')}
+            value={settings.preferences.sleepTime}
+            onChange={(time) => void settings.update({ sleepTime: time })}
+            disabled={!settings.preferences.sleepDuaEnabled}
+          />
+        </ListSection>
+
         <ListSection title={t('reminders.quietHours')}>
           <View className="px-4">
             <Switch
