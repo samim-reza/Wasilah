@@ -37,12 +37,27 @@ import { useDebouncedValue } from './useDebouncedValue';
 /** Below this, results are noise: one or two letters match almost everything. */
 const MIN_QUERY_LENGTH = 2;
 
+/**
+ * A result plus how far its content has got.
+ *
+ * `unavailable` is not hypothetical. The search index covers the whole Quran
+ * while the content API's coverage depends on the credentials in use — pre-live
+ * serves only the first two surahs — so a perfectly good search hit can have no
+ * text behind it. Without this distinction those rows would sit on a spinner
+ * forever, which reads as a hung app rather than a missing ayah.
+ */
+export type SearchResultStatus = 'loading' | 'ready' | 'unavailable';
+
+export interface SearchResultItem extends SearchResult {
+  status: SearchResultStatus;
+}
+
 export interface UseQuranSearchResult {
   query: string;
   setQuery: (value: string) => void;
   /** The query actually being searched, after debouncing. */
   activeQuery: string;
-  results: SearchResult[];
+  results: SearchResultItem[];
   totalResults: number;
   isSearching: boolean;
   /** True while stage two is filling in text for keys already on screen. */
@@ -105,18 +120,20 @@ export function useQuranSearch(): UseQuranSearchResult {
     })),
   });
 
-  const results = useMemo<SearchResult[]>(
+  const results = useMemo<SearchResultItem[]>(
     () =>
       verseKeys.map((verseKey, index) => {
         const address = parseVerseKey(verseKey);
-        const verse = contentQueries[index]?.data;
+        const content = contentQueries[index];
+        const verse = content?.data;
         const translation = verse?.translations[0];
 
         return {
+          status: verse ? 'ready' : content?.isError ? 'unavailable' : 'loading',
           verseKey,
           chapterId: address?.chapterId ?? 0,
           verseNumber: address?.verseNumber ?? 0,
-          // Null until stage two lands; the row shows its reference meanwhile.
+          // Null until stage two lands — or for good, if it cannot.
           arabicText: verse?.arabicText ?? null,
           translationText: translation?.text ?? null,
           translationName: translation?.resourceName ?? null,

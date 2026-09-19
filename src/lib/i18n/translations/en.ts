@@ -168,6 +168,7 @@ export const en = {
     noResultsBody: 'Try a different word or phrase.',
     prompt: 'Search for a word, phrase or surah.',
     searching: 'Searching',
+    verseUnavailable: 'Tap to open this ayah',
   },
 
   progress: {

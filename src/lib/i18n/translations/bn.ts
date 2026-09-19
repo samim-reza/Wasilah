@@ -166,6 +166,7 @@ export const bn: Translation = {
     noResultsBody: 'অন্য কোনো শব্দ দিয়ে চেষ্টা করুন।',
     prompt: 'কোনো শব্দ, বাক্য বা সূরার নাম লিখুন।',
     searching: 'খোঁজা হচ্ছে',
+    verseUnavailable: 'এই আয়াতটি খুলতে ট্যাপ করুন',
   },
 
   progress: {

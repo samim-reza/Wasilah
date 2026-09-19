@@ -22,8 +22,10 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Pressable } from '@/components/ui/Pressable';
 import { Text } from '@/components/ui/Text';
 import { useChapters } from '@/features/quran/hooks/useChapters';
-import type { SearchResult } from '@/features/quran/types/quran.types';
-import { useQuranSearch } from '@/features/search/hooks/useQuranSearch';
+import {
+  useQuranSearch,
+  type SearchResultItem,
+} from '@/features/search/hooks/useQuranSearch';
 import { trackEvent } from '@/lib/analytics/analytics';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useTheme } from '@/theme/useTheme';
@@ -42,7 +44,7 @@ export default function SearchScreen() {
     return names;
   }, [chaptersQuery.data]);
 
-  const openResult = (result: SearchResult, position: number) => {
+  const openResult = (result: SearchResultItem, position: number) => {
     trackEvent('search_result_opened', { position });
     router.push(`/quran/${result.chapterId}?ayah=${result.verseNumber}`);
   };
@@ -127,14 +129,11 @@ function SearchResultRow({
   chapterName,
   onPress,
 }: {
-  result: SearchResult;
+  result: SearchResultItem;
   chapterName?: string;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  // Null while the ayah's text is still being fetched. The row stays tappable
-  // throughout: the reference alone is enough to act on.
-  const isLoadingText = result.arabicText === null;
   const reference = chapterName ? `${chapterName} ${result.verseKey}` : result.verseKey;
 
   return (
@@ -143,19 +142,29 @@ function SearchResultRow({
       pressedClassName="active:bg-surface-pressed"
       onPress={onPress}
       enforceMinTapTarget={false}
+      // The row stays tappable in every state: the reference alone is enough to
+      // act on, and the reader can say more about why an ayah would not load.
       accessibilityLabel={
-        isLoadingText ? reference : `${reference}. ${result.translationText ?? ''}`
+        result.status === 'ready' ? `${reference}. ${result.translationText ?? ''}` : reference
       }
     >
       <Text variant="caption" tone="primary" className="mb-1 font-semibold">
         {reference}
       </Text>
 
-      {isLoadingText ? (
+      {result.status === 'loading' && (
         <Text variant="caption" tone="subtle">
           {t('common.loading')}
         </Text>
-      ) : (
+      )}
+
+      {result.status === 'unavailable' && (
+        <Text variant="caption" tone="subtle">
+          {t('search.verseUnavailable')}
+        </Text>
+      )}
+
+      {result.status === 'ready' && (
         <>
           <Text
             className="font-arabic text-content"
