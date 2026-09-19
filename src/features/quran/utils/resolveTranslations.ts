@@ -17,14 +17,20 @@ import type { TranslationResource } from '../types/quran.types';
 /**
  * Preferred editions per language, best first.
  *
- * The first entry in each list is the production choice; later entries are
- * what the pre-live catalogue carries. Listing them in order means the same
- * build works against either environment without a config change.
+ * The first entry is the shipped choice; later entries cover environments whose
+ * catalogue lacks it. Listing them in order means the same build works against
+ * pre-live and production without a config change.
+ *
+ * Every ID here was verified against the live catalogues, which differ sharply:
+ * production carries 145 editions, pre-live 14.
  */
 export const preferredTranslationsByLanguage: Record<string, number[]> = {
-  // 131 = Dr. Mustafa Khattab, The Clear Quran (production)
-  // 85  = M.A.S. Abdel Haleem (present in pre-live)
-  en: [131, 85],
+  // 20 = Saheeh International (production; absent from pre-live)
+  // 85 = M.A.S. Abdel Haleem (the only prose English edition in pre-live)
+  // 19 = M. Pickthall (1930) — the public-domain option, if 20's licence
+  //      cannot be confirmed for distribution. See
+  //      docs/third-party-content-and-licenses.md.
+  en: [20, 85, 19],
   // 161 = Taisirul Quran, available in both environments
   bn: [161],
 };

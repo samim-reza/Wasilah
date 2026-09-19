@@ -10,13 +10,19 @@
 /**
  * QF translation resource IDs for the editions Wasilah ships by default.
  *
- * These are the PRODUCTION choices. The pre-live catalogue does not carry 131,
- * so `resolveTranslationIds` falls back to an available edition in the same
- * language rather than silently rendering Arabic with no translation. See
+ * Both IDs were checked against the PRODUCTION catalogue, which is not the same
+ * catalogue quran.com serves: The Clear Quran (131) is on quran.com but absent
+ * from every Quran Foundation environment, and was the default here until a
+ * live check proved it does not exist. A request for a missing edition is not
+ * an error — the API returns the verses with an empty `translations` array — so
+ * the reader would have shown Arabic only, with nothing to explain why.
+ *
+ * `resolveTranslationIds` still guards against this, but a default should be an
+ * edition we chose, not whichever one the fallback happens to reach. See
  * `src/features/quran/utils/resolveTranslations.ts`.
  */
 export const defaultTranslationIds = {
-  en: 131, // Dr. Mustafa Khattab, The Clear Quran
+  en: 20, // Saheeh International
   bn: 161, // Taisirul Quran
 } as const;
 

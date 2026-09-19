@@ -20,7 +20,7 @@
 import { errorResponse, handlePreflight, jsonResponse } from '../_shared/cors.ts';
 import { getEndpoints, resolveEnvironment } from '../_shared/qfConfig.ts';
 import { filterParams, resolveRoute } from '../_shared/qfRoutes.ts';
-import { getAccessToken, invalidateToken } from '../_shared/qfToken.ts';
+import { getAccessToken, hasScope, invalidateToken } from '../_shared/qfToken.ts';
 
 /**
  * Per-instance sliding-window rate limit.
@@ -113,6 +113,25 @@ Deno.serve(async (request: Request): Promise<Response> => {
   }
 
   try {
+    // Refuse a search the token cannot perform, rather than forwarding it. The
+    // search service answers an unscoped token with an empty result set, not a
+    // 401 — so without this check "permission not granted yet" is delivered to
+    // the user as "no matches", which is worse than an error.
+    if (route.path === '/search' && !(await hasScope('search'))) {
+      return jsonResponse(
+        {
+          error: {
+            code: 'search_unavailable',
+            status: 503,
+            message:
+              'Quran Foundation search is unavailable. The `search` permission ' +
+              'has not been granted to this app in the current environment.',
+          },
+        },
+        { status: 503 },
+      );
+    }
+
     const { apiBaseUrl } = getEndpoints();
     const params = filterParams(requestUrl.searchParams, route.allowedParams);
     const query = params.toString();

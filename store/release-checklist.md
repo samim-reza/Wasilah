@@ -7,10 +7,11 @@ production build is worth making.
 
 ## Blocking — cannot publish without these
 
-- [ ] **Quran Foundation production access.** Pre-live serves only Surah 1 and
-      Surah 2. Shipping that would be a broken app, not a limited one.
-      Request in the Developer Console; production credentials are separate
-      from pre-live and a token from one is rejected by the other.
+- [x] **Quran Foundation production access** — **done, 19 Sep 2026.** The
+      `content` permission was already granted in production; only the
+      credentials were missing. The proxy now runs on production and serves all
+      114 surahs and 145 translations. Pre-live (surahs 1–2, 14 translations)
+      is kept in `supabase/.env` so switching back is one line.
 - [ ] **Translation licences verified.** The API serving an edition does not
       grant the right to distribute it commercially. Confirm each shipped
       edition and record the outcome in
@@ -24,8 +25,8 @@ production build is worth making.
       currently point at `wasilah.app`, which does not exist. The About screen
       links to both.
 - [ ] **Screenshots captured** on a device with a real streak and real
-      bookmarks. Blocked on production API access — two surahs does not fill a
-      reading calendar.
+      bookmarks. **No longer blocked** — production serves the whole Quran, so
+      a real reading history can be built up on a device.
 
 ## Also required
 
@@ -47,6 +48,15 @@ production build is worth making.
 - [x] No secret in the bundle — verified by grepping the export
 - [x] Account deletion endpoint deployed and reachable from Settings
 - [x] `expo-updates` installed, so JS fixes ship without a review cycle
+
+## Waiting on someone else
+
+- [ ] **Production `search` permission.** Requested 19 Sep 2026, pending QF
+      review; pre-live took about ten hours. Nothing needs deploying when it
+      lands — `qfToken` asks for `search` on every cold start and drops it if
+      refused, so the feature starts working on its own within the hour.
+      Until then `/search` answers `search_unavailable` (503) and the app shows
+      the "search is unavailable, everything else still works" message.
 
 ## Worth doing first
 
@@ -85,8 +95,9 @@ background playback, tafsir, bookmarks, private notes, streaks and goals,
 reading calendar, local reminders with quiet hours, prayer times, offline
 reading with later sync, guest mode, light and dark themes.
 
-**Will not, at first**: search, until Quran Foundation approves the permission.
-The app says so plainly rather than showing a retry button that cannot work.
+**Will not, at first**: search, until Quran Foundation approves the permission
+in production. The app says so plainly rather than showing a retry button that
+cannot work.
 
 **Needs a connection** for content it has not cached. Quran text is fetched, not
 bundled — the developer terms cap caching at one week and do not permit shipping

@@ -6,8 +6,9 @@
  * in a single record makes mixing them impossible.
  *
  * NOTE: the pre-live dataset contains only Surah 1 (Al-Fatihah) and Surah 2
- * (Al-Baqarah). Requests for other chapters will legitimately return no data
- * until production access is granted.
+ * (Al-Baqarah), and 14 translations. Production carries the full Quran and 145
+ * translations. The catalogues are not supersets of one another and neither
+ * matches quran.com's, so a resource ID must be verified per environment.
  */
 export type QuranFoundationEnvironment = 'prelive' | 'production';
 
@@ -61,3 +62,21 @@ export const CONTENT_API_PREFIX = '/content/api/v4';
  * than a wrong address.
  */
 export const SEARCH_API_PREFIX = '/search/api/v1';
+
+/**
+ * Scopes to request when minting a token.
+ *
+ * This is a WISH LIST, not a guarantee. Ory — the OAuth server QF runs —
+ * rejects the entire token request if any requested scope is ungranted:
+ *
+ *   {"error":"invalid_scope","error_description":"... not allowed to request
+ *    scope 'search'."}
+ *
+ * which means asking for a scope still under review takes down every request,
+ * not just the feature that needs it. Production granted `content` but has
+ * `search` pending, so a fixed `content search` would black out the whole app.
+ *
+ * `qfToken` therefore drops a rejected scope and retries. Listing search here
+ * is what lets it start working the moment QF approves it, with no deploy.
+ */
+export const REQUESTED_SCOPES = ['content', 'search'] as const;

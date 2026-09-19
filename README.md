@@ -272,8 +272,18 @@ curl "$SUPABASE_URL/functions/v1/quran-proxy/chapters?language=en" \
 > setting the project up. The proxy adds an explicit hint to 404s in pre-live so
 > it is not mistaken for a bug.
 
-Production access is requested separately. Full checklist in
+Production access is requested separately, and is what this app runs on:
+production carries all 114 surahs, 145 translations and 12 recitations, against
+pre-live's 2 surahs and 14 translations. Note that **resource ids differ per
+environment and none of them are quran.com's** — a request for an id that does
+not exist returns the verse with an empty `translations` array rather than an
+error, so the reader shows Arabic and says nothing. Full checklist in
 [`docs/quran-api.md`](docs/quran-api.md).
+
+Scopes are all-or-nothing: the OAuth server refuses the entire token request if
+any requested scope is ungranted, so a permission still under review would take
+down every Quran request rather than one feature. The proxy drops a refused
+scope and retries, and picks the permission up on its own once it is granted.
 
 ---
 
@@ -359,8 +369,9 @@ What is actually covered:
   notification is _not_ sent
 - **Offline sync** — replay order, retry budget, abandonment, position conflicts
 - **Goals, achievements, audio queue, verse keys, translation sanitisation**
-- **Translation fallback** — the pre-live catalogue lacks the shipped English
-  default, and the API returns empty translations rather than erroring
+- **Translation fallback** — an edition can be missing from the catalogue the
+  environment actually serves, and the API returns empty translations rather
+  than erroring
 - **Storage key collisions and value shapes** — two regressions that no
   typecheck or lint rule can catch, only a device can
 - **Notification import discipline** — a static `expo-notifications` import
@@ -496,6 +507,12 @@ caches environment variables aggressively.
 You are on the **pre-live** Quran Foundation environment, which only contains
 Surah 1 and Surah 2. This is expected. Request production access, then set
 `QF_ENV=production` and redeploy the proxy.
+
+If instead the verses arrive but the **translation is missing**, that is a
+different problem with the same symptom: the requested edition id does not exist
+in that environment's catalogue, and the API returns an empty `translations`
+array instead of an error. Check the id against
+`/resources/translations?language=en`.
 </details>
 
 <details>
