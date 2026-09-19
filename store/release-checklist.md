@@ -23,17 +23,19 @@ production build is worth making.
       bundled, nothing is re-hosted, and the cache is capped at one week.
       Reasoning and clause citations in
       [`third-party-content-and-licenses.md`](../docs/third-party-content-and-licenses.md).
-- [ ] **Privacy policy hosted at a public URL.** Google requires one and checks
-      that it loads. Draft in [`privacy-policy.md`](./privacy-policy.md).
-      **Needs a decision on where it lives** — GitHub Pages off this repo
-      (`samim-reza.github.io/Wasilah/privacy`, free, but the repo must be
-      public) or a real `wasilah.app` domain. Everything else is ready; this is
-      the one item that cannot be finished without choosing.
-- [ ] **`branding.privacyPolicyUrl` and `termsUrl` point at real pages.** They
-      currently point at `wasilah.app`, which does not exist. The About screen
-      links to both. One-line change in `src/config/branding.ts` once the
-      hosting decision above is made — and `supportEmail` needs a real inbox
-      too, since Google publishes it on the listing.
+- [x] **Privacy policy and terms written and wired up.** Both pages live in
+      [`site/`](../site/) and deploy to GitHub Pages via
+      [`.github/workflows/pages.yml`](../.github/workflows/pages.yml).
+      `branding.ts` points at them, and `supportEmail` is a real inbox.
+      **Not reviewed by a lawyer** — the text was written from what the code
+      actually does, which is the right starting point but not a substitute.
+- [ ] **Push the repo, make it public, and turn Pages on.** The three steps
+      that only the account owner can do: 1. `git push -u origin main` 2. Settings → General → Change visibility → **Public**
+      (no secrets are committed; `.env*` files are all gitignored) 3. Settings → Pages → Source → **GitHub Actions**
+
+      Then confirm <https://samim-reza.github.io/Wasilah/privacy.html> loads,
+      because Google checks it during review.
+
 - [ ] **Screenshots captured** on a device with a real streak and real
       bookmarks. **No longer blocked** — production serves the whole Quran, so
       a real reading history can be built up on a device.

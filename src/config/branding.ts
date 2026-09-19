@@ -12,10 +12,22 @@ export const branding = {
   shareFooter: 'Wasilah — One ayah. Every day.',
   /** URL scheme registered in app.config.ts; used to build deep links. */
   scheme: 'wasilah',
-  supportEmail: 'support@wasilah.app',
-  websiteUrl: 'https://wasilah.app',
-  privacyPolicyUrl: 'https://wasilah.app/privacy',
-  termsUrl: 'https://wasilah.app/terms',
+  /**
+   * Published on the Play Store listing as well as the About screen, so it has
+   * to be an address that is actually monitored.
+   */
+  supportEmail: 'samimreza2111@gmail.com',
+  /**
+   * Served from `site/` by the Pages workflow in `.github/workflows/pages.yml`.
+   *
+   * GitHub Pages rather than a `wasilah.app` domain, which does not exist:
+   * Google Play refuses a listing whose privacy policy URL does not load, and a
+   * page that is deployed from the same repository as the app cannot silently
+   * drift out of existence the way a lapsed domain can.
+   */
+  websiteUrl: 'https://samim-reza.github.io/Wasilah/',
+  privacyPolicyUrl: 'https://samim-reza.github.io/Wasilah/privacy.html',
+  termsUrl: 'https://samim-reza.github.io/Wasilah/terms.html',
 } as const;
 
 /**

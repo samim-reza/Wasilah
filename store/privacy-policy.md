@@ -2,10 +2,14 @@
 
 **Last updated: 19 September 2026**
 
-> **This is a draft prepared from the app's actual implementation, not a
-> template.** Every claim below was checked against the code. It has not been
-> reviewed by a lawyer, and you are responsible for that review and for hosting
-> it at a public URL before submitting to Google Play, which requires one.
+> **Source text for the published page.** Every claim below was checked against
+> the app's actual implementation, not copied from a template. It has **not**
+> been reviewed by a lawyer.
+>
+> Published at
+> [samim-reza.github.io/Wasilah/privacy.html](https://samim-reza.github.io/Wasilah/privacy.html)
+> from [`site/privacy.html`](../site/privacy.html). **Edit both** — the HTML is
+> what Google and users actually read.
 
 Wasilah is a Quran reading app. This policy explains what it stores, why, and
 what it deliberately does not.
@@ -163,7 +167,7 @@ the top of this page always reflects the current version.
 
 Questions about your data, or a request to export or delete it:
 
-**support@wasilah.app**
+**samimreza2111@gmail.com**
 
 ---
 

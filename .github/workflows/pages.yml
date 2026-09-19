@@ -1,0 +1,44 @@
+# Publishes the public pages in `site/` to GitHub Pages.
+#
+# Google Play requires a privacy policy at a URL it can load, and the app's
+# About screen links to both pages, so these must stay reachable. Everything in
+# `site/` is plain HTML and CSS with no build step — there is nothing that can
+# fail to compile, which is the point.
+#
+# Setup, once: Settings → Pages → Source → "GitHub Actions". The repository must
+# be public for Pages to serve on a free plan.
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  # So the pages can be republished without an unrelated commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead, and keep the newer one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
