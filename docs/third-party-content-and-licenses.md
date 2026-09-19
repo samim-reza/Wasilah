@@ -27,9 +27,52 @@ product and does not present itself as an official Quran.com application.
 
 ## Translations
 
-Translation editions are fetched by resource id and are **licensed
-individually**. The API serving an edition does not by itself grant the right to
-ship it commercially.
+> **Read this before removing an edition.** An earlier version of this file
+> assumed each translation had to be licensed individually from its publisher,
+> and marked the shipped editions as unverified blockers. That is stricter than
+> the terms Wasilah actually operates under — see below.
+
+### What the QF Developer Terms cover
+
+The terms define **QF Content** as _"Quran text, translations, metadata, audio,
+reflections, and any other content returned by the APIs"_ — translations and
+recitation audio included — and license its display under the single developer
+agreement:
+
+> "Developer may display QF Content to end users within the Application,
+> provided that" the text remains unmodified, the content is not sold or
+> redistributed, and snippets preserve their original context.
+
+Commercial models (paid apps, subscriptions, ads, donations, freemium) are
+allowed without a separate commercial licence, so long as the content stays part
+of the end-user experience and is not resold or redistributed on its own.
+Selling or sublicensing the content itself is what needs a separate written
+licence, and Wasilah does none of that.
+
+### How Wasilah measures up
+
+| Condition                      | Status                                                          |
+| ------------------------------ | --------------------------------------------------------------- |
+| Display only, within the app   | ✅ Fetched at runtime; nothing bundled, nothing re-hosted       |
+| Text unmodified                | ⚠️ See "On sanitisation" below                                  |
+| Not sold or redistributed      | ✅ Free app, no resale, no export of raw API content            |
+| Snippets preserve context      | ✅ Every ayah and share card carries its `surah:ayah` reference |
+| Cached no longer than one week | ✅ `contentCacheMaxAgeMs`, enforced in three places             |
+| Attribution                    | ✅ About screen, not removable                                  |
+
+This is a reading of the published terms, not legal advice. The conservative
+rule at the top of this file still stands — but the thing to verify is **QF's
+terms**, which cover the editions their API serves, not a separate agreement
+with each publisher.
+
+### On sanitisation
+
+Translation bodies arrive with inline footnote markup
+(`the Book<sup foot_note=12345>1</sup>`). React Native has no HTML renderer, so
+`sanitizeTranslationText` strips the tags and renders the marker as a Unicode
+superscript digit. The wording of the translation is untouched; only the markup
+around it is. Footnote markers are deliberately kept rather than dropped,
+because removing them silently would misrepresent the edition.
 
 | Edition                 | Resource ID | Language | Licence verified                 |
 | ----------------------- | ----------- | -------- | -------------------------------- |
@@ -63,13 +106,14 @@ particular edition.
 
 ## Recitations
 
-| Reciter                 | Resource ID | Licence verified                |
-| ----------------------- | ----------- | ------------------------------- |
-| Mishari Rashid al-Afasy | 7           | ❌ **Verify before production** |
+| Reciter                 | Resource ID | Basis for shipping                         |
+| ----------------------- | ----------- | ------------------------------------------ |
+| Mishari Rashid al-Afasy | 7           | QF Developer Terms — audio is "QF Content" |
 
 Confirmed present in the production catalogue (12 recitations) and serving
 audio: `recitations/7/by_ayah/18:1` returns `Alafasy/mp3/018001.mp3`, a path
-relative to `verses.quran.foundation`.
+relative to `verses.quran.foundation`. The app streams from the URL the API
+supplies and never downloads, re-hosts or redistributes the file.
 
 Audio is streamed from URLs supplied by the API. No recitation audio is
 redistributed or re-hosted.

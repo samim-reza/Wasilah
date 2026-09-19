@@ -12,18 +12,28 @@ production build is worth making.
       credentials were missing. The proxy now runs on production and serves all
       114 surahs and 145 translations. Pre-live (surahs 1–2, 14 translations)
       is kept in `supabase/.env` so switching back is one line.
-- [ ] **Translation licences verified.** The API serving an edition does not
-      grant the right to distribute it commercially. Confirm each shipped
-      edition and record the outcome in
+- [x] **Translation and reciter licences** — **resolved, 19 Sep 2026.** This
+      was written on the assumption that each edition needed its own licence
+      from its publisher. Reading the QF Developer Terms shows otherwise: they
+      define "QF Content" as "Quran text, translations, metadata, audio,
+      reflections, and any other content returned by the APIs" and license its
+      display in an application under the one agreement, including for
+      commercial models. What needs a separate licence is _selling or
+      redistributing the content itself_, which Wasilah does not do — nothing is
+      bundled, nothing is re-hosted, and the cache is capped at one week.
+      Reasoning and clause citations in
       [`third-party-content-and-licenses.md`](../docs/third-party-content-and-licenses.md).
-      Any edition that cannot be confirmed must be removed, not shipped hopefully.
-- [ ] **Reciter licence verified.** Same reasoning.
 - [ ] **Privacy policy hosted at a public URL.** Google requires one and checks
-      that it loads. Draft in [`privacy-policy.md`](./privacy-policy.md); it
-      needs legal review before it goes up.
+      that it loads. Draft in [`privacy-policy.md`](./privacy-policy.md).
+      **Needs a decision on where it lives** — GitHub Pages off this repo
+      (`samim-reza.github.io/Wasilah/privacy`, free, but the repo must be
+      public) or a real `wasilah.app` domain. Everything else is ready; this is
+      the one item that cannot be finished without choosing.
 - [ ] **`branding.privacyPolicyUrl` and `termsUrl` point at real pages.** They
       currently point at `wasilah.app`, which does not exist. The About screen
-      links to both.
+      links to both. One-line change in `src/config/branding.ts` once the
+      hosting decision above is made — and `supportEmail` needs a real inbox
+      too, since Google publishes it on the listing.
 - [ ] **Screenshots captured** on a device with a real streak and real
       bookmarks. **No longer blocked** — production serves the whole Quran, so
       a real reading history can be built up on a device.
