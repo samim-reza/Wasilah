@@ -10,7 +10,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@app/*": ["./app/*"]
+      "@app/*": ["./src/app/*"]
     },
     "types": ["jest", "node"]
   },

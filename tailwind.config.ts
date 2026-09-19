@@ -15,7 +15,7 @@ function themeColor(name: string) {
 }
 
 const config: Config = {
-  content: ['./app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
+  content: ['./src/**/*.{ts,tsx}'],
   // `nativewind/preset` ships as CommonJS with no ESM type declarations, so a
   // default import fails to typecheck. Tailwind loads this config through jiti,
   // which handles require() in a .ts file.

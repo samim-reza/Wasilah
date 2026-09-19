@@ -1,5 +1,5 @@
 /**
- * Generates `global.css` from `src/theme/tokens.ts`.
+ * Generates `src/global.css` from `src/theme/tokens.ts`.
  *
  * Why generate rather than hand-write: NativeWind resolves `dark:` variants
  * through CSS custom properties, so every semantic colour needs a `--color-*`
@@ -73,7 +73,7 @@ ${declarationsFor('dark')}
 }
 `;
 
-writeFileSync(join(projectRoot, 'global.css'), css, 'utf8');
+writeFileSync(join(projectRoot, 'src', 'global.css'), css, 'utf8');
 
 // Only the handful of roles the native config actually needs, so the bridge
 // file does not become a second, fuller copy of the palette.
@@ -92,5 +92,5 @@ writeFileSync(
 );
 
 process.stdout.write(
-  'global.css + assets/brand/colors.json regenerated from src/theme/tokens.ts\n',
+  'src/global.css + assets/brand/colors.json regenerated from src/theme/tokens.ts\n',
 );

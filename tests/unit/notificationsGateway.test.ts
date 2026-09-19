@@ -14,7 +14,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PROJECT_ROOT = join(__dirname, '..', '..');
-const SCANNED_DIRECTORIES = ['src', 'app'];
+const SCANNED_DIRECTORIES = ['src'];
 
 function collectSourceFiles(directory: string): string[] {
   const files: string[] = [];

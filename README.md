@@ -100,7 +100,7 @@ cp .env.example .env.local     # then fill in the values below
 supabase start                 # local Postgres + Auth + Edge Functions
 supabase db reset              # apply migrations and seed
 
-npm run theme:build            # generate global.css from the design tokens
+npm run theme:build            # generate src/global.css from the design tokens
 npm start                      # Expo dev server
 ```
 
@@ -145,7 +145,7 @@ Organised by **feature**, not by file type. Every feature is self-contained, so
 a change to bookmarks touches one folder.
 
 ```
-app/                              Routes. Thin — they compose feature hooks.
+src/app/                          Routes. Thin — they compose feature hooks.
 ├── _layout.tsx                   Providers, splash, notification routing
 ├── index.tsx                     First-run redirect
 ├── (auth)/                       login · signup · forgot-password
@@ -325,7 +325,7 @@ npm start              # dev server
 npm run android        # open on Android
 npm run ios            # open on iOS (macOS only)
 
-npm run theme:build    # regenerate global.css after editing design tokens
+npm run theme:build    # regenerate src/global.css after editing design tokens
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint, zero warnings tolerated
 npm run format         # prettier
@@ -586,7 +586,7 @@ with no error pointing at the cause.
 <details>
 <summary><b>Tailwind classes have no effect</b></summary>
 
-Run `npm run theme:build` — `global.css` is generated from
+Run `npm run theme:build` — `src/global.css` is generated from
 `src/theme/tokens.ts` and is not committed as hand-written CSS. Then clear the
 Metro cache: `npm start -c`.
 </details>
