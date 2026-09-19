@@ -73,9 +73,21 @@ const persister = createAsyncStoragePersister({
 export const persistOptions: Omit<PersistQueryClientOptions, 'queryClient'> = {
   persister,
   maxAge: contentCacheMaxAgeMs,
-  // Bumping this string discards every persisted cache, which is how a schema
-  // change to the mapped domain models is rolled out safely.
-  buster: 'wasilah-v1',
+  /**
+   * Bumping this string discards every persisted cache on the next launch.
+   *
+   * Bump it for a change to the mapped domain models — and also, less
+   * obviously, when the UPSTREAM CONTENT SOURCE changes. Moving from the Quran
+   * Foundation pre-live environment to production did exactly that: pre-live
+   * serves 2 surahs and 14 translations, production 114 and 145. An install
+   * that had already cached the pre-live catalogue kept showing a two-surah
+   * Quran for up to a day after the server started serving all of it, because
+   * a cache hit is a cache hit and nothing connected the two facts.
+   *
+   * The switch is server-side, so no app update can fix that on its own. This
+   * is the mechanism that does.
+   */
+  buster: 'wasilah-v2-qf-production',
   dehydrateOptions: {
     shouldDehydrateQuery: (query) =>
       query.state.status === 'success' && isPersistable(query.queryKey),
