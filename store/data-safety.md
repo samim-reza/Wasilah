@@ -8,6 +8,18 @@ to yes or no.
 > A wrong answer here is a policy violation, not a typo. If you change what the
 > app collects, change this first.
 
+### On "shared" vs "collected"
+
+Google counts a transfer to a **service provider processing on your behalf** as
+collection, not sharing. Supabase (the database), Expo (notification delivery),
+PostHog and Sentry are all processors in that sense, which is why their rows say
+_Shared: No_ despite data leaving the device.
+
+The one row marked _Shared: Yes_ is approximate location, because the weather
+lookup goes to a public third-party endpoint that is not operating under a
+processing agreement with us. That is the conservative reading, and the
+conservative reading is the right one to submit.
+
 ---
 
 ## Does your app collect or share any of the required user data types?
@@ -65,9 +77,22 @@ never shown to anyone else.
 
 ### Device or other IDs
 
-| Type                | Collected          | Shared | Purpose                                                | Optional?                                 |
-| ------------------- | ------------------ | ------ | ------------------------------------------------------ | ----------------------------------------- |
-| Device or other IDs | Yes — a push token | No     | App functionality: delivering the user's own reminders | **Yes** — only with notifications enabled |
+| Type                | Collected | Shared | Purpose                                                              | Optional?                                       |
+| ------------------- | --------- | ------ | -------------------------------------------------------------------- | ----------------------------------------------- |
+| Device or other IDs | Yes       | No     | App functionality (reminder delivery) **and** Analytics, if opted in | **Yes** — both features are off until turned on |
+
+Two distinct identifiers, and both are optional:
+
+1. A **push token**, created only when notifications are enabled, used solely to
+   deliver that installation's own reminders, and removed on sign-out.
+2. A **randomly generated installation id** created by the analytics SDK, only
+   if analytics is opted into. It is not a device identifier, carries no
+   hardware or advertising value, and is reset when the user signs out. Once
+   signed in it is associated with the account id so a person's own events are
+   not split across sessions.
+
+Declare **both purposes** on this row. Picking only "App functionality" would
+understate it the moment someone enables analytics.
 
 ---
 
