@@ -57,7 +57,9 @@ production build is worth making.
 - [x] `RECORD_AUDIO` removed — the app never records
 - [x] `ACCESS_FINE_LOCATION` blocked — only coarse is ever used
 - [x] Row Level Security verified against the live database
-- [x] No secret in the bundle — verified by grepping the export
+- [x] No secret in the bundle — verified by unpacking the shipped APK, not the
+      export: no QF client secret, database password or service-role key. The
+      Supabase project ref is present and is meant to be.
 - [x] Account deletion endpoint deployed and reachable from Settings
 - [x] `expo-updates` installed, so JS fixes ship without a review cycle
 
