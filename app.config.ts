@@ -25,6 +25,19 @@ const brandColors = require('./assets/brand/colors.json') as {
 /** Bumped independently of the marketing version; drives OTA update compatibility. */
 const RUNTIME_VERSION = '1.0.0';
 
+/**
+ * Expo Go preview mode, enabled with `EXPO_GO_PREVIEW=1`.
+ *
+ * Expo Go will only load an update whose runtime version is `exposdk:<sdk>`,
+ * so a preview published for testers has to declare that instead of this
+ * app's own runtime version. The two can never collide: a shipped binary is
+ * on runtime `1.0.0` and ignores anything published under an `exposdk:` one,
+ * which is what keeps a preview from ever reaching a real install.
+ *
+ * Off by default, so ordinary builds and updates are completely unaffected.
+ */
+const isExpoGoPreview = process.env.EXPO_GO_PREVIEW === '1';
+
 const BUNDLE_ID = 'com.wasilah.app';
 
 /**
@@ -72,7 +85,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // `automatic` lets the OS drive the initial colour scheme; the in-app theme
   // provider can still override it with the user's explicit preference.
   userInterfaceStyle: 'automatic',
-  runtimeVersion: RUNTIME_VERSION,
+  runtimeVersion: isExpoGoPreview ? 'exposdk:57.0.0' : RUNTIME_VERSION,
 
   // The splash screen is configured exclusively through the
   // expo-splash-screen plugin below; SDK 57 removed the top-level `splash` key.
