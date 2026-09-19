@@ -36,6 +36,37 @@ never duplicated locally. What this codebase owns is everything around it:
 
 ---
 
+## Project status
+
+Everything in the spec is built and green: `npm run verify` passes typecheck,
+lint and 223 tests, and a signed Android build installs and runs against the
+production Quran Foundation API.
+
+Four things are **built but not switched on**, and each needs an action rather
+than more code:
+
+| Item                            | State                                                                                                                                                                                                                                                  | What it needs                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| **Server-side push**            | `supabase/functions/notification-engine` is written and tested, but **not deployed and not scheduled**. Every reminder today is scheduled locally on the device, which is the design — this covers only a user who has not opened the app in two days. | Deploy it, then schedule it (pg_cron or an external scheduler).                    |
+| **Production search**           | Implemented and working against pre-live. Production `search` permission requested 19 Sep 2026, pending QF review.                                                                                                                                     | Nothing — the proxy picks the scope up on its own within the hour of approval.     |
+| **Analytics / crash reporting** | Fully wired, opt-in, and inert without keys.                                                                                                                                                                                                           | Create PostHog and Sentry projects, or leave the keys blank and ship without them. |
+| **iOS**                         | Builds are configured; nothing has ever been run on a device or simulator.                                                                                                                                                                             | A Mac or an EAS iOS build, and someone to test it.                                 |
+
+Deliberately **not** built, because the spec asks only that the design allow for
+them later:
+
+- **Admin dashboard** (spec §53) — the schema supports it: `notification_templates`,
+  `feature_flags`, `app_announcements` and `daily_ayah_selections` are all tables
+  with seed data, so a dashboard is a client away.
+- **AI features** (spec §52) — "do not make AI the foundation". Nothing is built;
+  the retrieval path it would need (Quran and tafsir through one proxy) exists.
+
+Content other than the Quran — duas, hadith, adhkar — appears nowhere in the
+spec and has no source. The Quran Foundation API does not serve it, so adding
+any of it is a new content-sourcing decision, not unfinished work.
+
+---
+
 ## Table of contents
 
 - [Quick start](#quick-start)
@@ -434,16 +465,26 @@ made before it was installed will ignore updates entirely, without erroring.
 
 ### Before the first production release
 
-- [ ] Quran Foundation **production** access granted and `QF_ENV=production`
-- [ ] Every shipped translation's and reciter's licence verified and recorded in
+- [x] Quran Foundation **production** access granted and `QF_ENV=production`
+- [x] Every shipped translation's and reciter's licence recorded in
       [`docs/third-party-content-and-licenses.md`](docs/third-party-content-and-licenses.md)
-- [ ] Attribution visible on the About screen and not obscured
-- [ ] Privacy policy published and linked
+      — the QF Developer Terms cover display of everything their API serves
+- [x] Attribution visible on the About screen and not obscured
+- [x] Privacy policy published and linked —
+      <https://samim-reza.github.io/Wasilah/privacy.html>
+- [x] `npm run verify` green
+- [x] RLS verified by attempting a cross-user read with a real token
+- [x] No secret in the bundle — verified against the built **APK**, not
+      `expo export`. The export is not what anyone installs:
+      `bash
+    unzip -o build.apk 'assets/*' -d /tmp/apk
+    grep -rac 'QF_CLIENT_SECRET\|service_role\|qfcs_' /tmp/apk
+    `
 - [ ] Sentry and PostHog projects created (or the keys left blank)
-- [ ] `npm run verify` green
-- [ ] RLS verified by attempting a cross-user read with a real token
-- [ ] No secret in the bundle: `npx expo export --platform android` then grep the
-      output for `QF_CLIENT_SECRET` and `service_role`
+- [ ] `notification-engine` deployed and scheduled — see
+      [Project status](#project-status)
+- [ ] Google Play Developer account, Data safety form, content rating,
+      screenshots — [`store/release-checklist.md`](store/release-checklist.md)
 
 ---
 
