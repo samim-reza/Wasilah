@@ -17,6 +17,7 @@ function track(verseNumber: number): AudioTrack {
     url: `https://example.test/1-${verseNumber}.mp3`,
     chapterId: 1,
     verseNumber,
+    segments: null,
   };
 }
 

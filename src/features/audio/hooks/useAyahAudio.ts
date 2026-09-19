@@ -20,7 +20,11 @@ import type { VerseKey } from '@/features/quran/types/quran.types';
 import { useAudio } from './AudioPlayerProvider';
 import type { AudioTrack } from '../types/audio.types';
 
-function toTrack(verseKey: VerseKey, url: string): AudioTrack | null {
+function toTrack(
+  verseKey: VerseKey,
+  url: string,
+  segments: number[][] | null = null,
+): AudioTrack | null {
   const address = parseVerseKey(verseKey);
   if (!address) return null;
 
@@ -29,6 +33,7 @@ function toTrack(verseKey: VerseKey, url: string): AudioTrack | null {
     url,
     chapterId: address.chapterId,
     verseNumber: address.verseNumber,
+    segments,
   };
 }
 
@@ -45,7 +50,7 @@ export function useChapterAudio(recitationId: number, chapterId: number | null) 
     queryFn: async () => {
       const files = await fetchChapterRecitation(recitationId, chapterId as number);
       return files
-        .map((file) => toTrack(file.verseKey, file.url))
+        .map((file) => toTrack(file.verseKey, file.url, file.segments))
         .filter((track): track is AudioTrack => track !== null);
     },
     enabled: chapterId !== null && chapterId > 0,
@@ -71,7 +76,7 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
       const file = await fetchAyahRecitation(recitationId, verseKey);
       if (!file) return;
 
-      const track = toTrack(verseKey, file.url);
+      const track = toTrack(verseKey, file.url, file.segments);
       if (track) audio.playTrack(track);
     },
     [recitationId, audio],
@@ -81,7 +86,7 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
     async (chapterId: number, verseKey: VerseKey) => {
       const files = await fetchChapterRecitation(recitationId, chapterId);
       const tracks = files
-        .map((file) => toTrack(file.verseKey, file.url))
+        .map((file) => toTrack(file.verseKey, file.url, file.segments))
         .filter((track): track is AudioTrack => track !== null);
 
       const startIndex = Math.max(

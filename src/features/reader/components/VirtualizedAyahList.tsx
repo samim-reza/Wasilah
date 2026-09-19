@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AyahCard } from '@/features/quran/components/AyahCard';
-import type { Verse } from '@/features/quran/types/quran.types';
+import type { Verse, WordSegment } from '@/features/quran/types/quran.types';
 import { Text } from '@/components/ui/Text';
 
 export interface VirtualizedAyahListProps {
@@ -32,6 +32,8 @@ export interface VirtualizedAyahListProps {
   bookmarkedKeys: ReadonlySet<string>;
   notedKeys: ReadonlySet<string>;
   playingVerseKey: string | null;
+  /** Word being recited in the playing ayah; null when nothing is playing. */
+  activeWordPosition: number | null;
   showTafsirAction: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
@@ -43,6 +45,7 @@ export interface VirtualizedAyahListProps {
   onBookmark: (verse: Verse) => void;
   onNote: (verse: Verse) => void;
   onShare: (verse: Verse) => void;
+  onWordPress: (word: WordSegment) => void;
   ListHeaderComponent?: React.ReactElement | null;
   ListFooterComponent?: React.ReactElement | null;
 }
@@ -73,6 +76,7 @@ export function VirtualizedAyahList({
   bookmarkedKeys,
   notedKeys,
   playingVerseKey,
+  activeWordPosition,
   showTafsirAction,
   isFetchingNextPage,
   hasNextPage,
@@ -83,6 +87,7 @@ export function VirtualizedAyahList({
   onBookmark,
   onNote,
   onShare,
+  onWordPress,
   ListHeaderComponent,
   ListFooterComponent,
 }: VirtualizedAyahListProps) {
@@ -120,7 +125,11 @@ export function VirtualizedAyahList({
         isBookmarked={bookmarkedKeys.has(item.verseKey)}
         hasNote={notedKeys.has(item.verseKey)}
         isPlaying={playingVerseKey === item.verseKey}
+        // Only the playing ayah receives a position, so a tick from the player
+        // re-renders one card instead of every card in the list.
+        activeWordPosition={playingVerseKey === item.verseKey ? activeWordPosition : null}
         showTafsirAction={showTafsirAction}
+        onWordPress={onWordPress}
         onPlay={onPlay}
         onTafsir={onTafsir}
         onBookmark={onBookmark}
@@ -137,12 +146,14 @@ export function VirtualizedAyahList({
       bookmarkedKeys,
       notedKeys,
       playingVerseKey,
+      activeWordPosition,
       showTafsirAction,
       onPlay,
       onTafsir,
       onBookmark,
       onNote,
       onShare,
+      onWordPress,
     ],
   );
 

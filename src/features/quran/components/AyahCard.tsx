@@ -20,7 +20,7 @@ import { ArabicText } from './ArabicText';
 import { AyahNumber } from './AyahNumber';
 import { TranslationText } from './TranslationText';
 import { WordByWordRow } from './WordByWordRow';
-import type { Verse } from '../types/quran.types';
+import type { Verse, WordSegment } from '../types/quran.types';
 
 export interface AyahCardProps {
   verse: Verse;
@@ -35,6 +35,14 @@ export interface AyahCardProps {
   isPlaying: boolean;
   /** Hidden when the tafsir flag is off or no edition is selected. */
   showTafsirAction: boolean;
+  /**
+   * 1-based position of the word being recited in THIS ayah, or null.
+   *
+   * Only ever non-null for the ayah currently playing, so a re-render from a
+   * position tick touches one card rather than the whole list.
+   */
+  activeWordPosition?: number | null;
+  onWordPress?: (word: WordSegment) => void;
   onPlay: (verse: Verse) => void;
   onTafsir: (verse: Verse) => void;
   onBookmark: (verse: Verse) => void;
@@ -53,6 +61,8 @@ function AyahCardComponent({
   hasNote,
   isPlaying,
   showTafsirAction,
+  activeWordPosition = null,
+  onWordPress,
   onPlay,
   onTafsir,
   onBookmark,
@@ -118,7 +128,12 @@ function AyahCardComponent({
       </View>
 
       {showWordByWord && verse.words.length > 0 ? (
-        <WordByWordRow words={verse.words} arabicFontSize={arabicFontSize} />
+        <WordByWordRow
+          words={verse.words}
+          arabicFontSize={arabicFontSize}
+          activeWordPosition={activeWordPosition}
+          onWordPress={onWordPress}
+        />
       ) : (
         <ArabicText text={verse.arabicText} fontSize={arabicFontSize} />
       )}
@@ -161,6 +176,7 @@ export const AyahCard = memo(AyahCardComponent, (previous, next) => {
     previous.translationFontSize === next.translationFontSize &&
     previous.showTranslation === next.showTranslation &&
     previous.showWordByWord === next.showWordByWord &&
+    previous.activeWordPosition === next.activeWordPosition &&
     previous.isBookmarked === next.isBookmarked &&
     previous.hasNote === next.hasNote &&
     previous.isPlaying === next.isPlaying &&

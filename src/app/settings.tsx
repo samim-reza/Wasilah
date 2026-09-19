@@ -96,17 +96,22 @@ export default function SettingsScreen() {
             icon="info"
             onPress={() => router.push('/reader-tafsirs')}
           />
-          <ListRow
-            label={t('reader.showWordByWord')}
-            icon="quran"
-            accessory={
-              <Switch
-                label={t('reader.showWordByWord')}
-                value={reader.showWordByWord}
-                onValueChange={(value) => void updateReader({ showWordByWord: value })}
-              />
-            }
-          />
+          {/*
+            A bare Switch in a padded View, NOT a ListRow accessory.
+            `Switch` is a full-width row in its own right — label on the left,
+            toggle on the right — so putting it in the narrow accessory slot
+            let its flex-1 label consume the width and squeezed the toggle to
+            nothing, leaving a label with no control. This matches how every
+            switch on the notification settings screen is laid out.
+          */}
+          <View className="px-4">
+            <Switch
+              label={t('reader.showWordByWord')}
+              hint={t('reader.showWordByWordHint')}
+              value={reader.showWordByWord}
+              onValueChange={(value) => void updateReader({ showWordByWord: value })}
+            />
+          </View>
         </ListSection>
 
         <ListSection title={t('settings.notifications')}>

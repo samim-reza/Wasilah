@@ -24,12 +24,15 @@ import { NoteEditorSheet } from '@/features/notes/components/NoteEditorSheet';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { BismillahHeader } from '@/features/quran/components/BismillahHeader';
 import { TafsirSheet } from '@/features/quran/components/TafsirSheet';
+import { PlayScopeSheet, type PlayScope } from '@/features/quran/components/PlayScopeSheet';
+import { WordMeaningSheet } from '@/features/quran/components/WordMeaningSheet';
+import { activeWordPosition as wordAtPosition, parseWordTimings } from '@/features/quran/utils/wordTimings';
 import { useChapter } from '@/features/quran/hooks/useChapters';
 import { useResolvedTranslationIds } from '@/features/quran/hooks/useResolvedTranslations';
 import { useVerses, type VerseSource } from '@/features/quran/hooks/useVerses';
 import type { FlashListRef } from '@shopify/flash-list';
 import { shareVerse } from '@/features/quran/services/shareService';
-import type { Verse } from '@/features/quran/types/quran.types';
+import type { Verse, WordSegment } from '@/features/quran/types/quran.types';
 import { useFeatureFlag } from '@/lib/api/useFeatureFlags';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { logger } from '@/lib/monitoring/logger';
@@ -85,6 +88,30 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
   const [topVerseNumber, setTopVerseNumber] = useState<number | null>(null);
 
   const listRef = useRef<FlashListRef<Verse>>(null);
+  const [selectedWord, setSelectedWord] = useState<WordSegment | null>(null);
+  // The ayah whose play button was tapped, held while the scope is chosen.
+  const [pendingPlayVerse, setPendingPlayVerse] = useState<Verse | null>(null);
+
+  /**
+   * Which word the reciter is on.
+   *
+   * Timings are parsed per track rather than per tick — the position updates
+   * several times a second, and re-parsing the segment array each time would
+   * do real work on every frame of playback for no gain.
+   */
+  const wordTimings = useMemo(
+    () => parseWordTimings(audio.currentTrack?.segments),
+    [audio.currentTrack?.segments],
+  );
+
+  // Null whenever the reciter publishes no timings, which is the common case.
+  const activeWord = useMemo(
+    () =>
+      wordTimings.length > 0
+        ? wordAtPosition(wordTimings, Math.round(audio.positionSeconds * 1000))
+        : null,
+    [wordTimings, audio.positionSeconds],
+  );
   // Guards against jumping the user back to the deep-linked ayah after they
   // have scrolled away, or on a re-render once more pages have loaded.
   const hasJumpedToInitialVerse = useRef(false);
@@ -130,13 +157,31 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
 
   const handlePlay = useCallback(
     (verse: Verse) => {
+      // Already the playing ayah: this is a pause, not a new choice.
       if (audio.currentTrack?.verseKey === verse.verseKey) {
         audio.toggle();
         return;
       }
-      void playAyah(verse.verseKey);
+      setPendingPlayVerse(verse);
     },
-    [audio, playAyah],
+    [audio],
+  );
+
+  const handlePlayScope = useCallback(
+    (scope: PlayScope) => {
+      const verse = pendingPlayVerse;
+      if (!verse) return;
+
+      if (scope === 'single') {
+        void playAyah(verse.verseKey);
+        return;
+      }
+
+      void playFrom(verse.chapterId, verse.verseKey).catch(() => {
+        toast.show(t('errors.audioUnavailable'), { tone: 'error', icon: 'error' });
+      });
+    },
+    [pendingPlayVerse, playAyah, playFrom, toast, t],
   );
 
   /**
@@ -238,6 +283,8 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
           bookmarkedKeys={bookmarks.bookmarkedKeys}
           notedKeys={notedKeys}
           playingVerseKey={audio.currentTrack?.verseKey ?? null}
+          activeWordPosition={activeWord}
+          onWordPress={setSelectedWord}
           showTafsirAction={tafsirEnabled && preferences.tafsirId !== null}
           isFetchingNextPage={versesQuery.isFetchingNextPage}
           hasNextPage={versesQuery.hasNextPage}
@@ -282,6 +329,14 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
         }}
         wordByWordAvailable
       />
+
+      <PlayScopeSheet
+        visible={pendingPlayVerse !== null}
+        onClose={() => setPendingPlayVerse(null)}
+        onSelect={handlePlayScope}
+      />
+
+      <WordMeaningSheet word={selectedWord} onClose={() => setSelectedWord(null)} />
 
       <TafsirSheet
         verse={tafsirVerse}

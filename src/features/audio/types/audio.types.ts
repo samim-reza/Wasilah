@@ -6,6 +6,14 @@ export interface AudioTrack {
   url: string;
   chapterId: number;
   verseNumber: number;
+  /**
+   * Word-level timings, when the reciter publishes them.
+   *
+   * Carried on the track rather than fetched separately: they arrive with the
+   * recitation response anyway, and the word highlight needs them at exactly
+   * the moment the track is playing.
+   */
+  segments: number[][] | null;
 }
 
 export type RepeatMode =
