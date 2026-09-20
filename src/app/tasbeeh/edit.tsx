@@ -7,7 +7,7 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { useTasbeeh } from '@/features/tasbeeh/hooks/useTasbeeh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { confirm } from '@/lib/ui/confirm';
 import { useTheme } from '@/theme/useTheme';
 
 /** Only digits, and empty parses to zero rather than NaN. */
@@ -104,23 +105,20 @@ export default function TasbeehEditScreen() {
             <Button
               label={t('common.delete')}
               variant="danger"
-              onPress={() =>
-                Alert.alert(
-                  t('tasbeeh.deleteTitle'),
-                  t('tasbeeh.deleteBody', { name: existing.name }),
-                  [
-                    { text: t('common.cancel'), style: 'cancel' },
-                    {
-                      text: t('common.delete'),
-                      style: 'destructive',
-                      onPress: () => {
-                        remove(existing.id);
-                        router.back();
-                      },
-                    },
-                  ],
-                )
-              }
+              onPress={() => {
+                void (async () => {
+                  const confirmed = await confirm({
+                    title: t('tasbeeh.deleteTitle'),
+                    message: t('tasbeeh.deleteBody', { name: existing.name }),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
+                    destructive: true,
+                  });
+                  if (!confirmed) return;
+                  remove(existing.id);
+                  router.back();
+                })();
+              }}
             />
           )}
         </View>

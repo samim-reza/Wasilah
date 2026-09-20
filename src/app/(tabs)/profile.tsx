@@ -6,7 +6,7 @@
  */
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,7 @@ import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/features/auth/hooks/AuthProvider';
 import { useHabitState } from '@/features/streak/hooks/useHabitState';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { confirm } from '@/lib/ui/confirm';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -23,10 +24,16 @@ export default function ProfileScreen() {
   const habit = useHabitState();
 
   const handleSignOut = () => {
-    Alert.alert(t('profile.signOutConfirm'), t('profile.signOutBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('profile.signOut'), style: 'destructive', onPress: () => void signOut() },
-    ]);
+    void (async () => {
+      const confirmed = await confirm({
+        title: t('profile.signOutConfirm'),
+        message: t('profile.signOutBody'),
+        confirmLabel: t('profile.signOut'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (confirmed) await signOut();
+    })();
   };
 
   const version = Constants.expoConfig?.version ?? '1.0.0';

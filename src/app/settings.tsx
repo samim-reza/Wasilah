@@ -5,7 +5,7 @@
  * lives in. Privacy toggles are opt-in and default to off.
  */
 import { router } from 'expo-router';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -18,6 +18,7 @@ import { useReaderPreferences } from '@/features/reader/hooks/useReaderPreferenc
 import { useAppPreferences } from '@/features/settings/hooks/useAppPreferences';
 import { localeNames, supportedLocales, type Locale } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { confirm } from '@/lib/ui/confirm';
 import { useTheme } from '@/theme/useTheme';
 import type { ThemePreference } from '@/theme/types';
 
@@ -35,14 +36,16 @@ export default function SettingsScreen() {
   ];
 
   const handleDeleteAccount = () => {
-    Alert.alert(t('settings.deleteAccount'), t('settings.deleteAccountBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: () => void appPreferences.deleteAccount(),
-      },
-    ]);
+    void (async () => {
+      const confirmed = await confirm({
+        title: t('settings.deleteAccount'),
+        message: t('settings.deleteAccountBody'),
+        confirmLabel: t('common.delete'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (confirmed) await appPreferences.deleteAccount();
+    })();
   };
 
   return (

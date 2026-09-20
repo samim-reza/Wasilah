@@ -7,7 +7,7 @@
  * would be the wrong trade.
  */
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -19,17 +19,22 @@ import { useTasbeeh } from '@/features/tasbeeh/hooks/useTasbeeh';
 import { deriveProgress } from '@/features/tasbeeh/utils/tasbeehProgress';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { confirm } from '@/lib/ui/confirm';
 
 export default function TasbeehListScreen() {
   const { t } = useTranslation();
   const { today } = useLocalDate();
   const { list, isLoading, remove } = useTasbeeh();
 
-  const confirmRemove = (id: string, name: string) => {
-    Alert.alert(t('tasbeeh.deleteTitle'), t('tasbeeh.deleteBody', { name }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: () => remove(id) },
-    ]);
+  const confirmRemove = async (id: string, name: string) => {
+    const confirmed = await confirm({
+      title: t('tasbeeh.deleteTitle'),
+      message: t('tasbeeh.deleteBody', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (confirmed) remove(id);
   };
 
   return (
@@ -87,7 +92,7 @@ export default function TasbeehListScreen() {
                     name="trash"
                     size={18}
                     color="danger"
-                    onPress={() => confirmRemove(entry.id, entry.name)}
+                    onPress={() => void confirmRemove(entry.id, entry.name)}
                     accessibilityLabel={t('common.delete')}
                   />
                 </Card>

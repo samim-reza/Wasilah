@@ -30,7 +30,7 @@ import type * as ExpoNotifications from 'expo-notifications';
 export type NotificationsModule = typeof ExpoNotifications;
 
 /** Why notifications are unavailable, when they are. */
-export type NotificationsUnavailableReason = 'expo_go_android' | 'load_failed';
+export type NotificationsUnavailableReason = 'expo_go_android' | 'web' | 'load_failed';
 
 export interface NotificationsAvailability {
   available: boolean;
@@ -43,8 +43,18 @@ export interface NotificationsAvailability {
  * Expo Go on Android cannot — not even for local notifications, because the
  * crash happens at import. iOS Expo Go only warns, so local notifications there
  * still work.
+ *
+ * The web cannot either. The module imports cleanly there, which is the trap:
+ * it is each METHOD that throws, one at a time and asynchronously, so the
+ * failure surfaces as unhandled promise rejections in the console rather than
+ * as a missing feature. `getLastNotificationResponse` rejecting during startup
+ * was doing exactly that. Web users get email reminders instead, which is why
+ * refusing here costs them nothing.
  */
 export function getNotificationsAvailability(): NotificationsAvailability {
+  if (Platform.OS === 'web') {
+    return { available: false, reason: 'web' };
+  }
   if (isRunningInExpoGo() && Platform.OS === 'android') {
     return { available: false, reason: 'expo_go_android' };
   }
