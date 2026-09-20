@@ -16,6 +16,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
 import { isDuaCatalogueReady } from '@/features/duas/data/duaCatalogue';
+import { useEmailReminders } from '@/features/notifications/hooks/useEmailReminders';
 import { TimePickerRow } from '@/features/reminders/components/TimePickerRow';
 import { useReminderSettings } from '@/features/reminders/hooks/useReminderSettings';
 import { formatTimeForDisplay } from '@/lib/datetime/timeOfDay';
@@ -24,6 +25,7 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 export default function NotificationSettingsScreen() {
   const { t, locale } = useTranslation();
   const settings = useReminderSettings();
+  const email = useEmailReminders();
 
   const maxPerDayOptions = [
     { value: '1', label: '1' },
@@ -103,6 +105,20 @@ export default function NotificationSettingsScreen() {
               onValueChange={(value) => void settings.update({ prayerRemindersEnabled: value })}
               disabled={!settings.permissionGranted || !settings.notificationsSupported}
             />
+            {/*
+              Only offered to a signed-in user: there is no address to send
+              to otherwise. Hidden rather than disabled, because a switch you
+              cannot explain is worse than one that is not there.
+            */}
+            {email.isAvailable && (
+              <Switch
+                label={t('reminders.emailReminders')}
+                hint={t('reminders.emailRemindersBody')}
+                value={email.enabled}
+                onValueChange={(value) => void email.setEnabled(value)}
+                disabled={email.isLoading}
+              />
+            )}
             <Switch
               label={t('reminders.weatherReminders')}
               hint={t('weather.body')}

@@ -310,6 +310,8 @@ export const en = {
     goalReminderBody: 'When you have started but not finished your goal.',
     prayerReminders: 'Prayer reminders',
     weatherReminders: 'Weather reminders',
+    emailReminders: 'Email reminders',
+    emailRemindersBody: 'A nudge by email when you have not read. Works on the web, where notifications cannot.',
     duas: 'Duas',
     duaReminders: 'Occasion duas',
     duaRemindersBody: 'A dua when it rains, on a new moon, or on a Friday.',

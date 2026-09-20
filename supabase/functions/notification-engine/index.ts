@@ -28,6 +28,7 @@
 import { createAdminClient } from '../_shared/supabaseAdmin.ts';
 import { errorResponse, handlePreflight, jsonResponse } from '../_shared/cors.ts';
 import { sendPushMessages, type PushMessage } from '../_shared/expoPush.ts';
+import { sendEmails, type EmailMessage } from '../_shared/email.ts';
 
 /**
  * How long a device must have been silent before the server steps in.
@@ -255,11 +256,112 @@ Deno.serve(async (request: Request): Promise<Response> => {
       .in('token', pushResult.unregisteredTokens);
   }
 
+  const emailResult = await sendReminderEmails(supabase);
+
   return jsonResponse({
     candidates: data?.length ?? 0,
     skipped,
     sent: pushResult.sent,
     failed: pushResult.failed,
     invalidated: pushResult.unregisteredTokens.length,
+    email: emailResult,
   });
 });
+
+/**
+ * The email pass, for users the push pass cannot reach.
+ *
+ * Driven by `notification_preferences.email_enabled` rather than by
+ * `push_tokens`, which is the whole point: a web user has no push token and
+ * would never appear in the query above, so without this they get no reminder
+ * at all.
+ *
+ * Deliberately separate rather than folded into the push loop. The two have
+ * different candidate sets, different failure modes and different costs, and
+ * a shared loop would have to branch on all three.
+ */
+async function sendReminderEmails(
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<Record<string, unknown>> {
+  // Two queries joined in code rather than one PostgREST embed. There is no
+  // foreign key between these tables — each references auth.users separately,
+  // and PostgREST cannot infer a relationship through that. An `!inner` embed
+  // here fails at request time, which is exactly the bug the push pass above
+  // still has.
+  const { data: optedIn, error } = await supabase
+    .from('notification_preferences')
+    .select('user_id')
+    .eq('email_enabled', true)
+    .limit(MAX_USERS_PER_RUN);
+
+  if (error) {
+    console.error('email candidate query failed', error.message);
+    return { sent: 0, failed: 0, provider: 'none', error: error.message };
+  }
+
+  const userIds = (optedIn ?? []).map((row) => (row as unknown as { user_id: string }).user_id);
+  if (userIds.length === 0) return { sent: 0, failed: 0, provider: 'none' };
+
+  const { data: reminderRows } = await supabase
+    .from('reminder_preferences')
+    .select('user_id, daily_reminder_enabled')
+    .in('user_id', userIds);
+
+  const wantsDaily = new Set(
+    (reminderRows ?? [])
+      .filter((row) => (row as unknown as { daily_reminder_enabled: boolean }).daily_reminder_enabled)
+      .map((row) => (row as unknown as { user_id: string }).user_id),
+  );
+
+  const candidates = userIds.filter((id) => wantsDaily.has(id)).map((user_id) => ({ user_id }));
+
+  if (candidates.length === 0) return { sent: 0, failed: 0, provider: 'none' };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const messages: EmailMessage[] = [];
+  const historyRows: Record<string, unknown>[] = [];
+
+  for (const row of candidates) {
+    const userId = (row as unknown as { user_id: string }).user_id;
+
+    // The address lives in auth.users, which PostgREST cannot join, so it is
+    // fetched per user. The candidate set is small enough for that to be
+    // cheaper than maintaining a copy of the address in a public table —
+    // and a copy would be one more place an email address can go stale.
+    const { data: user } = await supabase.auth.admin.getUserById(userId);
+    const address = user?.user?.email;
+    if (!address) continue;
+
+    messages.push({
+      to: address,
+      subject: 'One ayah today',
+      text:
+        'You have not read yet today.\n\n' +
+        'One ayah is enough to keep your streak.\n\n' +
+        'Open Wasilah: https://mywasilah.com\n\n' +
+        'To stop these emails, turn off email reminders in the app settings.',
+    });
+
+    historyRows.push({
+      user_id: userId,
+      category: 'daily_reminder',
+      local_date: today,
+      route: '/(tabs)/home',
+      // Shares the partial unique index with the push pass, so a user who
+      // gets a push cannot also be emailed for the same day.
+      dedupe_key: `daily_reminder:${today}`,
+    });
+  }
+
+  const result = await sendEmails(messages);
+
+  if (historyRows.length > 0 && result.sent > 0) {
+    const { error: historyError } = await supabase
+      .from('notification_history')
+      .upsert(historyRows, { onConflict: 'user_id,local_date,dedupe_key', ignoreDuplicates: true });
+
+    if (historyError) console.error('email history insert failed', historyError.message);
+  }
+
+  return { ...result, candidates: candidates.length };
+}

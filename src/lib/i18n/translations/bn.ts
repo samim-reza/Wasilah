@@ -308,6 +308,8 @@ export const bn: Translation = {
     goalReminderBody: 'শুরু করেছেন কিন্তু লক্ষ্য শেষ করেননি, এমন সময়ে।',
     prayerReminders: 'নামাজভিত্তিক রিমাইন্ডার',
     weatherReminders: 'আবহাওয়াভিত্তিক রিমাইন্ডার',
+    emailReminders: 'ইমেইল রিমাইন্ডার',
+    emailRemindersBody: 'না পড়লে ইমেইলে মনে করিয়ে দেওয়া হবে। ওয়েবে কাজ করে, যেখানে নোটিফিকেশন সম্ভব নয়।',
     duas: 'দোয়া',
     duaReminders: 'উপলক্ষভিত্তিক দোয়া',
     duaRemindersBody: 'বৃষ্টি, নতুন চাঁদ বা শুক্রবারে একটি দোয়া।',

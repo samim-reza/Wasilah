@@ -115,6 +115,8 @@ export type TasbeehRow = {
 export type NotificationPreferencesRow = {
   user_id: string;
   push_enabled: boolean;
+  /** Opt-in for reminders by email. The only channel the web app has. */
+  email_enabled: boolean;
   disabled_categories: NotificationCategory[];
   sound_enabled: boolean;
   created_at: string;
