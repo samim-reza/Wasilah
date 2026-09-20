@@ -136,14 +136,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   },
 
-  // No web target. Wasilah ships to Android and iOS, and the features that
-  // matter here — recitation audio, local notifications, secure session
-  // storage — either behave differently or not at all in a browser, so a web
-  // build would give a misleading impression of the app rather than a useful
-  // preview. Declaring the target without installing `@expo/metro-runtime` and
-  // `react-native-web` also made the dev server attempt a web prerender and
-  // fail on every start. Add those two packages and restore this block if web
-  // ever becomes a real target.
+  // Web IS a target now, serving mywasilah.com and the admin panel at /admin.
+  //
+  // The caveat that removed it originally still stands and is not a bug: local
+  // notifications, background recitation and keychain-backed session storage
+  // do not exist in a browser. The web build is therefore the reader, search,
+  // bookmarks and progress — the habit engine's reminders stay native-only,
+  // and web users are offered email instead. Platform variants (`*.web.ts`)
+  // carry the differences so no `Platform.OS` checks leak into shared code.
+  web: {
+    output: 'static',
+    bundler: 'metro',
+  },
 
   plugins: [
     'expo-router',

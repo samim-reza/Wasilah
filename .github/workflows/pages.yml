@@ -1,12 +1,22 @@
-# Publishes the public pages in `site/` to GitHub Pages.
+# Publishes the web app and the public pages to mywasilah.com via GitHub Pages.
 #
-# Google Play requires a privacy policy at a URL it can load, and the app's
-# About screen links to both pages, so these must stay reachable. Everything in
-# `site/` is plain HTML and CSS with no build step — there is nothing that can
-# fail to compile, which is the point.
+# Two things ship from here, and the difference matters:
 #
-# Setup, once: Settings → Pages → Source → "GitHub Actions". The repository must
-# be public for Pages to serve on a free plan.
+#   • the web build of the app, which serves `/` and every in-app route;
+#   • `site/privacy.html` and `site/terms.html`, which are plain HTML with no
+#     build step. Google Play loads the privacy URL during review and the
+#     About screen links to both, so they must stay reachable even if the app
+#     build ever breaks. They are copied over the export last, so a change to
+#     the app can never take them down.
+#
+# Setup, once: Settings → Pages → Source → "GitHub Actions", and set the custom
+# domain to mywasilah.com. The repository must be public for Pages on a free
+# plan.
+#
+# The build needs the two EXPO_PUBLIC_* Supabase values. They are inlined into
+# the bundle and are public by design — the anon key is safe to expose and is
+# protected by row level security — but they still live in repository secrets
+# rather than the repo, so the same values are not duplicated in two places.
 name: Publish site
 
 on:
@@ -14,8 +24,12 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'src/**'
+      - 'assets/**'
+      - 'app.config.ts'
+      - 'package.json'
       - '.github/workflows/pages.yml'
-  # So the pages can be republished without an unrelated commit.
+  # So the site can be republished without an unrelated commit.
   workflow_dispatch:
 
 permissions:
@@ -36,9 +50,38 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The theme CSS is generated from the design tokens and is not committed.
+      - run: npm run theme:build
+
+      - name: Build the web app
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_APP_ENV: production
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Overlay the static pages
+        # Copied after the export, and deliberately not including
+        # site/index.html — the app owns `/`. CNAME must be present in the
+        # published artifact or Pages drops the custom domain on every deploy.
+        run: |
+          cp site/privacy.html site/terms.html site/style.css dist/
+          cp site/CNAME dist/
+          # Pages serves 404.html for unknown paths; pointing it at the app's
+          # entry lets client-side routes survive a hard refresh.
+          cp dist/index.html dist/404.html
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
