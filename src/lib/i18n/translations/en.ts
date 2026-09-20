@@ -33,6 +33,7 @@ export const en = {
   },
 
   tabs: {
+    tasbeeh: 'Tasbeeh',
     home: 'Home',
     quran: 'Quran',
     progress: 'Progress',
@@ -286,13 +287,10 @@ export const en = {
     notFound: 'This tasbeeh no longer exists.',
     name: 'Name',
     namePlaceholder: 'Subhanallah',
-    arabic: 'Arabic (optional)',
-    arabicPlaceholder: 'سُبْحَانَ ٱللَّٰهِ',
-    roundSize: 'Count per round',
+    totalCount: 'Total: {{count}}',
     dailyTarget: 'Daily target',
     targetHint: 'Set the daily target to 0 to hide the progress ring.',
     rounds: 'Rounds: {{count}}',
-    countOfRound: '{{count}} / {{size}}',
     rowSummary: 'Count: {{count}} · Rounds: {{rounds}}',
     rowTarget: 'Today: {{today}} / {{target}}',
     todayOfTarget: 'Today: {{today}} / {{target}}',

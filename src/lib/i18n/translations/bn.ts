@@ -32,6 +32,7 @@ export const bn: Translation = {
   },
 
   tabs: {
+    tasbeeh: 'তাসবিহ',
     home: 'হোম',
     quran: 'কুরআন',
     progress: 'অগ্রগতি',
@@ -284,13 +285,10 @@ export const bn: Translation = {
     notFound: 'এই তাসবিহটি আর নেই।',
     name: 'নাম',
     namePlaceholder: 'সুবহানাল্লাহ',
-    arabic: 'আরবি (ঐচ্ছিক)',
-    arabicPlaceholder: 'سُبْحَانَ ٱللَّٰهِ',
-    roundSize: 'প্রতি রাউন্ডে গণনা',
+    totalCount: 'মোট: {{count}}',
     dailyTarget: 'দৈনিক লক্ষ্য',
     targetHint: 'প্রগ্রেস রিং লুকাতে দৈনিক লক্ষ্য ০ দিন।',
     rounds: 'রাউন্ড: {{count}}',
-    countOfRound: '{{count}} / {{size}}',
     rowSummary: 'গণনা: {{count}} · রাউন্ড: {{rounds}}',
     rowTarget: 'আজ: {{today}} / {{target}}',
     todayOfTarget: 'আজ: {{today}} / {{target}}',

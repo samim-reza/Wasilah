@@ -10,12 +10,17 @@ import type { LocalDate } from '@/lib/datetime/localDate';
 
 export interface Tasbeeh {
   id: string;
+  /**
+   * What the counter is called, and the only text shown for it.
+   *
+   * Arabic is fine here — a name of "سُبْحَانَ ٱللَّٰهِ" renders as exactly that.
+   * A separate Arabic field asked the same question twice.
+   */
   name: string;
-  /** The dhikr shown large on the counter. Empty when the user did not add one. */
-  arabic: string;
-  /** How many before a round completes. 33 and 100 are the usual choices. */
-  roundSize: number;
-  /** Zero means no daily target, which hides the progress ring entirely. */
+  /**
+   * Target per day, and the round size: a round is a completed target.
+   * Zero means no target, which hides the progress ring entirely.
+   */
   dailyTarget: number;
   totalCount: number;
   /** Today's tally, paired with the date it belongs to. */
@@ -28,8 +33,8 @@ export interface Tasbeeh {
 export interface TasbeehProgress {
   /** Completed rounds, derived from the total. */
   rounds: number;
-  /** Position within the current round, 1-based while counting. */
-  countInRound: number;
+  /** Lifetime total, shown beneath the day's figure. */
+  totalCount: number;
   /** Today's count, already zeroed when the stored date is not today. */
   todayCount: number;
   /** 0–1 toward the daily target; 0 when no target is set. */
@@ -38,7 +43,5 @@ export interface TasbeehProgress {
 
 export interface TasbeehDraft {
   name: string;
-  arabic: string;
-  roundSize: number;
   dailyTarget: number;
 }

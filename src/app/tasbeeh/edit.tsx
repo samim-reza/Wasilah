@@ -34,21 +34,14 @@ export default function TasbeehEditScreen() {
   const existing = id ? find(id) : undefined;
 
   const [name, setName] = useState(existing?.name ?? '');
-  const [arabic, setArabic] = useState(existing?.arabic ?? '');
-  const [roundSize, setRoundSize] = useState(String(existing?.roundSize ?? 33));
-  const [dailyTarget, setDailyTarget] = useState(String(existing?.dailyTarget ?? 0));
+  const [dailyTarget, setDailyTarget] = useState(String(existing?.dailyTarget ?? 33));
 
   const canSave = name.trim().length > 0;
 
   const onSave = () => {
     if (!canSave) return;
 
-    const draft = {
-      name,
-      arabic,
-      roundSize: toNumber(roundSize, 33),
-      dailyTarget: toNumber(dailyTarget, 0),
-    };
+    const draft = { name, dailyTarget: toNumber(dailyTarget, 33) };
 
     if (existing) edit(existing.id, draft);
     else create(draft);
@@ -85,50 +78,16 @@ export default function TasbeehEditScreen() {
 
           <View className="gap-1">
             <Text variant="caption" tone="subtle">
-              {t('tasbeeh.arabic')}
+              {t('tasbeeh.dailyTarget')}
             </Text>
             <TextInput
-              value={arabic}
-              onChangeText={setArabic}
-              placeholder={t('tasbeeh.arabicPlaceholder')}
-              placeholderTextColor={colors.textSubtle}
-              multiline
-              // The field holds Arabic, so it must lay out right-to-left even
-              // though the surrounding interface does not.
-              style={[inputStyle, { writingDirection: 'rtl', textAlign: 'right', minHeight: 64 }]}
+              value={dailyTarget}
+              onChangeText={setDailyTarget}
+              keyboardType="number-pad"
               className="rounded-xl border px-3 py-3"
-              accessibilityLabel={t('tasbeeh.arabic')}
+              style={inputStyle}
+              accessibilityLabel={t('tasbeeh.dailyTarget')}
             />
-          </View>
-
-          <View className="flex-row gap-3">
-            <View className="flex-1 gap-1">
-              <Text variant="caption" tone="subtle">
-                {t('tasbeeh.roundSize')}
-              </Text>
-              <TextInput
-                value={roundSize}
-                onChangeText={setRoundSize}
-                keyboardType="number-pad"
-                className="rounded-xl border px-3 py-3"
-                style={inputStyle}
-                accessibilityLabel={t('tasbeeh.roundSize')}
-              />
-            </View>
-
-            <View className="flex-1 gap-1">
-              <Text variant="caption" tone="subtle">
-                {t('tasbeeh.dailyTarget')}
-              </Text>
-              <TextInput
-                value={dailyTarget}
-                onChangeText={setDailyTarget}
-                keyboardType="number-pad"
-                className="rounded-xl border px-3 py-3"
-                style={inputStyle}
-                accessibilityLabel={t('tasbeeh.dailyTarget')}
-              />
-            </View>
           </View>
 
           <Text variant="caption" tone="muted">

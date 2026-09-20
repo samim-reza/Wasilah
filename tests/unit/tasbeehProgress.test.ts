@@ -13,9 +13,7 @@ function tasbeeh(overrides: Partial<Tasbeeh> = {}): Tasbeeh {
   return {
     id: 't1',
     name: 'Kalima',
-    arabic: '',
-    roundSize: 100,
-    dailyTarget: 0,
+    dailyTarget: 100,
     totalCount: 0,
     todayCount: 0,
     todayDate: TODAY,
@@ -25,36 +23,30 @@ function tasbeeh(overrides: Partial<Tasbeeh> = {}): Tasbeeh {
 }
 
 describe('deriveProgress', () => {
-  it('starts at zero rounds and zero within the round', () => {
-    expect(deriveProgress(tasbeeh(), TODAY)).toMatchObject({ rounds: 0, countInRound: 0 });
+  it('starts at zero', () => {
+    expect(deriveProgress(tasbeeh(), TODAY)).toMatchObject({ rounds: 0, totalCount: 0 });
   });
 
-  it('counts within the first round', () => {
+  it('reports the lifetime total', () => {
     expect(deriveProgress(tasbeeh({ totalCount: 42 }), TODAY)).toMatchObject({
       rounds: 0,
-      countInRound: 42,
+      totalCount: 42,
     });
   });
 
-  it('shows the completing bead as the full round, not as zero of the next', () => {
-    // A physical tasbeeh reads 100/100 on the hundredth bead.
-    expect(deriveProgress(tasbeeh({ totalCount: 100 }), TODAY)).toMatchObject({
-      rounds: 0,
-      countInRound: 100,
-    });
-  });
-
-  it('rolls into the next round on the following press', () => {
-    expect(deriveProgress(tasbeeh({ totalCount: 101 }), TODAY)).toMatchObject({
-      rounds: 1,
-      countInRound: 1,
-    });
+  it('counts a round once the target is completed', () => {
+    expect(deriveProgress(tasbeeh({ totalCount: 100 }), TODAY).rounds).toBe(1);
+    expect(deriveProgress(tasbeeh({ totalCount: 99 }), TODAY).rounds).toBe(0);
   });
 
   it('matches the figures from a large running total', () => {
-    // 180 complete rounds of 1000, plus one.
-    const progress = deriveProgress(tasbeeh({ roundSize: 1000, totalCount: 180_001 }), TODAY);
-    expect(progress).toMatchObject({ rounds: 180, countInRound: 1 });
+    // 180 complete targets of 1000, plus one.
+    const progress = deriveProgress(tasbeeh({ dailyTarget: 1000, totalCount: 180_001 }), TODAY);
+    expect(progress).toMatchObject({ rounds: 180, totalCount: 180_001 });
+  });
+
+  it('counts no rounds when there is no target, rather than dividing by zero', () => {
+    expect(deriveProgress(tasbeeh({ dailyTarget: 0, totalCount: 500 }), TODAY).rounds).toBe(0);
   });
 
   it("treats a previous day's tally as zero without needing a write", () => {
@@ -63,7 +55,7 @@ describe('deriveProgress', () => {
   });
 
   it('reports no daily progress when no target is set', () => {
-    expect(deriveProgress(tasbeeh({ todayCount: 50 }), TODAY).dailyProgress).toBe(0);
+    expect(deriveProgress(tasbeeh({ dailyTarget: 0, todayCount: 50 }), TODAY).dailyProgress).toBe(0);
   });
 
   it('caps daily progress at fully complete', () => {
@@ -71,8 +63,8 @@ describe('deriveProgress', () => {
     expect(deriveProgress(over, TODAY).dailyProgress).toBe(1);
   });
 
-  it('survives a round size of zero rather than dividing by it', () => {
-    expect(() => deriveProgress(tasbeeh({ roundSize: 0, totalCount: 5 }), TODAY)).not.toThrow();
+  it('survives a target of zero rather than dividing by it', () => {
+    expect(() => deriveProgress(tasbeeh({ dailyTarget: 0, totalCount: 5 }), TODAY)).not.toThrow();
   });
 });
 
@@ -112,7 +104,7 @@ describe('reset', () => {
   });
 
   it('keeps the counter itself, not just its numbers', () => {
-    const next = reset(tasbeeh({ name: 'Subhanallah', roundSize: 33 }), TODAY);
-    expect(next).toMatchObject({ name: 'Subhanallah', roundSize: 33 });
+    const next = reset(tasbeeh({ name: 'سُبْحَانَ ٱللَّٰهِ', dailyTarget: 33 }), TODAY);
+    expect(next).toMatchObject({ name: 'سُبْحَانَ ٱللَّٰهِ', dailyTarget: 33 });
   });
 });

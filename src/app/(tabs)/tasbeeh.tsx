@@ -58,10 +58,10 @@ export default function TasbeehListScreen() {
                   <View className="flex-1 gap-1">
                     <Text className="font-semibold">{entry.name}</Text>
 
-                    {/* The three numbers that answer "where am I?" at a glance. */}
+                    {/* The numbers that answer "where am I?" at a glance. */}
                     <Text variant="caption" tone="muted">
                       {t('tasbeeh.rowSummary', {
-                        count: entry.totalCount,
+                        count: progress.totalCount,
                         rounds: progress.rounds,
                       })}
                       {entry.dailyTarget > 0

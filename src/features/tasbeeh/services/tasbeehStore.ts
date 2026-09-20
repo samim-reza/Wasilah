@@ -26,17 +26,16 @@ import { DEFAULT_TASBEEH_NAME } from '../utils/tasbeehProgress';
 /**
  * The counter every new user starts with.
  *
- * The Kalima, at 100 a round: a starting point that needs no setup, so the
- * feature is usable the first time it is opened rather than presenting an
- * empty list and a form.
+ * The Kalima, with a daily target of 100: a starting point that needs no
+ * setup, so the feature is usable the first time it is opened rather than
+ * presenting an empty list and a form. The name is the display, so a user who
+ * renames it to Arabic sees Arabic.
  */
 export function defaultTasbeeh(): Tasbeeh {
   return {
     id: 'default-kalima',
     name: DEFAULT_TASBEEH_NAME,
-    arabic: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ مُحَمَّدٌ رَسُولُ ٱللَّٰهِ',
-    roundSize: 100,
-    dailyTarget: 0,
+    dailyTarget: 100,
     totalCount: 0,
     todayCount: 0,
     todayDate: null,
@@ -62,8 +61,6 @@ function toTasbeeh(row: TasbeehRow): Tasbeeh {
   return {
     id: row.id,
     name: row.name,
-    arabic: row.arabic ?? '',
-    roundSize: row.round_size,
     dailyTarget: row.daily_target,
     totalCount: Number(row.total_count),
     todayCount: row.today_count,
@@ -94,8 +91,6 @@ export async function upsertRemote(userId: string, tasbeeh: Tasbeeh): Promise<vo
       id: tasbeeh.id,
       user_id: userId,
       name: tasbeeh.name,
-      arabic: tasbeeh.arabic || null,
-      round_size: tasbeeh.roundSize,
       daily_target: tasbeeh.dailyTarget,
       total_count: tasbeeh.totalCount,
       today_count: tasbeeh.todayCount,
@@ -145,8 +140,6 @@ export function fromDraft(draft: TasbeehDraft, position: number): Tasbeeh {
     // `crypto.randomUUID` exists in Hermes and in every browser this ships to.
     id: globalThis.crypto?.randomUUID?.() ?? `tasbeeh-${Date.now()}`,
     name: draft.name.trim(),
-    arabic: draft.arabic.trim(),
-    roundSize: Math.max(1, draft.roundSize),
     dailyTarget: Math.max(0, draft.dailyTarget),
     totalCount: 0,
     todayCount: 0,

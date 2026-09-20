@@ -81,7 +81,6 @@ function RootNavigator() {
         <Stack.Screen name="reader-reciters" />
         <Stack.Screen name="reader-tafsirs" />
         <Stack.Screen name="prayer-times" />
-        <Stack.Screen name="tasbeeh/index" />
         <Stack.Screen name="tasbeeh/[tasbeehId]" />
         <Stack.Screen name="tasbeeh/edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="about" />

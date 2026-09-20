@@ -123,8 +123,6 @@ export function useTasbeeh(): UseTasbeehResult {
       mutate(id, (entry) => ({
         ...entry,
         name: draft.name.trim(),
-        arabic: draft.arabic.trim(),
-        roundSize: Math.max(1, draft.roundSize),
         dailyTarget: Math.max(0, draft.dailyTarget),
       })),
     [mutate],

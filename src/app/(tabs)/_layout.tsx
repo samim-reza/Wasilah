@@ -24,6 +24,7 @@ const tabs: TabConfig[] = [
   { name: 'home', labelKey: 'tabs.home', icon: 'home', activeIcon: 'homeActive' },
   { name: 'quran', labelKey: 'tabs.quran', icon: 'quran', activeIcon: 'quranActive' },
   { name: 'progress', labelKey: 'tabs.progress', icon: 'progress', activeIcon: 'progressActive' },
+  { name: 'tasbeeh', labelKey: 'tabs.tasbeeh', icon: 'streakOutline', activeIcon: 'streak' },
   { name: 'profile', labelKey: 'tabs.profile', icon: 'profile', activeIcon: 'profileActive' },
 ];
 

@@ -12,33 +12,25 @@ import type { Tasbeeh, TasbeehProgress } from '../types/tasbeeh.types';
 export const DEFAULT_TASBEEH_NAME = 'Kalima';
 
 /**
- * Rounds and position, derived from the total.
+ * What the counter shows, derived from what is stored.
  *
- * The position is 1-based while counting and shows the full round size on the
- * bead that completes it: at a round size of 100, the hundredth press reads
- * "100 / 100" rather than "0 / 100" with the round already banked. That is
- * what a physical tasbeeh does, and reading 0 at the moment of completion is
- * the kind of detail that makes a counter feel wrong.
+ * Rounds are completed daily targets rather than a separate round size: the
+ * two were the same number asked twice, and one of them always drifted.
  */
 export function deriveProgress(tasbeeh: Tasbeeh, today: LocalDate): TasbeehProgress {
-  const size = Math.max(1, tasbeeh.roundSize);
   const total = Math.max(0, tasbeeh.totalCount);
-
-  const remainder = total % size;
-  const completedRounds = Math.floor(total / size);
-
-  // A total that lands exactly on a round boundary belongs to the round it
-  // just finished, not to the next one at position zero.
-  const rounds = remainder === 0 && total > 0 ? completedRounds - 1 : completedRounds;
-  const countInRound = remainder === 0 && total > 0 ? size : remainder;
 
   // A stored count from a previous day reads as zero without needing a write.
   const todayCount = tasbeeh.todayDate === today ? tasbeeh.todayCount : 0;
 
-  const dailyProgress =
-    tasbeeh.dailyTarget > 0 ? Math.min(1, todayCount / tasbeeh.dailyTarget) : 0;
+  const target = Math.max(0, tasbeeh.dailyTarget);
 
-  return { rounds, countInRound, todayCount, dailyProgress };
+  // A round is a completed daily target. With no target there is nothing to
+  // complete, so there are no rounds to count rather than a division by zero.
+  const rounds = target > 0 ? Math.floor(total / target) : 0;
+  const dailyProgress = target > 0 ? Math.min(1, todayCount / target) : 0;
+
+  return { rounds, totalCount: total, todayCount, dailyProgress };
 }
 
 /** The tasbeeh after one press, with the daily tally rolled over if needed. */

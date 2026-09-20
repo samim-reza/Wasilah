@@ -87,11 +87,6 @@ export default function ProfileScreen() {
           />
           <ListRow label={t('notes.title')} icon="note" onPress={() => router.push('/notes')} />
           <ListRow
-            label={t('tasbeeh.title')}
-            icon="streak"
-            onPress={() => router.push('/tasbeeh')}
-          />
-          <ListRow
             label={t('prayer.title')}
             icon="prayer"
             onPress={() => router.push('/prayer-times')}

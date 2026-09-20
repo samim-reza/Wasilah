@@ -47,7 +47,8 @@ export default function TasbeehCounterScreen() {
   const progress = deriveProgress(tasbeeh, today);
 
   const onPress = () => {
-    const willCompleteRound = progress.countInRound + 1 >= tasbeeh.roundSize;
+    const willCompleteRound =
+      tasbeeh.dailyTarget > 0 && (progress.todayCount + 1) % tasbeeh.dailyTarget === 0;
     // A round completing is the moment worth feeling, so it gets the heavier
     // notification haptic rather than the light tick every bead gets.
     void (willCompleteRound
@@ -61,16 +62,16 @@ export default function TasbeehCounterScreen() {
       <ScreenHeader title={tasbeeh.name} />
 
       <View className="flex-1 items-center justify-between px-4 pb-8">
-        <View className="items-center gap-2 pt-2">
-          {tasbeeh.arabic.length > 0 && (
-            <Text
-              className="font-arabic text-center text-content"
-              style={{ fontSize: 24, lineHeight: 24 * arabicLineHeightRatio }}
-              allowFontScaling={false}
-            >
-              {tasbeeh.arabic}
-            </Text>
-          )}
+        {/* The name is the display. It may be Arabic, so it gets the Arabic
+            face and enough leading for the diacritics. */}
+        <View className="items-center gap-2 px-4 pt-2">
+          <Text
+            className="font-arabic text-center text-content"
+            style={{ fontSize: 24, lineHeight: 24 * arabicLineHeightRatio }}
+            allowFontScaling={false}
+          >
+            {tasbeeh.name}
+          </Text>
         </View>
 
         {/* The tap target: the entire circle, not a button beside it. */}
@@ -87,14 +88,13 @@ export default function TasbeehCounterScreen() {
             strokeWidth={10}
             accessibilityLabel={t('tasbeeh.countUp')}
           >
+            {/* Today's figure is the one the ring tracks, so it is the one
+                that belongs in the middle. The lifetime total sits under it. */}
             <Text className="text-5xl font-bold text-content" allowFontScaling={false}>
-              {tasbeeh.totalCount}
+              {progress.todayCount}
             </Text>
             <Text variant="caption" tone="muted">
-              {t('tasbeeh.countOfRound', {
-                count: progress.countInRound,
-                size: tasbeeh.roundSize,
-              })}
+              {t('tasbeeh.totalCount', { count: progress.totalCount })}
             </Text>
           </ProgressRing>
         </Pressable>
