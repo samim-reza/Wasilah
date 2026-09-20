@@ -39,6 +39,14 @@ export const storageKeys = {
    * unmounted; and for a signed-in user it means a failed network write no
    * longer silently discards the change.
    */
+  /**
+   * Tasbeeh counters held on the device.
+   *
+   * Written for every user. A guest has no row to sync to, and for a
+   * signed-in user this is what lets a press register instantly and survive
+   * being offline — a counter that pauses for a round trip is unusable.
+   */
+  tasbeeh: `${prefix}.tasbeeh`,
   reminderPreferences: `${prefix}.reminders.preferences`,
   notificationPermissionAsked: `${prefix}.notifications.permissionAsked`,
   scheduledReminderIds: `${prefix}.notifications.scheduledIds`,

@@ -92,6 +92,22 @@ export type ReminderPreferencesRow = {
   updated_at: string;
 };
 
+export type TasbeehRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  arabic: string | null;
+  round_size: number;
+  daily_target: number;
+  total_count: number;
+  today_count: number;
+  /** 'YYYY-MM-DD' in the user's local time, or null before the first press. */
+  today_date: string | null;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type NotificationPreferencesRow = {
   user_id: string;
   push_enabled: boolean;
@@ -346,6 +362,7 @@ export type Database = {
         ReminderPreferencesRow,
         Pick<ReminderPreferencesRow, 'user_id'> & Partial<ReminderPreferencesRow>
       >;
+      tasbeeh: Table<TasbeehRow, Pick<TasbeehRow, 'user_id' | 'name'> & Partial<TasbeehRow>>;
       notification_preferences: Table<
         NotificationPreferencesRow,
         Pick<NotificationPreferencesRow, 'user_id'> & Partial<NotificationPreferencesRow>
