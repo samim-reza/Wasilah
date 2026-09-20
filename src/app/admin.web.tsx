@@ -13,11 +13,13 @@
  * the database refuses them. What you see here is a convenience over that,
  * never the gate.
  */
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
@@ -172,12 +174,19 @@ export default function AdminScreen() {
       <Screen edges={['top']} noPadding>
         <ScrollView contentContainerClassName="px-4 pb-10">
           <ScreenHeader title="Admin" />
-          <Card>
+          <Card className="gap-4">
             <Text tone="muted">
               {userId
                 ? 'This account is not an administrator.'
                 : 'Sign in with an administrator account to continue.'}
             </Text>
+
+            {/* The screen used to say "sign in" and then offer no way to do
+                it — the sign-in route is not linked from anywhere on the web,
+                since the app reaches it through the profile tab. */}
+            {!userId && (
+              <Button label="Sign in" onPress={() => router.push('/(auth)/login')} />
+            )}
           </Card>
         </ScrollView>
       </Screen>
