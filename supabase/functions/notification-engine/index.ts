@@ -116,16 +116,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const supabase = createAdminClient();
   const staleCutoff = new Date(Date.now() - STALE_DEVICE_HOURS * 3600_000).toISOString();
 
-  // One query for the candidate set: devices that have gone quiet, whose owners
-  // still want a daily reminder and allow push.
-  const { data, error } = await supabase
+  // Devices that have gone quiet. Their owners' preferences and streaks are
+  // fetched separately and joined in code — NOT with a PostgREST embed.
+  //
+  // This originally used `reminder_preferences!inner(...)`, which cannot work:
+  // there is no foreign key from push_tokens to those tables. Each references
+  // auth.users independently, and PostgREST will not infer a relationship
+  // through a third table. The embed failed at request time, so this whole
+  // function returned "Could not load candidates" every run — invisible for as
+  // long as it was never deployed.
+  const { data: tokenRows, error } = await supabase
     .from('push_tokens')
-    .select(
-      `user_id, token, timezone,
-       streaks!inner(current_streak),
-       reminder_preferences!inner(daily_reminder_time, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, max_notifications_per_day, daily_reminder_enabled),
-       notification_preferences!inner(push_enabled)`,
-    )
+    .select('user_id, token, timezone')
     .is('invalidated_at', null)
     .lt('last_seen_at', staleCutoff)
     .limit(MAX_USERS_PER_RUN);
@@ -134,6 +136,40 @@ Deno.serve(async (request: Request): Promise<Response> => {
     console.error('notification-engine candidate query failed', error.message);
     return errorResponse(500, 'query_failed', 'Could not load candidates.');
   }
+
+  const candidateIds = [...new Set((tokenRows ?? []).map((row) => row.user_id as string))];
+
+  const [reminderRows, notificationRows, streakRows] = await Promise.all([
+    candidateIds.length
+      ? supabase
+          .from('reminder_preferences')
+          .select(
+            'user_id, daily_reminder_time, quiet_hours_enabled, quiet_hours_start, quiet_hours_end, max_notifications_per_day, daily_reminder_enabled',
+          )
+          .in('user_id', candidateIds)
+      : Promise.resolve({ data: [] }),
+    candidateIds.length
+      ? supabase.from('notification_preferences').select('user_id, push_enabled').in('user_id', candidateIds)
+      : Promise.resolve({ data: [] }),
+    candidateIds.length
+      ? supabase.from('streaks').select('user_id, current_streak').in('user_id', candidateIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const byUser = <T extends { user_id: string }>(rows: T[] | null): Map<string, T> =>
+    new Map((rows ?? []).map((row) => [row.user_id, row]));
+
+  const remindersByUser = byUser(reminderRows.data as { user_id: string }[] | null);
+  const notificationsByUser = byUser(notificationRows.data as { user_id: string }[] | null);
+  const streaksByUser = byUser(streakRows.data as { user_id: string }[] | null);
+
+  // Shaped like the old embedded rows so the loop below is unchanged.
+  const data = (tokenRows ?? []).map((row) => ({
+    ...row,
+    reminder_preferences: remindersByUser.get(row.user_id as string),
+    notification_preferences: notificationsByUser.get(row.user_id as string),
+    streaks: streaksByUser.get(row.user_id as string),
+  }));
 
   const messages: PushMessage[] = [];
   const historyRows: Record<string, unknown>[] = [];
