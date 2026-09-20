@@ -11,6 +11,7 @@ import { useCallback } from 'react';
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { trackEvent } from '@/lib/analytics/analytics';
+import { refreshStreakWidget } from '@/features/widget/services/updateWidget';
 import { toLocalDate } from '@/lib/datetime/localDate';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { logger } from '@/lib/monitoring/logger';
@@ -98,6 +99,12 @@ export function useRecordReading() {
       }
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.habit.all });
+
+      // Redraw the home-screen widget now rather than waiting for Android's
+      // half-hourly tick — the moment that matters is right after reading.
+      // Deliberately not awaited: a widget refresh must never delay the UI,
+      // and it is a no-op for the many users who have not added one.
+      void refreshStreakWidget();
 
       // For a signed-in user the server is authoritative, so completion is read
       // back from the refreshed state rather than guessed here.

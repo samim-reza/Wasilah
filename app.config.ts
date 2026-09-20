@@ -166,6 +166,36 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-image',
     [
+      // Android-only. The plugin generates the AppWidgetProvider and its XML
+      // during prebuild, which EAS runs server-side — so no `android/`
+      // directory is committed and the managed workflow is preserved.
+      //
+      // The widget cannot run in Expo Go, which has no way to install a
+      // provider into its own manifest. That is fine: Expo Go was only ever a
+      // preview path here, and APK builds are how this app is tested.
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            // Must match STREAK_WIDGET_NAME in features/widget.
+            name: 'Streak',
+            label: 'Wasilah streak',
+            description: 'Your current reading streak',
+            minWidth: '110dp',
+            minHeight: '110dp',
+            targetCellWidth: 2,
+            targetCellHeight: 2,
+            resizeMode: 'horizontal|vertical',
+            // Half-hourly is the floor Android honours for a widget update
+            // anyway; the app also pushes an update the moment a session is
+            // recorded, so this is only the fallback for a day the app is
+            // never opened.
+            updatePeriodMillis: 1800000,
+          },
+        ],
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         image: './assets/splash-icon.png',
