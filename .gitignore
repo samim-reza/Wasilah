@@ -40,3 +40,7 @@ coverage/
 
 # Sentry
 .sentryclirc
+
+# Scratch files that may hold credentials pasted in for a one-off command.
+command.txt
+*.secret

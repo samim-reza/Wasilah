@@ -12,12 +12,13 @@
  */
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { IconButton } from '@/components/ui/IconButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
+import { CounterBead } from '@/features/tasbeeh/components/CounterBead';
 import { Text } from '@/components/ui/Text';
 import { useTasbeeh } from '@/features/tasbeeh/hooks/useTasbeeh';
 import { deriveProgress } from '@/features/tasbeeh/utils/tasbeehProgress';
@@ -74,30 +75,31 @@ export default function TasbeehCounterScreen() {
           </Text>
         </View>
 
-        {/* The tap target: the entire circle, not a button beside it. */}
-        <Pressable
-          onPress={onPress}
-          accessibilityRole="button"
+        {/* The ring tracks the daily target and sits around the bead; the
+            bead itself is the tap target, which is the whole middle of the
+            screen. */}
+        <ProgressRing
+          value={tasbeeh.dailyTarget > 0 ? progress.dailyProgress : 0}
+          size={272}
+          strokeWidth={8}
           accessibilityLabel={t('tasbeeh.countUp')}
-          accessibilityValue={{ now: tasbeeh.totalCount }}
-          className="items-center justify-center active:opacity-90"
         >
-          <ProgressRing
-            value={tasbeeh.dailyTarget > 0 ? progress.dailyProgress : 0}
-            size={260}
-            strokeWidth={10}
+          <CounterBead
+            size={232}
+            onPress={onPress}
             accessibilityLabel={t('tasbeeh.countUp')}
+            accessibilityValue={{ now: progress.todayCount }}
           >
-            {/* Today's figure is the one the ring tracks, so it is the one
-                that belongs in the middle. The lifetime total sits under it. */}
+            {/* Today's figure is what the ring tracks, so it belongs in the
+                middle. The lifetime total sits under it. */}
             <Text className="text-5xl font-bold text-content" allowFontScaling={false}>
               {progress.todayCount}
             </Text>
             <Text variant="caption" tone="muted">
               {t('tasbeeh.totalCount', { count: progress.totalCount })}
             </Text>
-          </ProgressRing>
-        </Pressable>
+          </CounterBead>
+        </ProgressRing>
 
         <View className="w-full gap-4">
           <View className="flex-row justify-between px-2">
