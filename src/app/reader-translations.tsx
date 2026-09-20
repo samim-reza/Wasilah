@@ -43,6 +43,9 @@ export default function TranslationPickerScreen() {
       // Removing the last edition would leave the reader with translation mode
       // on but nothing to show, so an empty selection turns it off instead.
       void update({
+        // Choosing by hand pins the selection, so a later language change
+        // leaves it alone.
+        translationsPinned: true,
         translationIds: next,
         showTranslation: next.length > 0,
       });

@@ -28,8 +28,8 @@ export const branding = {
    * project controls.
    */
   websiteUrl: 'https://mywasilah.com/',
-  privacyPolicyUrl: 'https://mywasilah.com/privacy.html',
-  termsUrl: 'https://mywasilah.com/terms.html',
+  privacyPolicyUrl: 'https://mywasilah.com/privacy',
+  termsUrl: 'https://mywasilah.com/terms',
 } as const;
 
 /**

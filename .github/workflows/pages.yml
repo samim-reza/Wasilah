@@ -73,8 +73,16 @@ jobs:
         # site/index.html — the app owns `/`. CNAME must be present in the
         # published artifact or Pages drops the custom domain on every deploy.
         run: |
-          cp site/privacy.html site/terms.html site/style.css dist/
+          cp site/style.css dist/
           cp site/CNAME dist/
+          # Served at /privacy and /terms. The .html copies stay so any link
+          # already in the wild — including one Google may have crawled during
+          # review — keeps resolving.
+          cp site/privacy.html dist/privacy.html
+          cp site/terms.html dist/terms.html
+          mkdir -p dist/privacy dist/terms
+          cp site/privacy.html dist/privacy/index.html
+          cp site/terms.html dist/terms/index.html
           # Pages serves 404.html for unknown paths; pointing it at the app's
           # entry lets client-side routes survive a hard refresh.
           cp dist/index.html dist/404.html

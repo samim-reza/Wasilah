@@ -9,12 +9,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { defaultRecitationId, defaultTranslationIds } from '@/config/quran';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { getLocale } from '@/lib/i18n';
 import { logger } from '@/lib/monitoring/logger';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import { supabase } from '@/lib/supabase/client';
 import type { ReadingModeValue } from '@/lib/supabase/database.types';
+import { defaultTranslationIdsFor } from '@/features/quran/utils/resolveTranslations';
 import { arabicFontSizes, translationFontSizes } from '@/theme/tokens';
 
 export interface ReaderPreferences {
@@ -29,6 +31,19 @@ export interface ReaderPreferences {
   mode: ReadingModeValue;
   playbackRate: number;
   keepScreenAwake: boolean;
+  /**
+   * True once the user has picked translations by hand.
+   *
+   * Until then the edition follows the interface language, so switching the
+   * app to Bengali switches the translation with it. `buildDefaults` only runs
+   * on a fresh install, so without this a user who installs in English and
+   * later switches language keeps reading an English translation under
+   * Bengali word-by-word glosses — which is exactly what happened.
+   *
+   * Local only: it records how the current value was arrived at, not what it
+   * is, so it does not belong in the synced preference row.
+   */
+  translationsPinned: boolean;
 }
 
 function buildDefaults(): ReaderPreferences {
@@ -47,6 +62,7 @@ function buildDefaults(): ReaderPreferences {
     mode: 'translation',
     playbackRate: 1,
     keepScreenAwake: true,
+    translationsPinned: false,
   };
 }
 
@@ -70,6 +86,7 @@ function stepThroughScale(scale: readonly number[], current: number, direction: 
 
 export function useReaderPreferences(): UseReaderPreferencesResult {
   const userId = useUserId();
+  const { locale } = useTranslation();
   const [preferences, setPreferences] = useState<ReaderPreferences>(buildDefaults);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -176,8 +193,39 @@ export function useReaderPreferences(): UseReaderPreferencesResult {
     [preferences.translationFontSize, update],
   );
 
+  /**
+   * Keeps the translation edition in step with the interface language.
+   *
+   * Derived rather than written back, which matters: the stored value is left
+   * exactly as the user last left it, and the language merely decides how it
+   * is read. Writing it would mean a language switch silently rewrote a
+   * preference the user never touched.
+   *
+   * Only applies while the choice is unpinned. Someone who deliberately picked
+   * an English edition keeps it; someone who simply switched the app to
+   * Bengali stops getting English prose under Bengali word-by-word glosses.
+   */
+  const effective = useMemo(() => {
+    if (preferences.translationsPinned) return preferences;
+
+    const expected = defaultTranslationIdsFor(locale);
+    if (expected.length === 0) return preferences;
+
+    const current = preferences.translationIds;
+    const matches =
+      current.length === expected.length && current.every((id, i) => id === expected[i]);
+
+    return matches ? preferences : { ...preferences, translationIds: expected };
+  }, [preferences, locale]);
+
   return useMemo(
-    () => ({ preferences, isLoading, update, stepArabicFontSize, stepTranslationFontSize }),
-    [preferences, isLoading, update, stepArabicFontSize, stepTranslationFontSize],
+    () => ({
+      preferences: effective,
+      isLoading,
+      update,
+      stepArabicFontSize,
+      stepTranslationFontSize,
+    }),
+    [effective, isLoading, update, stepArabicFontSize, stepTranslationFontSize],
   );
 }
