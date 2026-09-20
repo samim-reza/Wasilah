@@ -7,6 +7,8 @@ import {
 import { defaultReminderPreferences } from '@/features/reminders/services/reminderService';
 import type { WeatherSnapshot } from '@/features/weather/types/weather.types';
 
+import { fixtureCatalogue } from './duaFixtures';
+
 /** Wednesday 2026-09-16, 09:00 London. */
 const NOW = new Date('2026-09-16T08:00:00Z');
 
@@ -26,6 +28,9 @@ function input(overrides: Partial<DuaPlanInput> = {}): DuaPlanInput {
     horizonDays: 2,
     recentlyShownIds: [],
     randomSeed: 0,
+    // The shipped catalogue is all placeholders, which the selector ignores by
+    // design, so these tests supply content of their own.
+    catalogue: fixtureCatalogue,
     ...overrides,
   };
 }

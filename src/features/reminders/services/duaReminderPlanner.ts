@@ -19,7 +19,7 @@
  */
 import { selectOccasion, triggerSpecificity } from '@/features/duas/services/duaSelector';
 import { moonAgeDays } from '@/features/duas/utils/moonPhase';
-import type { DuaContext } from '@/features/duas/types/dua.types';
+import type { DuaContext, DuaOccasion } from '@/features/duas/types/dua.types';
 import type { WeatherSnapshot } from '@/features/weather/types/weather.types';
 import { addLocalDays, type LocalDate } from '@/lib/datetime/localDate';
 import { occurrenceOn, type TimeOfDay } from '@/lib/datetime/timeOfDay';
@@ -62,6 +62,11 @@ export interface DuaPlanInput {
   recentlyShownIds: readonly string[];
   /** Injected for reproducible tests. */
   randomSeed?: number;
+  /**
+   * Occasions to choose from. Defaults to the filled-in ones, so nothing is
+   * ever scheduled while the catalogue still holds only placeholders.
+   */
+  catalogue?: readonly DuaOccasion[];
 }
 
 function shiftMinutes(instant: Date, minutes: number): Date {
@@ -104,6 +109,7 @@ function planNightly(input: DuaPlanInput): PlannedReminder[] {
     const occasion = selectOccasion(
       contextAt(fireAt, input, preferences.sleepTime),
       input.randomSeed,
+      input.catalogue,
     );
     if (!occasion) continue;
 
@@ -128,6 +134,7 @@ function planContextual(input: DuaPlanInput): PlannedReminder[] {
   const occasion = selectOccasion(
     contextAt(fireAt, input, preferences.sleepDuaEnabled ? preferences.sleepTime : undefined),
     input.randomSeed,
+    input.catalogue,
   );
 
   if (!occasion) return [];

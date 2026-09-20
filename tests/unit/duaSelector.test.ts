@@ -7,10 +7,14 @@ import {
 import { isNewCrescentVisible, moonAgeDays } from '@/features/duas/utils/moonPhase';
 import type { DuaContext } from '@/features/duas/types/dua.types';
 
+import { fixtureCatalogue } from './duaFixtures';
+
 /** A Friday. 2026-09-18T20:00Z is Friday evening in London. */
 const FRIDAY_EVENING = new Date('2026-09-18T20:00:00Z');
 /** A Wednesday morning. */
 const WEDNESDAY_MORNING = new Date('2026-09-16T08:00:00Z');
+/** A Wednesday afternoon — no fixture occasion is specific to it. */
+const WEDNESDAY_AFTERNOON = new Date('2026-09-16T13:00:00Z');
 
 function context(overrides: Partial<DuaContext> = {}): DuaContext {
   return {
@@ -82,13 +86,19 @@ describe('triggerSpecificity', () => {
 describe('selectOccasion', () => {
   it('prefers a weather-specific dua over a generic one', () => {
     const rainy = context({ weather: { condition: 'rain', temperatureCelsius: 12 } });
-    expect(selectOccasion(rainy, 0)?.id).toBe('rain-falling');
+    expect(selectOccasion(rainy, 0, fixtureCatalogue)?.id).toBe('rain-falling');
+  });
+
+  it('prefers the time-of-day dua over a generic one in the morning', () => {
+    // morning-adhkar is more specific than an unconditioned everyday dua, so
+    // it should win rather than being lumped in with them.
+    expect(selectOccasion(context(), 0, fixtureCatalogue)?.id).toBe('morning-adhkar');
   });
 
   it('falls back to the everyday duas when nothing specific applies', () => {
-    const chosen = selectOccasion(context(), 0);
+    const chosen = selectOccasion(context({ now: WEDNESDAY_AFTERNOON }), 0, fixtureCatalogue);
     expect(chosen).not.toBeNull();
-    expect(chosen!.text.arabic).toBe('Allah');
+    expect(chosen!.trigger).toEqual({});
   });
 
   it('avoids repeating something shown recently', () => {
@@ -96,21 +106,21 @@ describe('selectOccasion', () => {
       weather: { condition: 'rain', temperatureCelsius: 12 },
       recentlyShownIds: ['rain-falling'],
     });
-    expect(selectOccasion(rainy, 0)?.id).not.toBe('rain-falling');
+    expect(selectOccasion(rainy, 0, fixtureCatalogue)?.id).not.toBe('rain-falling');
   });
 
   it('repeats rather than returning nothing when everything is recently shown', () => {
-    const everything = eligibleOccasions(context()).map((occasion) => occasion.id);
-    const chosen = selectOccasion(context({ recentlyShownIds: everything }), 0);
+    const everything = eligibleOccasions(context(), fixtureCatalogue).map((occasion) => occasion.id);
+    const chosen = selectOccasion(context({ recentlyShownIds: everything }), 0, fixtureCatalogue);
     expect(chosen).not.toBeNull();
   });
 
   it('is deterministic for a given seed', () => {
-    expect(selectOccasion(context(), 0.42)?.id).toBe(selectOccasion(context(), 0.42)?.id);
+    expect(selectOccasion(context(), 0.42, fixtureCatalogue)?.id).toBe(selectOccasion(context(), 0.42, fixtureCatalogue)?.id);
   });
 
   it('never indexes past the end of the pool at seed 1', () => {
-    expect(selectOccasion(context(), 1)).not.toBeNull();
+    expect(selectOccasion(context(), 1, fixtureCatalogue)).not.toBeNull();
   });
 });
 

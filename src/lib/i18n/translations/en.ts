@@ -86,6 +86,17 @@ export const en = {
   },
 
   quran: {
+    play: 'Play',
+    playThisAyah: 'This ayah only',
+    playThisAyahHint: 'Play it once and stop',
+    playFromHere: 'From here onwards',
+    playFromHereHint: 'Continue through the surah',
+    pronunciation: 'Pronunciation',
+    meaning: 'Meaning',
+    noWordMeaning: 'No word-by-word meaning is available for this word.',
+    duaTitle: 'Dua',
+    duaUnavailable: 'This dua is no longer available.',
+    duaWhySaid: 'Why it is said',
     title: 'Quran',
     surahs: 'Surahs',
     juz: 'Juz',
@@ -215,6 +226,11 @@ export const en = {
   },
 
   auth: {
+    confirming: 'Confirming your account…',
+    linkExpired: 'Link expired',
+    linkInvalid: 'This link is no longer valid. Request a new one and try again.',
+    confirmFailed: 'We could not confirm this link. Request a new one and try again.',
+    backToSignIn: 'Back to sign in',
     signInTitle: 'Welcome back',
     signUpTitle: 'Create your account',
     email: 'Email',

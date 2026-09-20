@@ -545,6 +545,35 @@ export const duaCatalogue: readonly DuaOccasion[] = [
   },
 ];
 
+/**
+ * Whether an occasion has real words yet, as opposed to the stub.
+ *
+ * This is the production safeguard. The catalogue ships with placeholders so
+ * the machinery can be built and tested, but a placeholder must never reach a
+ * user: a notification leading to a screen reading "Allah — Placeholder text"
+ * is worse than no notification at all.
+ */
+export function hasRealContent(occasion: DuaOccasion): boolean {
+  return occasion.text.arabic !== PLACEHOLDER_ARABIC;
+}
+
+/**
+ * The occasions that are actually showable.
+ *
+ * Everything downstream selects from this, never from the raw catalogue, so
+ * the feature switches itself on occasion by occasion as content lands rather
+ * than needing a release to flip. While it is empty, no dua is ever scheduled
+ * and the settings section stays hidden.
+ */
+export function readyOccasions(): DuaOccasion[] {
+  return duaCatalogue.filter(hasRealContent);
+}
+
+/** True once at least one occasion has real words. Gates the settings UI. */
+export function isDuaCatalogueReady(): boolean {
+  return duaCatalogue.some(hasRealContent);
+}
+
 /** Lookup by id, for routes and notification payloads. */
 export function findOccasion(id: string): DuaOccasion | undefined {
   return duaCatalogue.find((occasion) => occasion.id === id);

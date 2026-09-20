@@ -1,9 +1,13 @@
 import {
   duaCatalogue,
   findOccasion,
+  hasRealContent,
+  isDuaCatalogueReady,
   PLACEHOLDER_ARABIC,
+  readyOccasions,
   SOURCE_PLACEHOLDER,
 } from '@/features/duas/data/duaCatalogue';
+import { selectOccasion } from '@/features/duas/services/duaSelector';
 
 describe('dua catalogue', () => {
   it('has a stable, unique id for every occasion', () => {
@@ -44,6 +48,33 @@ describe('dua catalogue', () => {
       .map((occasion) => occasion.id);
 
     expect(uncited).toEqual([]);
+  });
+
+  /**
+   * The production safeguard.
+   *
+   * A placeholder must never reach a user. While the catalogue is unfilled the
+   * selector has nothing to offer, so no dua can be scheduled and the settings
+   * section stays hidden — and all of that switches on by itself, occasion by
+   * occasion, as real content lands.
+   */
+  it('offers nothing to schedule while every occasion is a placeholder', () => {
+    const ready = readyOccasions();
+    if (ready.length === 0) {
+      expect(isDuaCatalogueReady()).toBe(false);
+      expect(
+        selectOccasion({
+          now: new Date('2026-09-16T08:00:00Z'),
+          timezone: 'Europe/London',
+          moonAgeDays: 10,
+          recentlyShownIds: [],
+        }),
+      ).toBeNull();
+    } else {
+      // Content has started landing: everything offered must be real.
+      expect(ready.every(hasRealContent)).toBe(true);
+      expect(isDuaCatalogueReady()).toBe(true);
+    }
   });
 
   it('never leaves the source field blank, even while stubbed', () => {

@@ -9,7 +9,6 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
-import { MiniPlayer } from '@/features/audio/components/MiniPlayer';
 import { OfflineBanner } from '@/components/feedback/OfflineBanner';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { useTheme } from '@/theme/useTheme';
@@ -46,9 +45,6 @@ export default function TabsLayout() {
             borderTopColor: colors.border,
           },
           tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
-          // The mini player sits directly above the tab bar, so it is rendered
-          // as part of the bar's background rather than floating over content.
-          tabBarBackground: () => <MiniPlayer />,
         }}
       >
         {tabs.map((tab) => (

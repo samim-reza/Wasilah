@@ -17,12 +17,14 @@ import { ActivityIndicator, View } from 'react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
 
 type State = 'exchanging' | 'done' | 'failed';
 
 export default function AuthCallbackScreen() {
+  const { t } = useTranslation();
   // Supabase sends `code` on success and `error_description` on failure.
   const params = useLocalSearchParams<{ code?: string; error_description?: string }>();
   const [state, setState] = useState<State>('exchanging');
@@ -43,7 +45,7 @@ export default function AuthCallbackScreen() {
       if (!params.code) {
         if (!cancelled) {
           // Most often an expired or already-used link.
-          setMessage('This link is no longer valid. Request a new one and try again.');
+          setMessage(t('auth.linkInvalid'));
           setState('failed');
         }
         return;
@@ -55,7 +57,7 @@ export default function AuthCallbackScreen() {
 
       if (error) {
         logger.warn('auth.codeExchangeFailed', { error });
-        setMessage('We could not confirm this link. Request a new one and try again.');
+        setMessage(t('auth.confirmFailed'));
         setState('failed');
         return;
       }
@@ -70,7 +72,7 @@ export default function AuthCallbackScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params.code, params.error_description]);
+  }, [params.code, params.error_description, t]);
 
   return (
     <Screen>
@@ -78,19 +80,19 @@ export default function AuthCallbackScreen() {
         {state === 'exchanging' && (
           <>
             <ActivityIndicator />
-            <Text tone="muted">Confirming your account…</Text>
+            <Text tone="muted">{t('auth.confirming')}</Text>
           </>
         )}
 
         {state === 'failed' && (
           <>
             <Text variant="heading" className="text-center">
-              Link expired
+              {t('auth.linkExpired')}
             </Text>
             <Text tone="muted" className="text-center">
               {message}
             </Text>
-            <Button label="Back to sign in" onPress={() => router.replace('/(auth)/login')} />
+            <Button label={t('auth.backToSignIn')} onPress={() => router.replace('/(auth)/login')} />
           </>
         )}
       </View>

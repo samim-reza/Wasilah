@@ -15,6 +15,7 @@ import { ListRow, ListSection } from '@/components/ui/ListRow';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
+import { isDuaCatalogueReady } from '@/features/duas/data/duaCatalogue';
 import { TimePickerRow } from '@/features/reminders/components/TimePickerRow';
 import { useReminderSettings } from '@/features/reminders/hooks/useReminderSettings';
 import { formatTimeForDisplay } from '@/lib/datetime/timeOfDay';
@@ -112,6 +113,14 @@ export default function NotificationSettingsScreen() {
           </View>
         </ListSection>
 
+        {/*
+          Hidden until at least one occasion has real words. The catalogue
+          ships with placeholders so the machinery could be built and tested,
+          and a toggle that leads to "Placeholder text" is worse than no
+          toggle. This re-appears on its own as content lands — no release
+          needed, no flag to remember to flip.
+        */}
+        {isDuaCatalogueReady() && (
         <ListSection title={t('reminders.duas')}>
           <View className="gap-4 px-4">
             <Switch
@@ -141,6 +150,7 @@ export default function NotificationSettingsScreen() {
             disabled={!settings.preferences.sleepDuaEnabled}
           />
         </ListSection>
+        )}
 
         <ListSection title={t('reminders.quietHours')}>
           <View className="px-4">

@@ -84,6 +84,17 @@ export const bn: Translation = {
   },
 
   quran: {
+    play: 'বাজান',
+    playThisAyah: 'শুধু এই আয়াত',
+    playThisAyahHint: 'একবার বাজিয়ে থেমে যাবে',
+    playFromHere: 'এখান থেকে সামনে',
+    playFromHereHint: 'সূরাজুড়ে চলতে থাকবে',
+    pronunciation: 'উচ্চারণ',
+    meaning: 'অর্থ',
+    noWordMeaning: 'এই শব্দের জন্য শব্দে শব্দে অর্থ পাওয়া যায়নি।',
+    duaTitle: 'দোয়া',
+    duaUnavailable: 'এই দোয়াটি আর পাওয়া যাচ্ছে না।',
+    duaWhySaid: 'কেন পড়া হয়',
     title: 'কুরআন',
     surahs: 'সূরা',
     juz: 'পারা',
@@ -213,6 +224,11 @@ export const bn: Translation = {
   },
 
   auth: {
+    confirming: 'আপনার অ্যাকাউন্ট নিশ্চিত করা হচ্ছে…',
+    linkExpired: 'লিংকের মেয়াদ শেষ',
+    linkInvalid: 'এই লিংকটি আর কার্যকর নয়। নতুন একটি নিয়ে আবার চেষ্টা করুন।',
+    confirmFailed: 'আমরা এই লিংকটি নিশ্চিত করতে পারিনি। নতুন একটি নিয়ে আবার চেষ্টা করুন।',
+    backToSignIn: 'সাইন ইনে ফিরে যান',
     signInTitle: 'আবার স্বাগতম',
     signUpTitle: 'আপনার অ্যাকাউন্ট তৈরি করুন',
     email: 'ইমেইল',

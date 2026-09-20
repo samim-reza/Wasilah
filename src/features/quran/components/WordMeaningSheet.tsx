@@ -15,6 +15,7 @@ import { View } from 'react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Text } from '@/components/ui/Text';
 import type { WordSegment } from '@/features/quran/types/quran.types';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { arabicLineHeightRatio } from '@/theme/tokens';
 
 export interface WordMeaningSheetProps {
@@ -23,6 +24,8 @@ export interface WordMeaningSheetProps {
 }
 
 export function WordMeaningSheet({ word, onClose }: WordMeaningSheetProps) {
+  const { t } = useTranslation();
+
   return (
     <BottomSheet visible={word !== null} onClose={onClose} heightRatio={0.4}>
       {word && (
@@ -40,7 +43,7 @@ export function WordMeaningSheet({ word, onClose }: WordMeaningSheetProps) {
           {word.transliteration && (
             <View className="gap-1">
               <Text variant="caption" tone="subtle">
-                Pronunciation
+                {t('quran.pronunciation')}
               </Text>
               <Text className="italic">{word.transliteration}</Text>
             </View>
@@ -49,12 +52,12 @@ export function WordMeaningSheet({ word, onClose }: WordMeaningSheetProps) {
           {word.translation ? (
             <View className="gap-1">
               <Text variant="caption" tone="subtle">
-                Meaning
+                {t('quran.meaning')}
               </Text>
               <Text>{word.translation}</Text>
             </View>
           ) : (
-            <Text tone="muted">No word-by-word meaning is available for this word.</Text>
+            <Text tone="muted">{t('quran.noWordMeaning')}</Text>
           )}
         </View>
       )}

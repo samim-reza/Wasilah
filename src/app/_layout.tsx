@@ -20,6 +20,7 @@ import { useOfflineSync } from '@/lib/offline/useOfflineSync';
 import { initializeMonitoring } from '@/lib/monitoring/sentry';
 import { AppProviders } from '@/providers/AppProviders';
 import { useAppFonts } from '@/theme/fonts';
+import { MiniPlayer } from '@/features/audio/components/MiniPlayer';
 import { getNavigationTheme } from '@/theme/navigationTheme';
 import { useTheme } from '@/theme/useTheme';
 
@@ -82,6 +83,13 @@ function RootNavigator() {
         <Stack.Screen name="prayer-times" />
         <Stack.Screen name="about" />
       </Stack>
+
+      {/*
+        Mounted here rather than inside the tab navigator so recitation stays
+        controllable on every screen — including the reader, which is not a
+        tab — and so its buttons own their own hit area.
+      */}
+      <MiniPlayer />
     </NavigationThemeProvider>
   );
 }

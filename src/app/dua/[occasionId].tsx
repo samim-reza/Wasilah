@@ -13,8 +13,10 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { findOccasion, SOURCE_PLACEHOLDER } from '@/features/duas/data/duaCatalogue';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export default function DuaDetailScreen() {
+  const { t } = useTranslation();
   const { occasionId } = useLocalSearchParams<{ occasionId: string }>();
   const occasion = findOccasion(occasionId ?? '');
 
@@ -24,9 +26,9 @@ export default function DuaDetailScreen() {
     return (
       <Screen edges={['top']} noPadding>
         <ScrollView contentContainerClassName="px-4 pb-10">
-          <ScreenHeader title="Dua" />
+          <ScreenHeader title={t('quran.duaTitle')} />
           <Card>
-            <Text tone="muted">This dua is no longer available.</Text>
+            <Text tone="muted">{t('quran.duaUnavailable')}</Text>
           </Card>
         </ScrollView>
       </Screen>
@@ -52,14 +54,14 @@ export default function DuaDetailScreen() {
 
         <Card className="mb-4 gap-2">
           <Text variant="caption" tone="subtle">
-            Pronunciation
+            {t('quran.pronunciation')}
           </Text>
           <Text className="italic">{text.transliteration}</Text>
         </Card>
 
         <Card className="mb-4 gap-2">
           <Text variant="caption" tone="subtle">
-            Meaning
+            {t('quran.meaning')}
           </Text>
           <Text>{text.translation}</Text>
         </Card>
@@ -67,7 +69,7 @@ export default function DuaDetailScreen() {
         {text.benefit.length > 0 && (
           <Card className="mb-4 gap-2">
             <Text variant="caption" tone="subtle">
-              Why it is said
+              {t('quran.duaWhySaid')}
             </Text>
             <Text>{text.benefit}</Text>
           </Card>

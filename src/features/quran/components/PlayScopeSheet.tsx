@@ -13,6 +13,7 @@ import { View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ListRow } from '@/components/ui/ListRow';
+import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export type PlayScope = 'single' | 'continue';
 
@@ -23,23 +24,25 @@ export interface PlayScopeSheetProps {
 }
 
 export function PlayScopeSheet({ visible, onClose, onSelect }: PlayScopeSheetProps) {
+  const { t } = useTranslation();
+
   const choose = (scope: PlayScope) => {
     onSelect(scope);
     onClose();
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Play" heightRatio={0.3}>
+    <BottomSheet visible={visible} onClose={onClose} title={t('quran.play')} heightRatio={0.3}>
       <View>
         <ListRow
-          label="This ayah only"
-          hint="Play it once and stop"
+          label={t('quran.playThisAyah')}
+          hint={t('quran.playThisAyahHint')}
           icon="play"
           onPress={() => choose('single')}
         />
         <ListRow
-          label="From here onwards"
-          hint="Continue through the surah"
+          label={t('quran.playFromHere')}
+          hint={t('quran.playFromHereHint')}
           icon="skipNext"
           onPress={() => choose('continue')}
         />

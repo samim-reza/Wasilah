@@ -12,7 +12,7 @@
  */
 import { timeOfDayAt, toMinuteOfDay } from '@/lib/datetime/timeOfDay';
 
-import { duaCatalogue } from '../data/duaCatalogue';
+import { readyOccasions } from '../data/duaCatalogue';
 import { isNewCrescentVisible } from '../utils/moonPhase';
 import type { DuaContext, DuaOccasion, DuaTrigger } from '../types/dua.types';
 
@@ -107,9 +107,19 @@ export function matchesTrigger(trigger: DuaTrigger, context: DuaContext): boolea
   return true;
 }
 
-/** Every occasion whose conditions currently hold, most specific first. */
-export function eligibleOccasions(context: DuaContext): DuaOccasion[] {
-  return duaCatalogue
+/**
+ * Every occasion whose conditions currently hold, most specific first.
+ *
+ * Selects from `readyOccasions()` — entries that have real words — rather than
+ * the whole catalogue, so a half-filled catalogue offers only what it can
+ * actually show. `catalogue` is injectable so tests can supply a fixture
+ * instead of depending on how much content happens to be filled in.
+ */
+export function eligibleOccasions(
+  context: DuaContext,
+  catalogue: readonly DuaOccasion[] = readyOccasions(),
+): DuaOccasion[] {
+  return catalogue
     .filter((occasion) => matchesTrigger(occasion.trigger, context))
     .sort((a, b) => triggerSpecificity(b.trigger) - triggerSpecificity(a.trigger));
 }
@@ -125,8 +135,12 @@ export function eligibleOccasions(context: DuaContext): DuaOccasion[] {
  * `randomSeed` is injected rather than calling Math.random so the choice is
  * reproducible in tests.
  */
-export function selectOccasion(context: DuaContext, randomSeed = Math.random()): DuaOccasion | null {
-  const eligible = eligibleOccasions(context);
+export function selectOccasion(
+  context: DuaContext,
+  randomSeed = Math.random(),
+  catalogue: readonly DuaOccasion[] = readyOccasions(),
+): DuaOccasion | null {
+  const eligible = eligibleOccasions(context, catalogue);
   if (eligible.length === 0) return null;
 
   const unseen = eligible.filter((occasion) => !context.recentlyShownIds.includes(occasion.id));
