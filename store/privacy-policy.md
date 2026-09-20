@@ -7,7 +7,7 @@
 > been reviewed by a lawyer.
 >
 > Published at
-> [samim-reza.github.io/Wasilah/privacy.html](https://samim-reza.github.io/Wasilah/privacy.html)
+> [mywasilah.com/privacy.html](https://mywasilah.com/privacy.html)
 > from [`site/privacy.html`](../site/privacy.html). **Edit both** — the HTML is
 > what Google and users actually read.
 
@@ -167,7 +167,7 @@ the top of this page always reflects the current version.
 
 Questions about your data, or a request to export or delete it:
 
-**samimreza2111@gmail.com**
+**support@mywasilah.com**
 
 ---
 

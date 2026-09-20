@@ -35,7 +35,7 @@ production build is worth making.
       that only the account owner can do: 1. `git push -u origin main` 2. Settings → General → Change visibility → **Public**
       (no secrets are committed; `.env*` files are all gitignored) 3. Settings → Pages → Source → **GitHub Actions**
 
-      Then confirm <https://samim-reza.github.io/Wasilah/privacy.html> loads,
+      Then confirm <https://mywasilah.com/privacy.html> loads,
       because Google checks it during review.
 
 - [ ] **Screenshots captured** on a device with a real streak and real

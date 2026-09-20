@@ -471,7 +471,7 @@ made before it was installed will ignore updates entirely, without erroring.
       — the QF Developer Terms cover display of everything their API serves
 - [x] Attribution visible on the About screen and not obscured
 - [x] Privacy policy published and linked —
-      <https://samim-reza.github.io/Wasilah/privacy.html>
+      <https://mywasilah.com/privacy.html>
 - [x] `npm run verify` green
 - [x] RLS verified by attempting a cross-user read with a real token
 - [x] No secret in the bundle — verified against the built **APK**, not

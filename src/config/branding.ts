@@ -16,18 +16,20 @@ export const branding = {
    * Published on the Play Store listing as well as the About screen, so it has
    * to be an address that is actually monitored.
    */
-  supportEmail: 'samimreza2111@gmail.com',
+  supportEmail: 'support@mywasilah.com',
   /**
-   * Served from `site/` by the Pages workflow in `.github/workflows/pages.yml`.
+   * Served from `site/` by the Pages workflow in `.github/workflows/pages.yml`,
+   * now on the project's own domain via `site/CNAME`.
    *
-   * GitHub Pages rather than a `wasilah.app` domain, which does not exist:
-   * Google Play refuses a listing whose privacy policy URL does not load, and a
-   * page that is deployed from the same repository as the app cannot silently
-   * drift out of existence the way a lapsed domain can.
+   * Still GitHub Pages underneath rather than separate hosting: Google Play
+   * refuses a listing whose privacy policy URL does not load, and a page
+   * deployed from the same repository as the app cannot silently drift out of
+   * existence. The domain is the only new dependency, and it is one the
+   * project controls.
    */
-  websiteUrl: 'https://samim-reza.github.io/Wasilah/',
-  privacyPolicyUrl: 'https://samim-reza.github.io/Wasilah/privacy.html',
-  termsUrl: 'https://samim-reza.github.io/Wasilah/terms.html',
+  websiteUrl: 'https://mywasilah.com/',
+  privacyPolicyUrl: 'https://mywasilah.com/privacy.html',
+  termsUrl: 'https://mywasilah.com/terms.html',
 } as const;
 
 /**
