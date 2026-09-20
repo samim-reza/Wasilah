@@ -1,12 +1,26 @@
 /**
- * Tasbeeh state.
+ * Tasbeeh state, shared across every screen that touches it.
  *
- * Every mutation applies to local state first, writes to the device, and only
- * then syncs. The press has to register on the very next frame — anything
- * slower and the counter feels broken, which for a dhikr counter is the whole
+ * A provider rather than a plain hook, because three screens read the same
+ * list — the tab, the counter and the editor. As a plain hook each one held
+ * its own copy, so adding a counter in the editor left the tab showing stale
+ * state until it remounted. That is the bug this shape exists to prevent, not
+ * an optimisation.
+ *
+ * Every mutation applies to state first, writes to the device, and only then
+ * syncs. The press has to register on the very next frame — anything slower
+ * and the counter feels broken, which for a dhikr counter is the whole
  * product.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
@@ -39,7 +53,7 @@ export interface UseTasbeehResult {
   remove: (id: string) => void;
 }
 
-export function useTasbeeh(): UseTasbeehResult {
+function useTasbeehState(): UseTasbeehResult {
   const userId = useUserId();
   const { today } = useLocalDate();
   const [list, setList] = useState<Tasbeeh[]>([]);
@@ -146,4 +160,24 @@ export function useTasbeeh(): UseTasbeehResult {
     () => ({ list, isLoading, find, press, stepBack, resetOne, create, edit, remove }),
     [list, isLoading, find, press, stepBack, resetOne, create, edit, remove],
   );
+}
+
+const TasbeehContext = createContext<UseTasbeehResult | null>(null);
+
+export function TasbeehProvider({ children }: { children: ReactNode }) {
+  const value = useTasbeehState();
+  return <TasbeehContext.Provider value={value}>{children}</TasbeehContext.Provider>;
+}
+
+/**
+ * Reads the shared list.
+ *
+ * Throws rather than falling back to a private copy: a silent fallback would
+ * reintroduce exactly the stale-list bug this provider removes, and it would
+ * only show up as "the new counter did not appear".
+ */
+export function useTasbeeh(): UseTasbeehResult {
+  const value = useContext(TasbeehContext);
+  if (!value) throw new Error('useTasbeeh must be used inside TasbeehProvider');
+  return value;
 }

@@ -58,9 +58,20 @@ describe('deriveProgress', () => {
     expect(deriveProgress(tasbeeh({ dailyTarget: 0, todayCount: 50 }), TODAY).dailyProgress).toBe(0);
   });
 
-  it('caps daily progress at fully complete', () => {
-    const over = tasbeeh({ dailyTarget: 100, todayCount: 250 });
-    expect(deriveProgress(over, TODAY).dailyProgress).toBe(1);
+  it('fills the ring completely at the exact moment a round completes', () => {
+    // Resetting to empty here would hide the thing just achieved.
+    expect(deriveProgress(tasbeeh({ dailyTarget: 100, todayCount: 100 }), TODAY).dailyProgress).toBe(1);
+  });
+
+  it('starts the ring again on the next round rather than staying full', () => {
+    // The bug this pins: the ring stayed full once the first target was met,
+    // so the counter kept counting while the ring said nothing was happening.
+    expect(deriveProgress(tasbeeh({ dailyTarget: 100, todayCount: 101 }), TODAY).dailyProgress)
+      .toBeCloseTo(0.01);
+    expect(deriveProgress(tasbeeh({ dailyTarget: 100, todayCount: 150 }), TODAY).dailyProgress)
+      .toBeCloseTo(0.5);
+    expect(deriveProgress(tasbeeh({ dailyTarget: 100, todayCount: 250 }), TODAY).dailyProgress)
+      .toBeCloseTo(0.5);
   });
 
   it('survives a target of zero rather than dividing by it', () => {

@@ -30,7 +30,7 @@ export const defaultReminderPreferences: ReminderPreferences = {
   quietHoursEnabled: true,
   quietHoursStart: { hour: 22, minute: 30 },
   quietHoursEnd: { hour: 7, minute: 0 },
-  maxNotificationsPerDay: 2,
+  maxNotificationsPerDay: 10,
   minMinutesBetweenNotifications: 180,
   adaptiveFrequencyEnabled: true,
 };

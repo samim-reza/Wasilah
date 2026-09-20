@@ -28,7 +28,19 @@ export function deriveProgress(tasbeeh: Tasbeeh, today: LocalDate): TasbeehProgr
   // A round is a completed daily target. With no target there is nothing to
   // complete, so there are no rounds to count rather than a division by zero.
   const rounds = target > 0 ? Math.floor(total / target) : 0;
-  const dailyProgress = target > 0 ? Math.min(1, todayCount / target) : 0;
+
+  // The ring shows the CURRENT round, not the day as a whole, so it empties
+  // and fills again on every round. Capping it at the first completed target
+  // left it stuck full for the rest of the session — the counter kept
+  // counting while the ring said nothing more was happening.
+  //
+  // The exact boundary shows full rather than empty: landing on the target is
+  // the moment the round is complete, and resetting the ring at the instant
+  // of completion would hide the thing the user just achieved. The next press
+  // starts the new round.
+  const withinRound = target > 0 ? todayCount % target : 0;
+  const dailyProgress =
+    target === 0 ? 0 : withinRound === 0 && todayCount > 0 ? 1 : withinRound / target;
 
   return { rounds, totalCount: total, todayCount, dailyProgress };
 }

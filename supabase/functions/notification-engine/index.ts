@@ -276,13 +276,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const pushResult = await sendPushMessages(messages);
 
   if (historyRows.length > 0) {
-    // `ignoreDuplicates` relies on the partial unique index over
-    // (user_id, local_date, dedupe_key).
-    const { error: historyError } = await supabase
-      .from('notification_history')
-      .upsert(historyRows, { onConflict: 'user_id,local_date,dedupe_key', ignoreDuplicates: true });
+    // A plain insert, NOT an upsert. The dedupe index is PARTIAL
+    // (`where dedupe_key is not null`), and Postgres cannot infer a partial
+    // index from an ON CONFLICT column list — so the upsert raised "no unique
+    // or exclusion constraint matching" every single time and no history was
+    // ever recorded. The index still prevents duplicates; a 23505 here means
+    // the row already exists, which is success, not failure.
+    const { error: historyError } = await supabase.from('notification_history').insert(historyRows);
 
-    if (historyError) console.error('history insert failed', historyError.message);
+    if (historyError && historyError.code !== '23505') {
+      console.error('history insert failed', historyError.message);
+    }
   }
 
   if (pushResult.unregisteredTokens.length > 0) {
@@ -338,6 +342,8 @@ async function sendReminderEmails(
   const userIds = (optedIn ?? []).map((row) => (row as unknown as { user_id: string }).user_id);
   if (userIds.length === 0) return { sent: 0, failed: 0, provider: 'none' };
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const { data: reminderRows } = await supabase
     .from('reminder_preferences')
     .select('user_id, daily_reminder_enabled')
@@ -349,11 +355,30 @@ async function sendReminderEmails(
       .map((row) => (row as unknown as { user_id: string }).user_id),
   );
 
-  const candidates = userIds.filter((id) => wantsDaily.has(id)).map((user_id) => ({ user_id }));
+  // Anyone already notified today is excluded BEFORE sending, not after.
+  //
+  // The history upsert at the bottom dedupes rows, but it runs after the mail
+  // has gone out — so on a schedule that fires more than once a day this
+  // would email the same person every run. The history table is the record of
+  // what was sent; it has to be consulted first, not merely written to.
+  const { data: alreadyNotified } = await supabase
+    .from('notification_history')
+    .select('user_id')
+    .eq('local_date', today)
+    .in('user_id', userIds);
+
+  const notifiedToday = new Set(
+    (alreadyNotified ?? []).map((row) => (row as unknown as { user_id: string }).user_id),
+  );
+
+  const candidates = userIds
+    .filter((id) => wantsDaily.has(id) && !notifiedToday.has(id))
+    .map((user_id) => ({ user_id }));
 
   if (candidates.length === 0) return { sent: 0, failed: 0, provider: 'none' };
 
-  const today = new Date().toISOString().slice(0, 10);
+  if (candidates.length === 0) return { sent: 0, failed: 0, provider: 'none' };
+
   const messages: EmailMessage[] = [];
   const historyRows: Record<string, unknown>[] = [];
 
@@ -381,6 +406,11 @@ async function sendReminderEmails(
     historyRows.push({
       user_id: userId,
       category: 'daily_reminder',
+      // NOT NULL with no default. Omitting it made every insert fail, which
+      // the guard above then read as "not yet notified" — so the same person
+      // was emailed on every run.
+      template_key: 'dailyReminderEmail',
+      outcome: 'sent',
       local_date: today,
       route: '/(tabs)/home',
       // Shares the partial unique index with the push pass, so a user who
@@ -392,11 +422,12 @@ async function sendReminderEmails(
   const result = await sendEmails(messages);
 
   if (historyRows.length > 0 && result.sent > 0) {
-    const { error: historyError } = await supabase
-      .from('notification_history')
-      .upsert(historyRows, { onConflict: 'user_id,local_date,dedupe_key', ignoreDuplicates: true });
+    // Same reasoning as the push pass: plain insert, duplicates tolerated.
+    const { error: historyError } = await supabase.from('notification_history').insert(historyRows);
 
-    if (historyError) console.error('email history insert failed', historyError.message);
+    if (historyError && historyError.code !== '23505') {
+      console.error('email history insert failed', historyError.message);
+    }
   }
 
   return { ...result, candidates: candidates.length };

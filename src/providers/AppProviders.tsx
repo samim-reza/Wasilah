@@ -19,6 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { ReactNode } from 'react';
 
 import { AudioPlayerProvider } from '@/features/audio/hooks/AudioPlayerProvider';
+import { TasbeehProvider } from '@/features/tasbeeh/hooks/useTasbeeh';
 import { AuthProvider } from '@/features/auth/hooks/AuthProvider';
 import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
 import { ToastProvider } from '@/components/feedback/Toast';
@@ -34,12 +35,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <I18nProvider>
             <ThemeProvider>
               <AuthProvider>
-                <AudioPlayerProvider>
-                  <ToastProvider>
-                    {/* Catches anything a screen throws during render. */}
-                    <ErrorBoundary scope="root">{children}</ErrorBoundary>
-                  </ToastProvider>
-                </AudioPlayerProvider>
+                <TasbeehProvider>
+                  <AudioPlayerProvider>
+                    <ToastProvider>
+                      {/* Catches anything a screen throws during render. */}
+                      <ErrorBoundary scope="root">{children}</ErrorBoundary>
+                    </ToastProvider>
+                  </AudioPlayerProvider>
+                </TasbeehProvider>
               </AuthProvider>
             </ThemeProvider>
           </I18nProvider>

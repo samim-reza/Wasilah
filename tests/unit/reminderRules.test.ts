@@ -70,8 +70,12 @@ describe('evaluateDailyReminder', () => {
   });
 
   it('respects the daily cap', () => {
+    // The cap is set explicitly rather than leaning on whatever the default
+    // happens to be — this test broke when the default moved from 2 to 10,
+    // which told us nothing about the rule it is meant to protect.
     const decision = evaluateDailyReminder(
       buildContext({
+        preferences: { ...defaultReminderPreferences, maxNotificationsPerDay: 2 },
         todaysNotifications: [
           record({ category: 'streak_reminder', sentAt: new Date('2026-03-09T08:00:00Z') }),
           record({ category: 'goal_reminder', sentAt: new Date('2026-03-09T09:00:00Z') }),
