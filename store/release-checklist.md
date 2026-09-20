@@ -29,7 +29,9 @@ production build is worth making.
       `branding.ts` points at them, and `supportEmail` is a real inbox.
       **Not reviewed by a lawyer** — the text was written from what the code
       actually does, which is the right starting point but not a substitute.
-- [ ] **Push the repo, make it public, and turn Pages on.** The three steps
+- [x] **Push the repo, make it public, and turn Pages on.** — **done, 20 Sep 2026.**
+      Verified: the repo is public, and privacy.html, terms.html and the index
+      all return 200 from GitHub Pages. The three steps
       that only the account owner can do: 1. `git push -u origin main` 2. Settings → General → Change visibility → **Public**
       (no secrets are committed; `.env*` files are all gitignored) 3. Settings → Pages → Source → **GitHub Actions**
 

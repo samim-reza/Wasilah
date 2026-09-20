@@ -1,9 +1,15 @@
 /**
  * Database types.
  *
- * Hand-maintained to mirror `supabase/migrations`. Regenerate with
- * `npm run db:types` once a local Supabase stack is running; until then, any
- * change to a migration must be reflected here in the same commit.
+ * Hand-maintained to mirror `supabase/migrations`. Any change to a migration
+ * must be reflected here in the same commit.
+ *
+ * DO NOT run `npm run db:types` over this file. That script emits Supabase's
+ * generated shape — one big `Database` type with nested Row/Insert/Update
+ * generics — which is not what this file exports. Overwriting it would remove
+ * every named row type (`ReminderPreferencesRow`, `NotificationCategory`, and
+ * the rest) and break every import in the app. The script is kept for
+ * inspecting the live schema, not for regenerating this module.
  */
 
 export type GoalUnit = 'ayahs' | 'pages' | 'minutes' | 'rukus';
