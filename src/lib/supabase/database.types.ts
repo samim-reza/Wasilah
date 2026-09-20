@@ -92,6 +92,12 @@ export type ReminderPreferencesRow = {
   updated_at: string;
 };
 
+export type AdminUserRow = {
+  user_id: string;
+  note: string | null;
+  created_at: string;
+};
+
 export type TasbeehRow = {
   id: string;
   user_id: string;
@@ -362,6 +368,7 @@ export type Database = {
         ReminderPreferencesRow,
         Pick<ReminderPreferencesRow, 'user_id'> & Partial<ReminderPreferencesRow>
       >;
+      admin_users: Table<AdminUserRow, Pick<AdminUserRow, 'user_id'> & Partial<AdminUserRow>>;
       tasbeeh: Table<TasbeehRow, Pick<TasbeehRow, 'user_id' | 'name'> & Partial<TasbeehRow>>;
       notification_preferences: Table<
         NotificationPreferencesRow,
