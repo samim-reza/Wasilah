@@ -54,6 +54,9 @@ const iconMap = {
   more: 'ellipsis-horizontal',
   add: 'add',
   remove: 'remove',
+  // Delete is its own icon rather than reusing `remove`: a minus sign reads
+  // as "decrement", which on a counter screen is a different action entirely.
+  trash: 'trash-outline',
   filter: 'options-outline',
 
   settings: 'settings-outline',

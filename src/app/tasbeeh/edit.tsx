@@ -7,7 +7,7 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Alert, ScrollView, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -29,7 +29,7 @@ export default function TasbeehEditScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { find, create, edit } = useTasbeeh();
+  const { find, create, edit, remove } = useTasbeeh();
 
   const existing = id ? find(id) : undefined;
 
@@ -95,8 +95,34 @@ export default function TasbeehEditScreen() {
           </Text>
         </Card>
 
-        <View className="mt-6">
+        <View className="mt-6 gap-3">
           <Button label={t('common.save')} onPress={onSave} disabled={!canSave} />
+
+          {/* Only when editing. Offering delete while creating would be a
+              button that undoes something that does not exist yet. */}
+          {existing && (
+            <Button
+              label={t('common.delete')}
+              variant="danger"
+              onPress={() =>
+                Alert.alert(
+                  t('tasbeeh.deleteTitle'),
+                  t('tasbeeh.deleteBody', { name: existing.name }),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('common.delete'),
+                      style: 'destructive',
+                      onPress: () => {
+                        remove(existing.id);
+                        router.back();
+                      },
+                    },
+                  ],
+                )
+              }
+            />
+          )}
         </View>
       </ScrollView>
     </Screen>

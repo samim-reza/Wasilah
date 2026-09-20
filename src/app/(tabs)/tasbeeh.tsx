@@ -73,21 +73,23 @@ export default function TasbeehListScreen() {
                     </Text>
                   </View>
 
+                  {/* `settings` and `trash` rather than `more` and `remove`:
+                      a minus sign next to a counter reads as "decrement", and
+                      a three-dot menu hides the action behind another tap. */}
                   <IconButton
-                    name="more"
+                    name="settings"
                     size={18}
                     color="textMuted"
                     onPress={() => router.push(`/tasbeeh/edit?id=${entry.id}`)}
                     accessibilityLabel={t('common.edit')}
                   />
                   <IconButton
-                    name="remove"
+                    name="trash"
                     size={18}
-                    color="textMuted"
+                    color="danger"
                     onPress={() => confirmRemove(entry.id, entry.name)}
                     accessibilityLabel={t('common.delete')}
                   />
-                  <Icon name="forward" size={16} color="textSubtle" />
                 </Card>
               </Pressable>
             );
