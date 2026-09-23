@@ -30,7 +30,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Generous on purpose. A cold build downloads the NDK and compiles every
+    # native module's C++ for the New Architecture; on a two-core runner that
+    # alone can pass 40 minutes. The caches below make a warm rerun a fraction
+    # of that, but the first build after a dependency change is always cold.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +51,19 @@ jobs:
           java-version: 17
 
       - run: npm ci
+
+      # Gradle's dependency and build caches, plus the NDK the build installs
+      # into the SDK. Keyed on the lockfile: a dependency change invalidates
+      # both, anything else reuses them.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            /usr/local/lib/android/sdk/ndk
+          key: android-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            android-build-${{ runner.os }}-
 
       - run: npm run theme:build
 
