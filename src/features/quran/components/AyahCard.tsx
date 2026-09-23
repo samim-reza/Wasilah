@@ -21,6 +21,7 @@ import type { ArabicFontKey } from '@/theme/fonts';
 import { ArabicText } from './ArabicText';
 import { AyahNumber } from './AyahNumber';
 import { TranslationText } from './TranslationText';
+import { WordByWordArabic } from './WordByWordArabic';
 import { WordByWordRow } from './WordByWordRow';
 import type { Verse, WordSegment } from '../types/quran.types';
 
@@ -165,7 +166,21 @@ function AyahCardComponent({
           onWordPress={onWordPress}
           fontFamily={arabicFont}
         />
+      ) : verse.words.length > 0 ? (
+        // Normal reading, as Quran.com does it: the ayah flows as one line of
+        // text, and every word in it is a tap target. Words are nested Text,
+        // not a row of Views, so wrapping and RTL flow are exactly those of
+        // the plain string it replaces — only the interaction is added.
+        <WordByWordArabic
+          words={verse.words}
+          fontSize={arabicFontSize}
+          activeWordPosition={activeWordPosition}
+          onWordPress={onWordPress}
+          fontFamily={arabicFont}
+          accessibilityLabel={reference}
+        />
       ) : (
+        // Only when the API returned no word data at all.
         <ArabicText text={verse.arabicText} fontSize={arabicFontSize} fontFamily={arabicFont} />
       )}
 

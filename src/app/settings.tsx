@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ListRow, ListSection } from '@/components/ui/ListRow';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
+import { ArabicSample } from '@/features/reader/components/ArabicSample';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/features/auth/hooks/AuthProvider';
 import {
@@ -126,25 +127,34 @@ export default function SettingsScreen() {
             and typeface is the face it is drawn in. A reader may want IndoPak
             text in a Naskh face, or Uthmani in Nastaliq, so neither implies
             the other. */}
+        {/* Each option shows the first ayah rendered that way, because a
+            name alone ("IndoPak", "Nastaliq") tells most readers nothing —
+            the sample is what lets them choose. Script samples use the
+            current face; face samples use the current script, so each list
+            varies exactly one thing. */}
         <ListSection title={t('reader.arabicScript')}>
           {arabicScripts.map((script) => (
-            <ListRow
-              key={script}
-              label={t(`reader.script${script.charAt(0).toUpperCase()}${script.slice(1)}`)}
-              value={reader.arabicScript === script ? '✓' : undefined}
-              onPress={() => void updateReader({ arabicScript: script })}
-            />
+            <View key={script}>
+              <ListRow
+                label={t(`reader.script${script.charAt(0).toUpperCase()}${script.slice(1)}`)}
+                value={reader.arabicScript === script ? '✓' : undefined}
+                onPress={() => void updateReader({ arabicScript: script })}
+              />
+              <ArabicSample script={script} fontFamily={reader.arabicFont} />
+            </View>
           ))}
         </ListSection>
 
         <ListSection title={t('reader.arabicFont')}>
           {arabicFontKeys.map((font) => (
-            <ListRow
-              key={font}
-              label={t(`reader.font${font}`)}
-              value={reader.arabicFont === font ? '✓' : undefined}
-              onPress={() => void updateReader({ arabicFont: font })}
-            />
+            <View key={font}>
+              <ListRow
+                label={t(`reader.font${font}`)}
+                value={reader.arabicFont === font ? '✓' : undefined}
+                onPress={() => void updateReader({ arabicFont: font })}
+              />
+              <ArabicSample script={reader.arabicScript} fontFamily={font} />
+            </View>
           ))}
         </ListSection>
 

@@ -74,7 +74,12 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
 
   const versesQuery = useVerses(source, {
     translationIds: preferences.showTranslation ? translationIds : [],
-    includeWords: preferences.showWordByWord,
+    // Always. Tapping a word for its meaning and hearing it recited are part
+    // of normal reading now, not a mode — so the words come with every ayah.
+    // The cost is a larger response per page, taken deliberately: the
+    // alternative is a reader where words are inert unless a setting is on,
+    // which is exactly what was shipped and exactly what was asked to change.
+    includeWords: true,
     script: preferences.arabicScript,
   });
 

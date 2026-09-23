@@ -18,6 +18,7 @@
 import { Text } from 'react-native';
 
 import type { WordSegment } from '@/features/quran/types/quran.types';
+import { arabicLineHeightFor, type ArabicFontKey } from '@/theme/fonts';
 import { arabicLineHeightRatio } from '@/theme/tokens';
 
 export interface WordByWordArabicProps {
@@ -28,6 +29,7 @@ export interface WordByWordArabicProps {
   activeWordPosition?: number | null;
   onWordPress?: (word: WordSegment) => void;
   accessibilityLabel?: string;
+  fontFamily?: ArabicFontKey;
 }
 
 export function WordByWordArabic({
@@ -37,13 +39,15 @@ export function WordByWordArabic({
   activeWordPosition = null,
   onWordPress,
   accessibilityLabel,
+  fontFamily = 'AmiriQuran',
 }: WordByWordArabicProps) {
   return (
     <Text
       className="font-arabic text-content"
       style={{
+        fontFamily,
         fontSize,
-        lineHeight: fontSize * arabicLineHeightRatio,
+        lineHeight: fontSize * arabicLineHeightFor(fontFamily, arabicLineHeightRatio),
         textAlign: align,
         writingDirection: 'rtl',
       }}
