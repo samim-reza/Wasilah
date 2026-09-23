@@ -19,6 +19,17 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      abi:
+        description: >-
+          CPU architectures to include. arm64-v8a alone covers every phone made
+          in the last several years at roughly half the size of the full build;
+          pick "all" to include 32-bit ARM and the x86 emulator targets too.
+        type: choice
+        default: arm64-v8a
+        options:
+          - arm64-v8a
+          - all
 
 permissions:
   contents: write
@@ -84,6 +95,14 @@ jobs:
           org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
           org.gradle.workers.max=2
           PROPS
+          # React Native reads this to decide which native ABIs to compile and
+          # package. A test APK for a phone does not need x86 emulator code or
+          # 32-bit ARM, and dropping them halves the download — which matters
+          # when a 135 MB file over a weak connection arrives truncated and
+          # Android reports the result as "package appears to be invalid".
+          if [ "${{ inputs.abi }}" != "all" ]; then
+            echo "reactNativeArchitectures=${{ inputs.abi }}" >> ~/.gradle/gradle.properties
+          fi
 
       - name: Build APK locally with EAS
         env:
@@ -96,12 +115,26 @@ jobs:
             --local --non-interactive \
             --output "${{ github.workspace }}/wasilah-preview.apk"
 
+      # A checksum in the release notes is the fastest way to tell a truncated
+      # download from a broken build: compare the size and hash of the file on
+      # the phone with what is written here.
+      - name: Record size and checksum
+        id: sum
+        run: |
+          echo "size=$(stat -c%s wasilah-preview.apk)" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(sha256sum wasilah-preview.apk | cut -c1-64)" >> "$GITHUB_OUTPUT"
+
       - name: Publish as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-${{ github.run_number }}
           name: Wasilah preview APK (build ${{ github.run_number }})
           body: |
-            Built from `${{ github.sha }}` on the CI runner.
+            Built from `${{ github.sha }}` on the CI runner. Architectures: `${{ inputs.abi }}`.
+
             Install on Android: download the APK below and open it.
+
+            If Android says the package is invalid, the download was cut short.
+            The complete file is exactly **${{ steps.sum.outputs.size }} bytes**;
+            SHA-256 `${{ steps.sum.outputs.sha256 }}`.
           files: wasilah-preview.apk
