@@ -1,0 +1,72 @@
+# Builds the Android APK on a GitHub runner, without using an EAS build slot.
+#
+# Why this exists: the EAS Free plan allows a fixed number of Android builds a
+# month, and a day of rapid iteration exhausts it. `eas build --local` runs
+# the exact same pipeline — same prebuild, same config plugins, same keystore
+# fetched from EAS — but on this runner, which ships with the JDK and the
+# Android SDK already installed. The output is byte-for-byte the kind of APK
+# EAS would have produced; only where the Gradle run happens differs.
+#
+# The APK is attached to a GitHub Release named after the run, which gives a
+# plain download URL that works on a phone without signing in to anything.
+#
+# Manual trigger only. A release per push would be noise; this is for "give
+# me the latest APK", run on demand.
+#
+# Needs three repository secrets: EXPO_TOKEN (to fetch the signing keystore
+# from EAS), and the two EXPO_PUBLIC_SUPABASE_* values inlined into the bundle.
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-android
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # React Native's Gradle toolchain targets 17; the runner also carries 21,
+      # so the version is pinned rather than left to whichever is first on PATH.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      - run: npm run theme:build
+
+      - name: Build APK locally with EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_APP_ENV: preview
+        run: |
+          npx eas build --platform android --profile preview \
+            --local --non-interactive \
+            --output "${{ github.workspace }}/wasilah-preview.apk"
+
+      - name: Publish as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Wasilah preview APK (build ${{ github.run_number }})
+          body: |
+            Built from `${{ github.sha }}` on the CI runner.
+            Install on Android: download the APK below and open it.
+          files: wasilah-preview.apk
