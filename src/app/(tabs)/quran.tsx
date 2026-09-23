@@ -20,6 +20,8 @@ import { ChapterListItem } from '@/features/quran/components/ChapterListItem';
 import { useChapters } from '@/features/quran/hooks/useChapters';
 import type { Chapter } from '@/features/quran/types/quran.types';
 import { quranStructure } from '@/config/quran';
+import { queryKeys } from '@/lib/api/queryKeys';
+import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { Pressable } from '@/components/ui/Pressable';
 
@@ -29,6 +31,7 @@ export default function QuranScreen() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<BrowseMode>('surah');
   const { data: chapters, isLoading, error, refetch } = useChapters();
+  const refresh = usePullToRefresh([queryKeys.quran.all]);
 
   const handleChapterPress = useCallback((chapter: Chapter) => {
     router.push(`/quran/${chapter.id}`);
@@ -72,6 +75,8 @@ export default function QuranScreen() {
                 <ChapterListItem chapter={item} onPress={handleChapterPress} />
               )}
               keyExtractor={(chapter) => String(chapter.id)}
+              refreshing={refresh.refreshing}
+              onRefresh={refresh.onRefresh}
               showsVerticalScrollIndicator={false}
             />
           )}

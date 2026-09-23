@@ -104,7 +104,12 @@ export function useQuranSearch(): UseQuranSearchResult {
     [keysQuery.data],
   );
 
-  const scope: VerseQueryScope = { translationIds, includeWords: false, language: locale };
+  const scope: VerseQueryScope = {
+    translationIds,
+    includeWords: false,
+    language: locale,
+    script: preferences.arabicScript,
+  };
 
   // --- Stage two: what those ayahs say --------------------------------------
   //

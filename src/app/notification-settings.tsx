@@ -11,8 +11,8 @@ import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { IconButton } from '@/components/ui/IconButton';
 import { ListRow, ListSection } from '@/components/ui/ListRow';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
 import { isDuaCatalogueReady } from '@/features/duas/data/duaCatalogue';
@@ -22,16 +22,15 @@ import { useReminderSettings } from '@/features/reminders/hooks/useReminderSetti
 import { formatTimeForDisplay } from '@/lib/datetime/timeOfDay';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
+/** Mirrors the database check constraint; 0 would mean "off", which the switches already express. */
+const MIN_PER_DAY = 1;
+const MAX_PER_DAY = 10;
+
 export default function NotificationSettingsScreen() {
   const { t, locale } = useTranslation();
   const settings = useReminderSettings();
   const email = useEmailReminders();
 
-  const maxPerDayOptions = [
-    { value: '1', label: '1' },
-    { value: '2', label: '2' },
-    { value: '3', label: '3' },
-  ];
 
   return (
     <Screen edges={['top']} noPadding>
@@ -196,12 +195,50 @@ export default function NotificationSettingsScreen() {
           <Text variant="label" tone="subtle">
             {t('reminders.maxPerDay')}
           </Text>
-          <SegmentedControl
-            options={maxPerDayOptions}
-            value={String(settings.preferences.maxNotificationsPerDay)}
-            onChange={(value) => void settings.update({ maxNotificationsPerDay: Number(value) })}
-            accessibilityLabel={t('reminders.maxPerDay')}
-          />
+          {/* A stepper rather than chips: the range is 1–10 now, and ten
+              chips do not fit a phone width. The database enforces the same
+              bounds, so the buttons only mirror them. */}
+          <View className="flex-row items-center justify-between rounded-2xl bg-surface px-3 py-2">
+            <IconButton
+              name="remove"
+              size={20}
+              color="textMuted"
+              disabled={settings.preferences.maxNotificationsPerDay <= MIN_PER_DAY}
+              onPress={() =>
+                void settings.update({
+                  maxNotificationsPerDay: Math.max(
+                    MIN_PER_DAY,
+                    settings.preferences.maxNotificationsPerDay - 1,
+                  ),
+                })
+              }
+              accessibilityLabel={t('common.decrease')}
+            />
+            <Text
+              variant="heading"
+              accessibilityLiveRegion="polite"
+              accessibilityLabel={t('reminders.maxPerDayValue', {
+                count: settings.preferences.maxNotificationsPerDay,
+              })}
+            >
+              {settings.preferences.maxNotificationsPerDay}
+            </Text>
+            <IconButton
+              name="add"
+              size={20}
+              color="textMuted"
+              disabled={settings.preferences.maxNotificationsPerDay >= MAX_PER_DAY}
+              onPress={() =>
+                void settings.update({
+                  maxNotificationsPerDay: Math.min(
+                    MAX_PER_DAY,
+                    settings.preferences.maxNotificationsPerDay + 1,
+                  ),
+                })
+              }
+              accessibilityLabel={t('common.increase')}
+            />
+          </View>
         </View>
 
         {settings.nextReminder && (

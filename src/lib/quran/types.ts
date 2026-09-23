@@ -37,7 +37,11 @@ export interface QfWord {
   char_type_name: string;
   line_number?: number;
   page_number?: number;
-  text: string;
+  /** Present when no `word_fields` were requested; otherwise one of the script fields below is. */
+  text?: string;
+  text_uthmani?: string;
+  text_indopak?: string;
+  text_imlaei_simple?: string;
   translation?: { text: string; language_name: string };
   transliteration?: { text: string | null; language_name: string };
 }
@@ -73,6 +77,7 @@ export interface QfVerse {
   text_uthmani?: string;
   text_uthmani_simple?: string;
   text_imlaei?: string;
+  text_imlaei_simple?: string;
   text_indopak?: string;
   words?: QfWord[];
   translations?: QfTranslation[];

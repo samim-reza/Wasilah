@@ -122,6 +122,38 @@ redistributed or re-hosted.
 
 ## Fonts
 
+### Amiri
+
+| | |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Source**         | Google Fonts / [github.com/aliftype/amiri](https://github.com/aliftype/amiri) |
+| **Licence**        | SIL Open Font Licence 1.1                                                     |
+| **Used for**       | Quran text, as a user-selectable alternative face                             |
+
+### Scheherazade New
+
+| | |
+| ------------------ | -------------------------------------------------------------- |
+| **Source**         | Google Fonts / SIL International                               |
+| **Licence**        | SIL Open Font Licence 1.1                                      |
+| **Used for**       | Quran text, as a user-selectable alternative face              |
+
+### Noto Naskh Arabic
+
+| | |
+| ------------------ | -------------------------------------------------------------- |
+| **Source**         | Google Fonts (variable font, loaded at its Regular axis)       |
+| **Licence**        | SIL Open Font Licence 1.1                                      |
+| **Used for**       | Quran text, as a user-selectable alternative face              |
+
+### Noto Nastaliq Urdu
+
+| | |
+| ------------------ | -------------------------------------------------------------- |
+| **Source**         | Google Fonts (variable font, loaded at its Regular axis)       |
+| **Licence**        | SIL Open Font Licence 1.1                                      |
+| **Used for**       | Quran text, for readers used to IndoPak-style printing         |
+
 ### Amiri Quran
 
 |                    |                                                                               |

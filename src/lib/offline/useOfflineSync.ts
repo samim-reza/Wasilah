@@ -10,6 +10,8 @@ import { useNetworkState } from 'expo-network';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { onSyncRequested } from './syncSignal';
+
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { queryClient } from '@/lib/api/queryClient';
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -95,6 +97,10 @@ export function useOfflineSync(): OfflineSyncState {
     });
     return () => subscription.remove();
   }, [sync]);
+
+  // A write that has just been queued while online should not wait for the
+  // next foreground event; see `syncSignal` for the bug that motivated this.
+  useEffect(() => onSyncRequested(() => void sync()), [sync]);
 
   return { isOnline, pending, isSyncing, sync };
 }

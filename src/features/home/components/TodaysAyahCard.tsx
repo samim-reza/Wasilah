@@ -16,12 +16,14 @@ import { ArabicText } from '@/features/quran/components/ArabicText';
 import { TranslationText } from '@/features/quran/components/TranslationText';
 import type { Verse } from '@/features/quran/types/quran.types';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import type { ArabicFontKey } from '@/theme/fonts';
 
 export interface TodaysAyahCardProps {
   verse: Verse | undefined;
   chapterName: string | undefined;
   isLoading: boolean;
   arabicFontSize: number;
+  arabicFont: ArabicFontKey;
   translationFontSize: number;
   languageCode: string;
   isBookmarked: boolean;
@@ -40,6 +42,7 @@ export function TodaysAyahCard({
   chapterName,
   isLoading,
   arabicFontSize,
+  arabicFont,
   translationFontSize,
   languageCode,
   isBookmarked,
@@ -104,6 +107,7 @@ export function TodaysAyahCard({
       <ArabicText
         text={verse.arabicText}
         fontSize={arabicFontSize}
+        fontFamily={arabicFont}
         align="center"
         accessibilityLabel={reference}
       />

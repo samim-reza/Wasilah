@@ -14,11 +14,15 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/features/auth/hooks/AuthProvider';
-import { useReaderPreferences } from '@/features/reader/hooks/useReaderPreferences';
+import {
+  arabicScripts,
+  useReaderPreferences,
+} from '@/features/reader/hooks/useReaderPreferences';
 import { useAppPreferences } from '@/features/settings/hooks/useAppPreferences';
 import { localeNames, supportedLocales, type Locale } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { confirm } from '@/lib/ui/confirm';
+import { arabicFontKeys } from '@/theme/fonts';
 import { useTheme } from '@/theme/useTheme';
 import type { ThemePreference } from '@/theme/types';
 
@@ -115,6 +119,33 @@ export default function SettingsScreen() {
               onValueChange={(value) => void updateReader({ showWordByWord: value })}
             />
           </View>
+        </ListSection>
+
+        {/* Two independent choices. Script is WHICH TEXT is fetched from the
+            API — Uthmani, IndoPak or Imlaei are different orthographies —
+            and typeface is the face it is drawn in. A reader may want IndoPak
+            text in a Naskh face, or Uthmani in Nastaliq, so neither implies
+            the other. */}
+        <ListSection title={t('reader.arabicScript')}>
+          {arabicScripts.map((script) => (
+            <ListRow
+              key={script}
+              label={t(`reader.script${script.charAt(0).toUpperCase()}${script.slice(1)}`)}
+              value={reader.arabicScript === script ? '✓' : undefined}
+              onPress={() => void updateReader({ arabicScript: script })}
+            />
+          ))}
+        </ListSection>
+
+        <ListSection title={t('reader.arabicFont')}>
+          {arabicFontKeys.map((font) => (
+            <ListRow
+              key={font}
+              label={t(`reader.font${font}`)}
+              value={reader.arabicFont === font ? '✓' : undefined}
+              onPress={() => void updateReader({ arabicFont: font })}
+            />
+          ))}
         </ListSection>
 
         <ListSection title={t('settings.notifications')}>

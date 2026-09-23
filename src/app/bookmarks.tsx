@@ -28,6 +28,8 @@ import { useBookmarks } from '@/features/bookmarks/hooks/useBookmarks';
 import type { Bookmark } from '@/features/bookmarks/services/bookmarkService';
 import { useChapters } from '@/features/quran/hooks/useChapters';
 import { compareVerseKeys } from '@/features/quran/utils/verseKey';
+import { queryKeys } from '@/lib/api/queryKeys';
+import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 type SortOrder = 'recent' | 'mushaf';
@@ -35,6 +37,7 @@ type SortOrder = 'recent' | 'mushaf';
 export default function BookmarksScreen() {
   const { t } = useTranslation();
   const bookmarks = useBookmarks();
+  const refresh = usePullToRefresh([queryKeys.library.all]);
   const collections = useBookmarkCollections();
   const { data: chapters } = useChapters();
 
@@ -112,6 +115,8 @@ export default function BookmarksScreen() {
         <FlashList
           data={visible}
           keyExtractor={(bookmark) => bookmark.id}
+          refreshing={refresh.refreshing}
+          onRefresh={refresh.onRefresh}
           renderItem={({ item }) => (
             <Pressable
               className="flex-row items-center gap-2 border-b border-border px-4 py-3"

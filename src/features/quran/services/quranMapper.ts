@@ -57,11 +57,14 @@ function mapWord(raw: QfWord): WordSegment {
   return {
     id: raw.id,
     position: raw.position,
-    text: raw.text,
+    // `text` when no word fields were named; otherwise the requested script.
+    text: raw.text ?? raw.text_uthmani ?? raw.text_indopak ?? raw.text_imlaei_simple ?? '',
     translation: raw.translation?.text ?? null,
     transliteration: raw.transliteration?.text ?? null,
     isEndMarker: raw.char_type_name === 'end',
-    audioUrl: raw.audio_url,
+    // Relative on the wire ('wbw/001_001_001.mp3'); resolved against the same
+    // CDN base as ayah audio, which serves the word clips too.
+    audioUrl: raw.audio_url ? resolveAudioUrl(raw.audio_url) : null,
   };
 }
 
@@ -75,9 +78,16 @@ export function mapVerse(raw: QfVerse): Verse {
     // for endpoints that omit it.
     chapterId: address?.chapterId ?? 0,
     verseNumber: address?.verseNumber ?? raw.verse_number,
-    // Prefer Uthmani. Never substitute a different script silently — if the
-    // requested script is missing the ayah renders empty rather than wrong.
-    arabicText: raw.text_uthmani ?? raw.text_uthmani_simple ?? '',
+    // Exactly one script field is requested, so at most one is present; the
+    // chain simply finds it. Nothing is substituted: if the requested script
+    // is missing the ayah renders empty rather than silently in another.
+    arabicText:
+      raw.text_uthmani ??
+      raw.text_indopak ??
+      raw.text_imlaei_simple ??
+      raw.text_uthmani_simple ??
+      raw.text_imlaei ??
+      '',
     translations: (raw.translations ?? []).map((translation) => ({
       resourceId: translation.resource_id,
       resourceName: translation.resource_name ?? null,

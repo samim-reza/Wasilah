@@ -9,12 +9,14 @@
  * Keys are hierarchical: ['quran', 'verses', chapterId, params] so a prefix
  * invalidation cascades exactly as far as intended.
  */
-import type { VerseKey } from '@/features/quran/types/quran.types';
+import type { ArabicScript, VerseKey } from '@/features/quran/types/quran.types';
 
 export interface VerseQueryScope {
   translationIds: number[];
   includeWords: boolean;
   language: string;
+  /** Part of the key: switching script must fetch different text, not restyle the old. */
+  script: ArabicScript;
 }
 
 export const queryKeys = {

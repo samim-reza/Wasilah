@@ -18,6 +18,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AyahCard } from '@/features/quran/components/AyahCard';
 import type { Verse, WordSegment } from '@/features/quran/types/quran.types';
+import type { ArabicFontKey } from '@/theme/fonts';
 import { Text } from '@/components/ui/Text';
 
 export interface VirtualizedAyahListProps {
@@ -41,6 +42,8 @@ export interface VirtualizedAyahListProps {
   /** Reported once per ayah as it becomes visible. */
   onVerseVisible: (verse: Verse) => void;
   onPlay: (verse: Verse) => void;
+  onPlaySingle: (verse: Verse) => void;
+  arabicFont: ArabicFontKey;
   onTafsir: (verse: Verse) => void;
   onBookmark: (verse: Verse) => void;
   onNote: (verse: Verse) => void;
@@ -83,6 +86,8 @@ export function VirtualizedAyahList({
   onEndReached,
   onVerseVisible,
   onPlay,
+  onPlaySingle,
+  arabicFont,
   onTafsir,
   onBookmark,
   onNote,
@@ -131,6 +136,8 @@ export function VirtualizedAyahList({
         showTafsirAction={showTafsirAction}
         onWordPress={onWordPress}
         onPlay={onPlay}
+        onPlaySingle={onPlaySingle}
+        arabicFont={arabicFont}
         onTafsir={onTafsir}
         onBookmark={onBookmark}
         onNote={onNote}
@@ -149,6 +156,8 @@ export function VirtualizedAyahList({
       activeWordPosition,
       showTafsirAction,
       onPlay,
+      onPlaySingle,
+      arabicFont,
       onTafsir,
       onBookmark,
       onNote,

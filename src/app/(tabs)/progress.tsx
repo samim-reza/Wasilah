@@ -6,7 +6,7 @@
  * no pressure.
  */
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { Skeleton } from '@/components/feedback/Skeleton';
@@ -21,6 +21,8 @@ import { useAchievements } from '@/features/streak/hooks/useAchievements';
 import { useProgressCalendar } from '@/features/streak/hooks/useProgressCalendar';
 import { addLocalDays, startOfLocalMonth } from '@/lib/datetime/localDate';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
+import { queryKeys } from '@/lib/api/queryKeys';
+import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export default function ProgressScreen() {
@@ -30,6 +32,7 @@ export default function ProgressScreen() {
 
   const [month, setMonth] = useState(() => startOfLocalMonth(today));
   const calendar = useProgressCalendar(month);
+  const refresh = usePullToRefresh([queryKeys.habit.all]);
 
   const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -54,7 +57,12 @@ export default function ProgressScreen() {
 
   return (
     <Screen noPadding>
-      <ScrollView contentContainerClassName="px-4 pb-8 gap-4">
+      <ScrollView
+        contentContainerClassName="px-4 pb-8 gap-4"
+        refreshControl={
+          <RefreshControl refreshing={refresh.refreshing} onRefresh={refresh.onRefresh} />
+        }
+      >
         <Text variant="heading" className="pt-3" accessibilityRole="header">
           {t('progress.title')}
         </Text>

@@ -64,6 +64,10 @@ export type UserQuranPreferencesRow = {
   show_word_by_word: boolean;
   mode: ReadingModeValue;
   playback_rate: number;
+  /** 'uthmani' | 'indopak' | 'imlaei' — which text is fetched, not which font. */
+  arabic_script: string;
+  /** A key from `arabicFontKeys` in `theme/fonts`. */
+  arabic_font: string;
   created_at: string;
   updated_at: string;
 };

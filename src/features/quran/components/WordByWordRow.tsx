@@ -8,6 +8,7 @@
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
+import { arabicLineHeightFor, type ArabicFontKey } from '@/theme/fonts';
 import { arabicLineHeightRatio } from '@/theme/tokens';
 
 import type { WordSegment } from '../types/quran.types';
@@ -24,6 +25,7 @@ export interface WordByWordRowProps {
    */
   activeWordPosition?: number | null;
   onWordPress?: (word: WordSegment) => void;
+  fontFamily?: ArabicFontKey;
 }
 
 export function WordByWordRow({
@@ -32,6 +34,7 @@ export function WordByWordRow({
   showTransliteration = false,
   activeWordPosition = null,
   onWordPress,
+  fontFamily = 'AmiriQuran',
 }: WordByWordRowProps) {
   // The end-of-ayah glyph is not a word and has no translation; the ayah number
   // badge shows it instead.
@@ -55,8 +58,10 @@ export function WordByWordRow({
           <Text
             className={isActive ? 'font-arabic text-primary' : 'font-arabic text-content'}
             style={{
+              fontFamily,
               fontSize: arabicFontSize * 0.8,
-              lineHeight: arabicFontSize * 0.8 * arabicLineHeightRatio,
+              lineHeight:
+                arabicFontSize * 0.8 * arabicLineHeightFor(fontFamily, arabicLineHeightRatio),
             }}
             allowFontScaling={false}
           >

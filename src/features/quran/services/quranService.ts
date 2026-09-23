@@ -31,6 +31,7 @@ import type {
   Verse,
   VerseKey,
   VersePage,
+  ArabicScript,
 } from '../types/quran.types';
 import {
   mapAudioFiles,
@@ -48,9 +49,36 @@ import {
  * than the default payload roughly halves the response size, which is the
  * single biggest lever on how fast a surah opens.
  */
-const READER_VERSE_FIELDS =
-  'text_uthmani,chapter_id,verse_number,verse_key,juz_number,page_number,sajdah_number,ruku_number,hizb_number';
-const WORD_FIELDS = 'text_uthmani,translation,transliteration,char_type_name,position,audio_url';
+const READER_STRUCTURE_FIELDS =
+  'chapter_id,verse_number,verse_key,juz_number,page_number,sajdah_number,ruku_number,hizb_number';
+const WORD_STRUCTURE_FIELDS = 'translation,transliteration,char_type_name,position,audio_url';
+
+/**
+ * The API field that carries the text for a script.
+ *
+ * Only the selected script is requested, never all three. Each is a full copy
+ * of the Arabic, so requesting them together would nearly double the payload
+ * for a surah — and switching script is rare enough that a refetch on change
+ * is the right trade.
+ */
+export function verseTextField(script: ArabicScript): string {
+  switch (script) {
+    case 'indopak':
+      return 'text_indopak';
+    case 'imlaei':
+      return 'text_imlaei_simple';
+    case 'uthmani':
+      return 'text_uthmani';
+  }
+}
+
+function readerVerseFields(script: ArabicScript): string {
+  return `${verseTextField(script)},${READER_STRUCTURE_FIELDS}`;
+}
+
+function wordFields(script: ArabicScript): string {
+  return `${verseTextField(script)},${WORD_STRUCTURE_FIELDS}`;
+}
 
 export interface VerseQueryOptions extends QuranRequestOptions {
   /** Translation resource IDs to include. Empty means Arabic only. */
@@ -58,6 +86,8 @@ export interface VerseQueryOptions extends QuranRequestOptions {
   /** Word-by-word data roughly triples the payload; request it only when shown. */
   includeWords?: boolean;
   language?: string;
+  /** Defaults to Uthmani, the Madinah Mushaf orthography. */
+  script?: ArabicScript;
   page?: number;
   perPage?: number;
 }
@@ -65,10 +95,10 @@ export interface VerseQueryOptions extends QuranRequestOptions {
 function verseParams(options: VerseQueryOptions) {
   return {
     language: options.language ?? 'en',
-    fields: READER_VERSE_FIELDS,
+    fields: readerVerseFields(options.script ?? 'uthmani'),
     translations: options.translationIds?.length ? options.translationIds : undefined,
     words: options.includeWords ? true : undefined,
-    word_fields: options.includeWords ? WORD_FIELDS : undefined,
+    word_fields: options.includeWords ? wordFields(options.script ?? 'uthmani') : undefined,
     page: options.page ?? 1,
     per_page: options.perPage ?? readerPageSize,
   };
@@ -160,10 +190,10 @@ export async function fetchVerse(
     `/verses/by_key/${verseKey}`,
     {
       language: options.language ?? 'en',
-      fields: READER_VERSE_FIELDS,
+      fields: readerVerseFields(options.script ?? 'uthmani'),
       translations: options.translationIds?.length ? options.translationIds : undefined,
       words: options.includeWords ? true : undefined,
-      word_fields: options.includeWords ? WORD_FIELDS : undefined,
+      word_fields: options.includeWords ? wordFields(options.script ?? 'uthmani') : undefined,
     },
     options,
   );

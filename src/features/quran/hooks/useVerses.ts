@@ -21,11 +21,12 @@ import {
   fetchVersesByJuz,
   fetchVersesByPage,
 } from '../services/quranService';
-import type { Verse, VersePage } from '../types/quran.types';
+import type { ArabicScript, Verse, VersePage } from '../types/quran.types';
 
 export interface UseVersesOptions {
   translationIds: number[];
   includeWords: boolean;
+  script: ArabicScript;
   /** Skip fetching, e.g. while the route param is still resolving. */
   enabled?: boolean;
 }
@@ -78,6 +79,7 @@ export function useVerses(source: VerseSource, options: UseVersesOptions): UseVe
     translationIds: options.translationIds,
     includeWords: options.includeWords,
     language: locale,
+    script: options.script,
   };
 
   const query = useInfiniteQuery<VersePage>({
@@ -87,6 +89,7 @@ export function useVerses(source: VerseSource, options: UseVersesOptions): UseVe
         translationIds: options.translationIds,
         includeWords: options.includeWords,
         language: locale,
+        script: options.script,
         page: pageParam as number,
         perPage: readerPageSize,
       }),

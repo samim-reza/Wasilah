@@ -10,11 +10,13 @@
  * text from the accessibility tree.
  */
 import { memo } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { Text } from '@/components/ui/Text';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import type { ArabicFontKey } from '@/theme/fonts';
 
 import { ArabicText } from './ArabicText';
 import { AyahNumber } from './AyahNumber';
@@ -43,7 +45,12 @@ export interface AyahCardProps {
    */
   activeWordPosition?: number | null;
   onWordPress?: (word: WordSegment) => void;
+  /** The face the Arabic is drawn in — the user's choice, from settings. */
+  arabicFont: ArabicFontKey;
+  /** Plays from this ayah and continues through the surah. */
   onPlay: (verse: Verse) => void;
+  /** Plays this ayah alone and stops. */
+  onPlaySingle: (verse: Verse) => void;
   onTafsir: (verse: Verse) => void;
   onBookmark: (verse: Verse) => void;
   onNote: (verse: Verse) => void;
@@ -63,7 +70,9 @@ function AyahCardComponent({
   showTafsirAction,
   activeWordPosition = null,
   onWordPress,
+  arabicFont,
   onPlay,
+  onPlaySingle,
   onTafsir,
   onBookmark,
   onNote,
@@ -87,13 +96,34 @@ function AyahCardComponent({
         <AyahNumber verseNumber={verse.verseNumber} active={isPlaying} />
 
         <View className="flex-row items-center">
+          {/* Two play controls, not a chooser sheet. The plain one continues
+              through the surah, which is how most listening starts; the one
+              marked ¹ plays this ayah alone. A sheet asking which on every tap
+              was the worse of both worlds. */}
           <IconButton
             name={isPlaying ? 'pause' : 'play'}
             size={18}
             color={isPlaying ? 'primary' : 'textMuted'}
             onPress={() => onPlay(verse)}
-            accessibilityLabel={t('a11y.playAyah', { reference })}
+            accessibilityLabel={t('a11y.playFromHere', { reference })}
           />
+          <Pressable
+            onPress={() => onPlaySingle(verse)}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.playAyah', { reference })}
+            hitSlop={8}
+            className="flex-row items-start px-2 py-2"
+          >
+            <Icon name="play" size={18} color="textMuted" />
+            <Text
+              variant="caption"
+              tone="muted"
+              className="-ml-0.5 text-[9px] font-bold"
+              accessible={false}
+            >
+              1
+            </Text>
+          </Pressable>
           <IconButton
             name={isBookmarked ? 'bookmarkFilled' : 'bookmark'}
             size={18}
@@ -133,9 +163,10 @@ function AyahCardComponent({
           arabicFontSize={arabicFontSize}
           activeWordPosition={activeWordPosition}
           onWordPress={onWordPress}
+          fontFamily={arabicFont}
         />
       ) : (
-        <ArabicText text={verse.arabicText} fontSize={arabicFontSize} />
+        <ArabicText text={verse.arabicText} fontSize={arabicFontSize} fontFamily={arabicFont} />
       )}
 
       {showTranslation && verse.translations.length > 0 && (
@@ -177,6 +208,7 @@ export const AyahCard = memo(AyahCardComponent, (previous, next) => {
     previous.showTranslation === next.showTranslation &&
     previous.showWordByWord === next.showWordByWord &&
     previous.activeWordPosition === next.activeWordPosition &&
+    previous.arabicFont === next.arabicFont &&
     previous.isBookmarked === next.isBookmarked &&
     previous.hasNote === next.hasNote &&
     previous.isPlaying === next.isPlaying &&

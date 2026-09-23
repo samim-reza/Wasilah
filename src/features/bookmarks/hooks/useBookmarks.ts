@@ -13,6 +13,7 @@ import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { trackEvent } from '@/lib/analytics/analytics';
 import { isArrayOf, isRecord } from '@/lib/storage/guards';
+import { requestSync } from '@/lib/offline/syncSignal';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 
@@ -70,6 +71,9 @@ export function useBookmarks(): UseBookmarksResult {
     mutationFn: async ({ verseKey, shouldAdd }: { verseKey: string; shouldAdd: boolean }) => {
       if (shouldAdd) await addBookmark(verseKey, userId);
       else await removeBookmark(verseKey, userId);
+      // The write is queued, not sent. Ask the queue to flush now rather than
+      // at the next foreground event, so the server learns about it promptly.
+      requestSync();
       return shouldAdd;
     },
 
@@ -107,9 +111,12 @@ export function useBookmarks(): UseBookmarksResult {
       trackEvent(shouldAdd ? 'bookmark_created' : 'bookmark_removed', {});
     },
 
-    onSettled: () => {
-      if (userId) void queryClient.invalidateQueries({ queryKey });
-    },
+    // Deliberately NO invalidation here for a signed-in user. `addBookmark`
+    // only enqueues; the server does not have the row yet. Refetching at this
+    // point returned the old list and replaced the optimistic entry with it —
+    // the bookmark appeared, then vanished. The queue's own flush invalidates
+    // `library.all` once the row has actually landed.
+    onSettled: () => undefined,
   });
 
   const isBookmarked = useCallback(

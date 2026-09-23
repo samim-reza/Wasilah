@@ -23,6 +23,7 @@
  */
 import { Text } from 'react-native';
 
+import { arabicLineHeightFor, type ArabicFontKey } from '@/theme/fonts';
 import { arabicLineHeightRatio } from '@/theme/tokens';
 
 export interface ArabicTextProps {
@@ -33,6 +34,8 @@ export interface ArabicTextProps {
   /** Screen-reader label; the ayah reference, since the glyphs read poorly. */
   accessibilityLabel?: string;
   selectable?: boolean;
+  /** Defaults to Amiri Quran; the reader passes the user's chosen face. */
+  fontFamily?: ArabicFontKey;
 }
 
 export function ArabicText({
@@ -41,13 +44,17 @@ export function ArabicText({
   align = 'right',
   accessibilityLabel,
   selectable = true,
+  fontFamily = 'AmiriQuran',
 }: ArabicTextProps) {
   return (
     <Text
       className="font-arabic text-content"
+      // Inline `fontFamily` wins over the class, which is the point: the class
+      // is the default face, the prop is the user's choice.
       style={{
+        fontFamily,
         fontSize,
-        lineHeight: fontSize * arabicLineHeightRatio,
+        lineHeight: fontSize * arabicLineHeightFor(fontFamily, arabicLineHeightRatio),
         textAlign: align,
         writingDirection: 'rtl',
       }}

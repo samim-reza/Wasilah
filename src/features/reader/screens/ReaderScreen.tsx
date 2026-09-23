@@ -19,14 +19,17 @@ import { useToast } from '@/components/feedback/Toast';
 import { Screen } from '@/components/layout/Screen';
 import { useAudio } from '@/features/audio/hooks/AudioPlayerProvider';
 import { useAyahPlayback } from '@/features/audio/hooks/useAyahAudio';
+import { useWordAudio } from '@/features/audio/hooks/useWordAudio';
 import { useBookmarks } from '@/features/bookmarks/hooks/useBookmarks';
 import { NoteEditorSheet } from '@/features/notes/components/NoteEditorSheet';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { BismillahHeader } from '@/features/quran/components/BismillahHeader';
 import { TafsirSheet } from '@/features/quran/components/TafsirSheet';
-import { PlayScopeSheet, type PlayScope } from '@/features/quran/components/PlayScopeSheet';
 import { WordMeaningSheet } from '@/features/quran/components/WordMeaningSheet';
-import { activeWordPosition as wordAtPosition, parseWordTimings } from '@/features/quran/utils/wordTimings';
+import {
+  activeWordPosition as wordAtPosition,
+  parseWordTimings,
+} from '@/features/quran/utils/wordTimings';
 import { useChapter } from '@/features/quran/hooks/useChapters';
 import { useResolvedTranslationIds } from '@/features/quran/hooks/useResolvedTranslations';
 import { useVerses, type VerseSource } from '@/features/quran/hooks/useVerses';
@@ -72,6 +75,7 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
   const versesQuery = useVerses(source, {
     translationIds: preferences.showTranslation ? translationIds : [],
     includeWords: preferences.showWordByWord,
+    script: preferences.arabicScript,
   });
 
   const bookmarks = useBookmarks();
@@ -89,8 +93,7 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
 
   const listRef = useRef<FlashListRef<Verse>>(null);
   const [selectedWord, setSelectedWord] = useState<WordSegment | null>(null);
-  // The ayah whose play button was tapped, held while the scope is chosen.
-  const [pendingPlayVerse, setPendingPlayVerse] = useState<Verse | null>(null);
+  const playWord = useWordAudio();
 
   /**
    * Which word the reciter is on.
@@ -155,33 +158,47 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
     [tracker, savePosition],
   );
 
+  /**
+   * The plain play button: from this ayah, continuing through the surah.
+   * Tapping it on the ayah already playing pauses — that is a pause, not a
+   * new request.
+   */
   const handlePlay = useCallback(
     (verse: Verse) => {
-      // Already the playing ayah: this is a pause, not a new choice.
       if (audio.currentTrack?.verseKey === verse.verseKey) {
         audio.toggle();
         return;
       }
-      setPendingPlayVerse(verse);
-    },
-    [audio],
-  );
-
-  const handlePlayScope = useCallback(
-    (scope: PlayScope) => {
-      const verse = pendingPlayVerse;
-      if (!verse) return;
-
-      if (scope === 'single') {
-        void playAyah(verse.verseKey);
-        return;
-      }
-
       void playFrom(verse.chapterId, verse.verseKey).catch(() => {
         toast.show(t('errors.audioUnavailable'), { tone: 'error', icon: 'error' });
       });
     },
-    [pendingPlayVerse, playAyah, playFrom, toast, t],
+    [audio, playFrom, toast, t],
+  );
+
+  /** The ¹ button: this ayah alone, then stop. */
+  const handlePlaySingle = useCallback(
+    (verse: Verse) => {
+      if (audio.currentTrack?.verseKey === verse.verseKey) {
+        audio.toggle();
+        return;
+      }
+      void playAyah(verse.verseKey);
+    },
+    [audio, playAyah],
+  );
+
+  /**
+   * A tapped word is heard AND explained: the clip plays over whatever else
+   * is playing, and the sheet opens with pronunciation and meaning. A word
+   * with no clip still opens the sheet, so the tap is never wasted.
+   */
+  const handleWordPress = useCallback(
+    (word: WordSegment) => {
+      if (word.audioUrl) playWord(word.audioUrl);
+      setSelectedWord(word);
+    },
+    [playWord],
   );
 
   /**
@@ -284,7 +301,9 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
           notedKeys={notedKeys}
           playingVerseKey={audio.currentTrack?.verseKey ?? null}
           activeWordPosition={activeWord}
-          onWordPress={setSelectedWord}
+          onWordPress={handleWordPress}
+          onPlaySingle={handlePlaySingle}
+          arabicFont={preferences.arabicFont}
           showTafsirAction={tafsirEnabled && preferences.tafsirId !== null}
           isFetchingNextPage={versesQuery.isFetchingNextPage}
           hasNextPage={versesQuery.hasNextPage}
@@ -328,12 +347,6 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
           router.push('/reader-tafsirs');
         }}
         wordByWordAvailable
-      />
-
-      <PlayScopeSheet
-        visible={pendingPlayVerse !== null}
-        onClose={() => setPendingPlayVerse(null)}
-        onSelect={handlePlayScope}
       />
 
       <WordMeaningSheet word={selectedWord} onClose={() => setSelectedWord(null)} />

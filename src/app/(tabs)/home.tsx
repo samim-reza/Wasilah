@@ -30,6 +30,8 @@ import { useHabitState } from '@/features/streak/hooks/useHabitState';
 import { useRecordReading } from '@/features/streak/hooks/useRecordReading';
 import { shareVerse } from '@/features/quran/services/shareService';
 import { trackEvent } from '@/lib/analytics/analytics';
+import { queryKeys } from '@/lib/api/queryKeys';
+import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export default function HomeScreen() {
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const bookmarks = useBookmarks();
   const audio = useAudio();
   const recordReading = useRecordReading();
+  const refresh = usePullToRefresh([queryKeys.habit.all, queryKeys.quran.all, queryKeys.library.all]);
 
   const translationIds = useResolvedTranslationIds(preferences.translationIds);
   const dailyAyah = useDailyAyah({ translationIds });
@@ -133,7 +136,7 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerClassName="px-4 pb-8 gap-3"
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => void habit.refetch()} />
+          <RefreshControl refreshing={refresh.refreshing} onRefresh={refresh.onRefresh} />
         }
         // The deep link from a notification can ask for a particular card; the
         // list is short enough that scrolling to the top is the right response.
@@ -150,6 +153,7 @@ export default function HomeScreen() {
           chapterName={dailyAyah.chapter?.nameSimple}
           isLoading={dailyAyah.isLoading}
           arabicFontSize={preferences.arabicFontSize}
+          arabicFont={preferences.arabicFont}
           translationFontSize={preferences.translationFontSize}
           languageCode={preferences.translationIds[0] === 161 ? 'bn' : 'en'}
           isBookmarked={

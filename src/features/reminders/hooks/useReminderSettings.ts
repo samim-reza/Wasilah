@@ -113,8 +113,14 @@ export function useReminderSettings(): UseReminderSettingsResult {
         ? await fetchPrayerRules(userId).catch(() => [])
         : [];
 
+    // Weather is needed by TWO features: the weather-flavoured daily reminder
+    // and the contextual duas (rain, heat, cold). It used to be fetched only
+    // for the first, so a user who enabled dua reminders without weather
+    // reminders could never receive the rain dua — the planner saw no weather
+    // and, correctly, refused to guess.
     const weather: WeatherSnapshot | null =
-      preferences.weatherRemindersEnabled && prayer.settings.coordinates
+      (preferences.weatherRemindersEnabled || preferences.duaRemindersEnabled) &&
+      prayer.settings.coordinates
         ? await fetchWeather(prayer.settings.coordinates).catch(() => null)
         : null;
 

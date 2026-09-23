@@ -1,14 +1,32 @@
 /**
- * Reading preferences: font sizes, translations, reciter, display mode.
+ * Reading preferences: font sizes, translations, reciter, script, typeface,
+ * display mode.
  *
- * Stored on device first and synced to Supabase when signed in. Device-first is
- * the right default here: a font size the user just changed must apply
- * instantly and survive being offline, and it is not worth a network round trip.
+ * A PROVIDER, not a plain hook, and the reason is a bug that shipped: seven
+ * screens called the hook and each held its own copy of the state, so a change
+ * made in Settings did not reach the reader until the reader remounted. The
+ * user had to leave the surah and come back to see their own setting. One
+ * provider, one state, every consumer sees every change the instant it is
+ * made.
+ *
+ * Stored on device first and synced to Supabase when signed in. Device-first
+ * is the right default here: a font size the user just changed must apply
+ * instantly and survive being offline, and it is not worth a network round
+ * trip.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { defaultRecitationId, defaultTranslationIds } from '@/config/quran';
+import { defaultTranslationIdsFor } from '@/features/quran/utils/resolveTranslations';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { getLocale } from '@/lib/i18n';
 import { logger } from '@/lib/monitoring/logger';
@@ -16,8 +34,13 @@ import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import { supabase } from '@/lib/supabase/client';
 import type { ReadingModeValue } from '@/lib/supabase/database.types';
-import { defaultTranslationIdsFor } from '@/features/quran/utils/resolveTranslations';
 import { arabicFontSizes, translationFontSizes } from '@/theme/tokens';
+import { arabicFontKeys, type ArabicFontKey } from '@/theme/fonts';
+
+import { arabicScripts, type ArabicScript } from '@/features/quran/types/quran.types';
+
+export type { ArabicScript };
+export { arabicScripts };
 
 export interface ReaderPreferences {
   arabicFontSize: number;
@@ -31,17 +54,14 @@ export interface ReaderPreferences {
   mode: ReadingModeValue;
   playbackRate: number;
   keepScreenAwake: boolean;
+  arabicScript: ArabicScript;
+  arabicFont: ArabicFontKey;
   /**
    * True once the user has picked translations by hand.
    *
    * Until then the edition follows the interface language, so switching the
-   * app to Bengali switches the translation with it. `buildDefaults` only runs
-   * on a fresh install, so without this a user who installs in English and
-   * later switches language keeps reading an English translation under
-   * Bengali word-by-word glosses — which is exactly what happened.
-   *
-   * Local only: it records how the current value was arrived at, not what it
-   * is, so it does not belong in the synced preference row.
+   * app to Bengali switches the translation with it. Local only: it records
+   * how the value was arrived at, not what it is.
    */
   translationsPinned: boolean;
 }
@@ -52,8 +72,6 @@ function buildDefaults(): ReaderPreferences {
   return {
     arabicFontSize: arabicFontSizes[2] ?? 30,
     translationFontSize: translationFontSizes[1] ?? 16,
-    // Default to the translation matching the interface language, so a Bengali
-    // speaker does not have to find the setting before they can read.
     translationIds: [locale === 'bn' ? defaultTranslationIds.bn : defaultTranslationIds.en],
     tafsirId: null,
     recitationId: defaultRecitationId,
@@ -62,8 +80,18 @@ function buildDefaults(): ReaderPreferences {
     mode: 'translation',
     playbackRate: 1,
     keepScreenAwake: true,
+    arabicScript: 'uthmani',
+    arabicFont: 'AmiriQuran',
     translationsPinned: false,
   };
+}
+
+function isArabicScript(value: unknown): value is ArabicScript {
+  return typeof value === 'string' && (arabicScripts as readonly string[]).includes(value);
+}
+
+function isArabicFont(value: unknown): value is ArabicFontKey {
+  return typeof value === 'string' && (arabicFontKeys as readonly string[]).includes(value);
 }
 
 export interface UseReaderPreferencesResult {
@@ -84,7 +112,7 @@ function stepThroughScale(scale: readonly number[], current: number, direction: 
   return scale[next] ?? current;
 }
 
-export function useReaderPreferences(): UseReaderPreferencesResult {
+function useReaderPreferencesState(): UseReaderPreferencesResult {
   const userId = useUserId();
   const { locale } = useTranslation();
   const [preferences, setPreferences] = useState<ReaderPreferences>(buildDefaults);
@@ -134,6 +162,10 @@ export function useReaderPreferences(): UseReaderPreferencesResult {
         showWordByWord: data.show_word_by_word,
         mode: data.mode,
         playbackRate: Number(data.playback_rate),
+        // Validated rather than trusted: a value written by a newer build with
+        // a script this one does not know would otherwise select nothing.
+        arabicScript: isArabicScript(data.arabic_script) ? data.arabic_script : current.arabicScript,
+        arabicFont: isArabicFont(data.arabic_font) ? data.arabic_font : current.arabicFont,
       }));
     })();
 
@@ -162,6 +194,8 @@ export function useReaderPreferences(): UseReaderPreferencesResult {
           show_word_by_word: next.showWordByWord,
           mode: next.mode,
           playback_rate: next.playbackRate,
+          arabic_script: next.arabicScript,
+          arabic_font: next.arabicFont,
         },
         { onConflict: 'user_id' },
       );
@@ -196,14 +230,10 @@ export function useReaderPreferences(): UseReaderPreferencesResult {
   /**
    * Keeps the translation edition in step with the interface language.
    *
-   * Derived rather than written back, which matters: the stored value is left
-   * exactly as the user last left it, and the language merely decides how it
-   * is read. Writing it would mean a language switch silently rewrote a
-   * preference the user never touched.
-   *
-   * Only applies while the choice is unpinned. Someone who deliberately picked
-   * an English edition keeps it; someone who simply switched the app to
-   * Bengali stops getting English prose under Bengali word-by-word glosses.
+   * Derived rather than written back: the stored value stays exactly as the
+   * user left it and the language only decides how it is read. Only while the
+   * choice is unpinned — someone who deliberately picked an English edition
+   * keeps it.
    */
   const effective = useMemo(() => {
     if (preferences.translationsPinned) return preferences;
@@ -228,4 +258,27 @@ export function useReaderPreferences(): UseReaderPreferencesResult {
     }),
     [effective, isLoading, update, stepArabicFontSize, stepTranslationFontSize],
   );
+}
+
+const ReaderPreferencesContext = createContext<UseReaderPreferencesResult | null>(null);
+
+export function ReaderPreferencesProvider({ children }: { children: ReactNode }) {
+  const value = useReaderPreferencesState();
+  return (
+    <ReaderPreferencesContext.Provider value={value}>{children}</ReaderPreferencesContext.Provider>
+  );
+}
+
+/**
+ * Reads the shared preferences.
+ *
+ * Throws outside the provider rather than falling back to a private copy —
+ * a silent fallback would reintroduce exactly the stale-settings bug this
+ * provider exists to remove, and it would only ever show up as "my setting
+ * did not apply".
+ */
+export function useReaderPreferences(): UseReaderPreferencesResult {
+  const value = useContext(ReaderPreferencesContext);
+  if (!value) throw new Error('useReaderPreferences must be used inside ReaderPreferencesProvider');
+  return value;
 }

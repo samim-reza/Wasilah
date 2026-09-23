@@ -28,6 +28,17 @@ export interface Chapter {
   lastPage: number;
 }
 
+/**
+ * Which orthography the Quran text is fetched in.
+ *
+ * These are different TEXTS from the API, not different fonts: Uthmani is the
+ * Madinah Mushaf spelling, IndoPak the South Asian one, Imlaei modern
+ * standard spelling. A reader who learned on an IndoPak mushaf reads the
+ * Uthmani text noticeably slower, which is why it is a setting.
+ */
+export type ArabicScript = 'uthmani' | 'indopak' | 'imlaei';
+export const arabicScripts: readonly ArabicScript[] = ['uthmani', 'indopak', 'imlaei'];
+
 export interface WordSegment {
   id: number;
   position: number;
