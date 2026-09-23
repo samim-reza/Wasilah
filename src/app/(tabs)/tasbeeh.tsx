@@ -53,47 +53,48 @@ export default function TasbeehListScreen() {
             const progress = deriveProgress(entry, today);
 
             return (
-              <Pressable
-                key={entry.id}
-                onPress={() => router.push(`/tasbeeh/${entry.id}`)}
-                accessibilityRole="button"
-                accessibilityLabel={entry.name}
-              >
-                <Card className="flex-row items-center gap-3">
-                  <View className="flex-1 gap-1">
-                    <Text className="font-semibold">{entry.name}</Text>
+              // The row is a card with a pressable name area and two buttons
+              // beside it, not a button wrapping buttons: nested buttons are
+              // invalid HTML, and on the web the inner ones stopped working.
+              <Card key={entry.id} className="flex-row items-center gap-3">
+                <Pressable
+                  className="flex-1 gap-1"
+                  onPress={() => router.push(`/tasbeeh/${entry.id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={entry.name}
+                >
+                  <Text className="font-semibold">{entry.name}</Text>
 
-                    {/* The numbers that answer "where am I?" at a glance. */}
-                    <Text variant="caption" tone="muted">
-                      {t('tasbeeh.rowSummary', { count: progress.totalCount })}
-                      {entry.dailyTarget > 0
-                        ? ` · ${t('tasbeeh.rowTarget', {
-                            today: progress.todayCount,
-                            target: entry.dailyTarget,
-                          })}`
-                        : ''}
-                    </Text>
-                  </View>
+                  {/* The numbers that answer "where am I?" at a glance. */}
+                  <Text variant="caption" tone="muted">
+                    {t('tasbeeh.rowSummary', { count: progress.totalCount })}
+                    {entry.dailyTarget > 0
+                      ? ` · ${t('tasbeeh.rowTarget', {
+                          today: progress.todayCount,
+                          target: entry.dailyTarget,
+                        })}`
+                      : ''}
+                  </Text>
+                </Pressable>
 
-                  {/* `settings` and `trash` rather than `more` and `remove`:
-                      a minus sign next to a counter reads as "decrement", and
-                      a three-dot menu hides the action behind another tap. */}
-                  <IconButton
-                    name="settings"
-                    size={18}
-                    color="textMuted"
-                    onPress={() => router.push(`/tasbeeh/edit?id=${entry.id}`)}
-                    accessibilityLabel={t('common.edit')}
-                  />
-                  <IconButton
-                    name="trash"
-                    size={18}
-                    color="danger"
-                    onPress={() => void confirmRemove(entry.id, entry.name)}
-                    accessibilityLabel={t('common.delete')}
-                  />
-                </Card>
-              </Pressable>
+                {/* `settings` and `trash` rather than `more` and `remove`:
+                    a minus sign next to a counter reads as "decrement", and
+                    a three-dot menu hides the action behind another tap. */}
+                <IconButton
+                  name="settings"
+                  size={18}
+                  color="textMuted"
+                  onPress={() => router.push(`/tasbeeh/edit?id=${entry.id}`)}
+                  accessibilityLabel={t('common.edit')}
+                />
+                <IconButton
+                  name="trash"
+                  size={18}
+                  color="danger"
+                  onPress={() => void confirmRemove(entry.id, entry.name)}
+                  accessibilityLabel={t('common.delete')}
+                />
+              </Card>
             );
           })}
         </View>
