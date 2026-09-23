@@ -67,6 +67,24 @@ jobs:
 
       - run: npm run theme:build
 
+      # The Expo template caps Gradle's JVM at 2 GB heap and 512 MB Metaspace.
+      # With this many native modules compiled for the New Architecture that
+      # Metaspace ceiling is hit mid-build: the first CI run spent 24 minutes
+      # logging `OutOfMemoryError: Metaspace` until the job cap cancelled it.
+      # EAS's own machines override the template; a bare runner does not.
+      #
+      # Set in the user-level gradle.properties, which Gradle ranks above the
+      # generated project file — and which prebuild never overwrites. The
+      # runner has 7 GB, so 4 GB heap plus 1 GB Metaspace leaves room for the
+      # C++ compiles running alongside.
+      - name: Give Gradle enough memory
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties <<'PROPS'
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+          org.gradle.workers.max=2
+          PROPS
+
       - name: Build APK locally with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
