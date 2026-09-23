@@ -1,10 +1,10 @@
 /**
  * Tasbeeh counters.
  *
- * The counting model mirrors a physical tasbeeh: `totalCount` is the only
- * stored figure, and rounds plus the position within the current round are
- * derived from it. Storing all three would let them drift apart — a dropped
- * write to one and the numbers contradict each other on screen.
+ * The counting model mirrors a physical tasbeeh: `totalCount` is the stored
+ * figure, and the position within the current round is derived from today's
+ * tally. Storing the derived numbers too would let them drift apart — a
+ * dropped write to one and the figures contradict each other on screen.
  */
 import type { LocalDate } from '@/lib/datetime/localDate';
 
@@ -31,8 +31,6 @@ export interface Tasbeeh {
 
 /** What the counter screen and the list rows actually display. */
 export interface TasbeehProgress {
-  /** Completed rounds, derived from the total. */
-  rounds: number;
   /** Lifetime total, shown beneath the day's figure. */
   totalCount: number;
   /** Today's count, already zeroed when the stored date is not today. */

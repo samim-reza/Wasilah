@@ -74,11 +74,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     void keyValueStore.set(storageKeys.locale, next);
   }, []);
 
+  // A NEW function per locale, not the module-level `t` passed through.
+  //
+  // The React Compiler memoises every `t('key')` call in a component by the
+  // identity of `t` (and the key). The module-level `t` never changes, so its
+  // results were cached for the life of the screen: switching language moved
+  // the checkmark (which reads `locale`) but left every string in the old
+  // language until the screen was remounted. Binding the locale into the
+  // function gives the compiler a dependency that actually changes, and pins
+  // the string to the locale this render is for rather than to whatever the
+  // i18n singleton happens to hold at the moment of the call.
+  const translate = useCallback<I18nContextValue['t']>(
+    (key, options) => t(key, { ...options, locale }),
+    [locale],
+  );
+
   const value = useMemo<I18nContextValue>(
-    // `t` is recreated whenever the locale changes so memoised consumers
-    // correctly invalidate their cached strings.
-    () => ({ locale, setLocale, t, isHydrated }),
-    [locale, setLocale, isHydrated],
+    () => ({ locale, setLocale, t: translate, isHydrated }),
+    [locale, setLocale, translate, isHydrated],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

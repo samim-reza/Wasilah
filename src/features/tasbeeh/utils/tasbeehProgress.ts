@@ -14,8 +14,9 @@ export const DEFAULT_TASBEEH_NAME = 'Kalima';
 /**
  * What the counter shows, derived from what is stored.
  *
- * Rounds are completed daily targets rather than a separate round size: the
- * two were the same number asked twice, and one of them always drifted.
+ * The daily target doubles as the ring's round size: the ring empties and
+ * fills again each time today's count passes it. A separate round size was
+ * the same number asked twice, and one of them always drifted.
  */
 export function deriveProgress(tasbeeh: Tasbeeh, today: LocalDate): TasbeehProgress {
   const total = Math.max(0, tasbeeh.totalCount);
@@ -24,10 +25,6 @@ export function deriveProgress(tasbeeh: Tasbeeh, today: LocalDate): TasbeehProgr
   const todayCount = tasbeeh.todayDate === today ? tasbeeh.todayCount : 0;
 
   const target = Math.max(0, tasbeeh.dailyTarget);
-
-  // A round is a completed daily target. With no target there is nothing to
-  // complete, so there are no rounds to count rather than a division by zero.
-  const rounds = target > 0 ? Math.floor(total / target) : 0;
 
   // The ring shows the CURRENT round, not the day as a whole, so it empties
   // and fills again on every round. Capping it at the first completed target
@@ -42,7 +39,7 @@ export function deriveProgress(tasbeeh: Tasbeeh, today: LocalDate): TasbeehProgr
   const dailyProgress =
     target === 0 ? 0 : withinRound === 0 && todayCount > 0 ? 1 : withinRound / target;
 
-  return { rounds, totalCount: total, todayCount, dailyProgress };
+  return { totalCount: total, todayCount, dailyProgress };
 }
 
 /** The tasbeeh after one press, with the daily tally rolled over if needed. */

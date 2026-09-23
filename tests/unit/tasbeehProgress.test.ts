@@ -24,29 +24,18 @@ function tasbeeh(overrides: Partial<Tasbeeh> = {}): Tasbeeh {
 
 describe('deriveProgress', () => {
   it('starts at zero', () => {
-    expect(deriveProgress(tasbeeh(), TODAY)).toMatchObject({ rounds: 0, totalCount: 0 });
+    expect(deriveProgress(tasbeeh(), TODAY)).toMatchObject({ totalCount: 0, todayCount: 0 });
   });
 
-  it('reports the lifetime total', () => {
-    expect(deriveProgress(tasbeeh({ totalCount: 42 }), TODAY)).toMatchObject({
-      rounds: 0,
-      totalCount: 42,
-    });
+  it('reports the lifetime total, untouched by the target', () => {
+    expect(deriveProgress(tasbeeh({ totalCount: 42 }), TODAY).totalCount).toBe(42);
+    expect(deriveProgress(tasbeeh({ dailyTarget: 0, totalCount: 500 }), TODAY).totalCount).toBe(
+      500,
+    );
   });
 
-  it('counts a round once the target is completed', () => {
-    expect(deriveProgress(tasbeeh({ totalCount: 100 }), TODAY).rounds).toBe(1);
-    expect(deriveProgress(tasbeeh({ totalCount: 99 }), TODAY).rounds).toBe(0);
-  });
-
-  it('matches the figures from a large running total', () => {
-    // 180 complete targets of 1000, plus one.
-    const progress = deriveProgress(tasbeeh({ dailyTarget: 1000, totalCount: 180_001 }), TODAY);
-    expect(progress).toMatchObject({ rounds: 180, totalCount: 180_001 });
-  });
-
-  it('counts no rounds when there is no target, rather than dividing by zero', () => {
-    expect(deriveProgress(tasbeeh({ dailyTarget: 0, totalCount: 500 }), TODAY).rounds).toBe(0);
+  it('never reports a negative total', () => {
+    expect(deriveProgress(tasbeeh({ totalCount: -3 }), TODAY).totalCount).toBe(0);
   });
 
   it("treats a previous day's tally as zero without needing a write", () => {

@@ -1,7 +1,7 @@
 /**
  * The tasbeeh list.
  *
- * Each row carries its own numbers — count, rounds and today against the
+ * Each row carries its own numbers — the lifetime count and today against the
  * target — because the reason to open this screen is usually to check where
  * you are, not to start counting. Making that require a tap into each counter
  * would be the wrong trade.
@@ -65,10 +65,7 @@ export default function TasbeehListScreen() {
 
                     {/* The numbers that answer "where am I?" at a glance. */}
                     <Text variant="caption" tone="muted">
-                      {t('tasbeeh.rowSummary', {
-                        count: progress.totalCount,
-                        rounds: progress.rounds,
-                      })}
+                      {t('tasbeeh.rowSummary', { count: progress.totalCount })}
                       {entry.dailyTarget > 0
                         ? ` · ${t('tasbeeh.rowTarget', {
                             today: progress.todayCount,

@@ -91,20 +91,22 @@ export default function TasbeehCounterScreen() {
             accessibilityValue={{ now: progress.todayCount }}
           >
             {/* Today's figure is what the ring tracks, so it belongs in the
-                middle. The lifetime total sits under it. */}
+                middle; the caption says so. The lifetime total is the row
+                below the bead. */}
             <Text className="text-5xl font-bold text-content" allowFontScaling={false}>
               {progress.todayCount}
             </Text>
             <Text variant="caption" tone="muted">
-              {t('tasbeeh.totalCount', { count: progress.totalCount })}
+              {t('tasbeeh.today')}
             </Text>
           </CounterBead>
         </ProgressRing>
 
         <View className="w-full gap-4">
           <View className="flex-row justify-between px-2">
+            {/* The lifetime count: every press ever, across days. */}
             <Text variant="caption" tone="muted">
-              {t('tasbeeh.rounds', { count: progress.rounds })}
+              {t('tasbeeh.count', { count: progress.totalCount })}
             </Text>
             {tasbeeh.dailyTarget > 0 && (
               <Text variant="caption" tone="muted">
