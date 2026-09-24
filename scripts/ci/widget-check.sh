@@ -47,10 +47,15 @@ shot 03-after-tap
 dumpui pin-dialog-ui
 
 echo "== confirm the pin dialog"
-python3 scripts/ci/ui_tap.py "Add automatically" \
-  || python3 scripts/ci/ui_tap.py "Add to home" \
-  || python3 scripts/ci/ui_tap.py "Add" \
-  || echo "no pin dialog button found"
+# The emulator's launcher can stall while it prepares the pin dialog and
+# Android offers to close it; waiting it out is what a person would do.
+for i in $(seq 1 8); do
+  if python3 scripts/ci/ui_tap.py "Wait" 2>/dev/null; then sleep 10; continue; fi
+  if python3 scripts/ci/ui_tap.py "Add automatically" \
+    || python3 scripts/ci/ui_tap.py "Add to home" \
+    || python3 scripts/ci/ui_tap.py "Add"; then break; fi
+  sleep 5
+done
 sleep 15
 shot 04-after-confirm
 

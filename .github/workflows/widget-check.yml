@@ -19,6 +19,13 @@ on:
         description: Android API level for the emulator image.
         type: string
         default: '35'
+      target:
+        description: >-
+          System image flavour. "default" is the plain AOSP launcher, which is
+          light enough to place a widget on a software-rendered emulator;
+          "google_apis" is the Pixel Launcher.
+        type: string
+        default: default
 
 permissions:
   contents: read
@@ -50,7 +57,7 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ inputs.api_level }}
-          target: google_apis
+          target: ${{ inputs.target }}
           arch: x86_64
           profile: pixel_6
           disable-animations: true

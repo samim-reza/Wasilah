@@ -18,6 +18,13 @@
  * cells wide the middle line is dropped, because two clipped words are worse
  * than none.
  */
+// The React Compiler must leave this file alone. It rewrites components to
+// use its memo-cache hook, and the widget library calls this component as a
+// plain function — outside React, in a headless task with no renderer — so
+// that hook throws "Invalid hook call" and the widget draws nothing at all.
+// This directive is what the library's own error message asks for.
+'use no memo';
+
 import { FlexWidget, ImageWidget, OverlapWidget, TextWidget } from 'react-native-android-widget';
 
 import type { WidgetModel } from '../services/widgetModel';
