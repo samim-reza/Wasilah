@@ -18,6 +18,7 @@ import { useNotificationRouting } from '@/features/notifications/hooks/useNotifi
 import { primeRemoteTemplates } from '@/features/notifications/templates/remoteTemplates';
 import { useWidgetRefresh } from '@/features/widget/hooks/useWidgetRefresh';
 import { useOfflineSync } from '@/lib/offline/useOfflineSync';
+import { logger } from '@/lib/monitoring/logger';
 import { initializeMonitoring } from '@/lib/monitoring/sentry';
 import { AppProviders } from '@/providers/AppProviders';
 import { useAppFonts } from '@/theme/fonts';
@@ -28,6 +29,9 @@ import { useTheme } from '@/theme/useTheme';
 // Keep the native splash up until the first screen is genuinely ready.
 void SplashScreen.preventAutoHideAsync();
 
+/** Longer than any honest start-up; a ceiling, not a target. */
+const SPLASH_TIMEOUT_MS = 8_000;
+
 // Monitoring is initialised outside the component tree so that a crash during
 // the very first render is still captured.
 initializeMonitoring();
@@ -37,9 +41,12 @@ function RootNavigator() {
   const { isReady: authReady } = useAuth();
   const { loaded: fontsLoaded } = useAppFonts();
 
+  const isReady = themeReady && authReady && fontsLoaded;
+
   // Notification taps must be able to navigate, so routing is wired up inside
-  // the navigator rather than at module scope.
-  useNotificationRouting();
+  // the navigator rather than at module scope — and only once the navigator
+  // exists, because a tap that launches the app arrives well before it does.
+  useNotificationRouting(isReady);
 
   // Warm the remote copy overrides so the scheduler can read them without
   // waiting on the network. Fire-and-forget: every template has shipped copy,
@@ -54,13 +61,22 @@ function RootNavigator() {
   // Redraw the home-screen widget on start and on every return to the app.
   useWidgetRefresh();
 
-  const isReady = themeReady && authReady && fontsLoaded;
-
   useEffect(() => {
     // Hiding is idempotent, and the splash must never outlive readiness even if
     // one of the dependencies resolves late.
     if (isReady) void SplashScreen.hideAsync();
   }, [isReady]);
+
+  // The splash is a promise that something is coming. If readiness never
+  // arrives — a font that will not load, a session check that hangs — the app
+  // must still show itself rather than sit on its icon for good.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isReady) logger.warn('app.splashTimeout', { themeReady, authReady, fontsLoaded });
+      void SplashScreen.hideAsync();
+    }, SPLASH_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [isReady, themeReady, authReady, fontsLoaded]);
 
   // Returning null keeps the native splash visible rather than flashing an
   // empty themed screen underneath it.

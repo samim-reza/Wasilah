@@ -6,6 +6,7 @@
  * `getDerivedStateFromError` to classes — there is no hook equivalent.
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -33,6 +34,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
+    // A crash before the first screen would otherwise leave the native splash
+    // covering this fallback, which reads as an app that never starts.
+    void SplashScreen.hideAsync().catch(() => undefined);
     logger.error('ui.renderCrash', { scope: this.props.scope, error });
     captureException(error, {
       scope: this.props.scope,

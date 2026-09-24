@@ -13,7 +13,7 @@
  * `notificationsGateway` for why — and this hook is mounted from the root
  * layout, so that crash took the entire app down before anything rendered.
  */
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { useEffect } from 'react';
 
 import { trackEvent } from '@/lib/analytics/analytics';
@@ -40,8 +40,41 @@ interface NotificationResponseLike {
   notification: { request: { content: { data: unknown } } };
 }
 
-export function useNotificationRouting(): void {
+/**
+ * Navigates once the router can, retrying briefly if it cannot yet.
+ *
+ * A tap that launches the app arrives before the root layout has mounted:
+ * fonts and the session are still loading and the navigator is not on
+ * screen. Navigating then throws, the throw is swallowed inside the async
+ * response handling, and the app sits on the splash with nowhere to go —
+ * which is exactly how a tapped bedtime reminder looked.
+ */
+function navigateWhenReady(route: string, attempt = 0): void {
+  try {
+    router.push(route as never);
+  } catch (error) {
+    if (attempt >= 20) {
+      logger.warn('notifications.routingGaveUp', { route, error });
+      return;
+    }
+    setTimeout(() => navigateWhenReady(route, attempt + 1), 250);
+  }
+}
+
+/**
+ * @param enabled False until the root navigator is mounted. The cold-start
+ * response is read only once it is true, so the navigation has somewhere to
+ * land; a response that arrives while the app is running is handled as it
+ * comes.
+ */
+export function useNotificationRouting(enabled: boolean): void {
+  // The root navigation state has a key once the navigator has mounted.
+  const rootState = useRootNavigationState();
+  const navigatorReady = enabled && Boolean(rootState?.key);
+
   useEffect(() => {
+    if (!navigatorReady) return;
+
     let cancelled = false;
     let remove: (() => void) | undefined;
     // Guards against the cold-start response also arriving through the
@@ -58,12 +91,12 @@ export function useNotificationRouting(): void {
       // but at home rather than at a destination chosen for yesterday.
       if (isStaleNotification(data)) {
         logger.debug('notifications.staleOpen', { category: data.category });
-        router.push('/(tabs)/home');
+        navigateWhenReady('/(tabs)/home');
         return;
       }
 
       logger.debug('notifications.routing', { category: data.category, route: data.route });
-      router.push(data.route as never);
+      navigateWhenReady(data.route);
     }
 
     void (async () => {
@@ -90,5 +123,5 @@ export function useNotificationRouting(): void {
       cancelled = true;
       remove?.();
     };
-  }, []);
+  }, [navigatorReady]);
 }
