@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 import { useToast } from '@/components/feedback/Toast';
@@ -23,6 +23,12 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<AuthValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { confirmed } = useLocalSearchParams<{ confirmed?: string }>();
+
+  // Arriving from the confirmation link: say so, once, and ask for the sign-in.
+  useEffect(() => {
+    if (confirmed === '1') toast.show(t('auth.confirmedSignIn'), { icon: 'check' });
+  }, [confirmed, toast, t]);
 
   const handleSubmit = async () => {
     const validation = validateSignIn({ email, password });

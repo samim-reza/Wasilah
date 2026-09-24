@@ -28,7 +28,7 @@
 import { FlexWidget, ImageWidget, OverlapWidget, TextWidget } from 'react-native-android-widget';
 
 import type { WidgetModel } from '../services/widgetModel';
-import type { WidgetScene } from '../services/widgetScene';
+import type { WidgetScene } from '../services/widgetCards';
 
 export interface WasilahWidgetProps {
   model: WidgetModel;
@@ -45,13 +45,23 @@ export interface WasilahWidgetProps {
  */
 const scenes: Record<WidgetScene, number> = {
   dawn: require('../../../../assets/widget/dawn.png'),
+  sunrise: require('../../../../assets/widget/sunrise.png'),
   day: require('../../../../assets/widget/day.png'),
+  noon: require('../../../../assets/widget/noon.png'),
+  afternoon: require('../../../../assets/widget/afternoon.png'),
   sunset: require('../../../../assets/widget/sunset.png'),
   night: require('../../../../assets/widget/night.png'),
+  midnight: require('../../../../assets/widget/midnight.png'),
+  tahajjud: require('../../../../assets/widget/tahajjud.png'),
   moon: require('../../../../assets/widget/moon.png'),
   rain: require('../../../../assets/widget/rain.png'),
+  storm: require('../../../../assets/widget/storm.png'),
+  wind: require('../../../../assets/widget/wind.png'),
+  heat: require('../../../../assets/widget/heat.png'),
   cold: require('../../../../assets/widget/cold.png'),
   mosque: require('../../../../assets/widget/mosque.png'),
+  prayer: require('../../../../assets/widget/prayer.png'),
+  quran: require('../../../../assets/widget/quran.png'),
 };
 
 const RADIUS = 24;
@@ -94,11 +104,17 @@ export function WasilahWidget({ model, width, height }: WasilahWidgetProps) {
           paddingVertical: 12,
         }}
       >
+        {/* A prayer's time is the headline; everything else keeps a small
+            label so the picture and the words underneath carry the card. */}
         <TextWidget
-          text={model.title.toUpperCase()}
+          text={model.card.kind === 'prayer' ? model.title : model.title.toUpperCase()}
           maxLines={1}
           truncate="END"
-          style={{ fontSize: 10, color: CREAM, letterSpacing: 0.6, fontWeight: '600' }}
+          style={
+            model.card.kind === 'prayer'
+              ? { fontSize: 18, color: WHITE, fontWeight: 'bold' }
+              : { fontSize: 10, color: CREAM, letterSpacing: 0.6, fontWeight: '600' }
+          }
         />
 
         {!compact &&

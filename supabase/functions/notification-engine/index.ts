@@ -230,17 +230,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       continue;
     }
 
-    // Respect the cap and the one-per-category-per-day rule.
-    const { count } = await supabase
-      .from('notification_history')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', row.user_id)
-      .eq('local_date', now.date);
-
-    if ((count ?? 0) >= preferences.max_notifications_per_day) {
-      skipped += 1;
-      continue;
-    }
+    // No daily cap: the dedupe key below is the only limit, one per category per day.
 
     const streak = row.streaks?.current_streak ?? 0;
     const isStreakRescue = streak > 0;

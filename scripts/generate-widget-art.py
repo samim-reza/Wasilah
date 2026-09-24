@@ -243,7 +243,137 @@ def scene_mosque(s: float) -> Image.Image:
     return img
 
 
+def scene_sunrise(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (70, 90, 160)), (0.5, (230, 150, 110)), (0.8, (252, 205, 120)), (1, (255, 236, 170))])
+    glow(img, (size[0] * 0.5, size[1] * 0.8), 90 * s, (255, 230, 160), 0.8)
+    disc(img, (size[0] * 0.5, size[1] * 0.82), 30 * s, (255, 248, 220))
+    hills(img, s, (110, 80, 90), 168, 8, seed=71)
+    hills(img, s, (70, 50, 66), 180, 6, seed=72)
+    return img
+
+
+def scene_noon(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (40, 120, 220)), (0.6, (110, 178, 238)), (1, (190, 224, 246))])
+    glow(img, (size[0] * 0.5, size[1] * 0.12), 90 * s, (255, 255, 220), 0.9)
+    disc(img, (size[0] * 0.5, size[1] * 0.12), 22 * s, (255, 255, 240))
+    hills(img, s, (96, 170, 128), 172, 8, seed=81)
+    hills(img, s, (64, 136, 100), 184, 5, seed=82)
+    return img
+
+
+def scene_afternoon(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (86, 140, 210)), (0.55, (196, 196, 200)), (1, (240, 214, 170))])
+    glow(img, (size[0] * 0.2, size[1] * 0.45), 80 * s, (255, 240, 190), 0.7)
+    disc(img, (size[0] * 0.2, size[1] * 0.45), 20 * s, (255, 250, 220))
+    cloud(img, s, 280, 60, 18, (250, 246, 240))
+    hills(img, s, (120, 140, 96), 170, 9, seed=91)
+    hills(img, s, (84, 104, 70), 182, 6, seed=92)
+    return img
+
+
+def scene_midnight(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (2, 4, 20)), (0.7, (8, 14, 44)), (1, (16, 26, 64))])
+    stars(img, s, 110, seed=27, max_y=0.8)
+    glow(img, (size[0] * 0.78, size[1] * 0.3), 40 * s, (220, 228, 255), 0.35)
+    disc(img, (size[0] * 0.78, size[1] * 0.3), 14 * s, (236, 240, 255))
+    hills(img, s, (4, 8, 28), 176, 7, seed=101)
+    return img
+
+
+def scene_tahajjud(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (6, 8, 36)), (0.55, (26, 22, 76)), (0.85, (70, 44, 96)), (1, (110, 70, 100))])
+    stars(img, s, 90, seed=33, max_y=0.75)
+    glow(img, (size[0] * 0.5, size[1] * 0.95), 110 * s, (150, 100, 140), 0.45)
+    hills(img, s, (20, 14, 44), 172, 8, seed=111)
+    hills(img, s, (10, 8, 30), 184, 5, seed=112)
+    return img
+
+
+def scene_heat(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (250, 160, 70)), (0.5, (252, 200, 110)), (1, (255, 232, 170))])
+    glow(img, (size[0] * 0.5, size[1] * 0.2), 120 * s, (255, 255, 200), 1.0)
+    disc(img, (size[0] * 0.5, size[1] * 0.2), 30 * s, (255, 255, 235))
+    hills(img, s, (214, 150, 80), 172, 6, seed=121)
+    hills(img, s, (180, 120, 60), 184, 4, seed=122)
+    return img
+
+
+def scene_storm(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (24, 28, 44)), (0.6, (56, 62, 84)), (1, (90, 98, 118))])
+    cloud(img, s, 120, 48, 30, (70, 76, 96))
+    cloud(img, s, 300, 62, 24, (60, 66, 86))
+    # A bolt: a jagged bright line from the cloud to the hills.
+    draw = ImageDraw.Draw(img)
+    pts = [(210 * s, 70 * s), (196 * s, 105 * s), (214 * s, 108 * s), (190 * s, 160 * s)]
+    draw.line(pts, fill=(255, 250, 200), width=max(1, int(3 * s)))
+    glow(img, (200 * s, 110 * s), 40 * s, (255, 250, 200), 0.5)
+    rain_streaks(img, s, seed=131)
+    hills(img, s, (30, 34, 50), 172, 7, seed=132)
+    return img
+
+
+def scene_wind(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (120, 150, 190)), (0.6, (170, 190, 210)), (1, (214, 220, 224))])
+    draw = ImageDraw.Draw(img)
+    for i, y in enumerate((50, 78, 104, 130)):
+        x0 = (30 + i * 40) * s
+        draw.arc((x0, y * s - 10 * s, x0 + 160 * s, y * s + 16 * s), start=190, end=350, fill=(240, 246, 250), width=max(1, int(2 * s)))
+        draw.arc((x0 + 120 * s, y * s - 4 * s, x0 + 180 * s, y * s + 20 * s), start=180, end=300, fill=(240, 246, 250), width=max(1, int(2 * s)))
+    hills(img, s, (96, 128, 110), 170, 12, seed=141)
+    hills(img, s, (66, 96, 80), 182, 8, seed=142)
+    return img
+
+
+def scene_prayer(s: float) -> Image.Image:
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (18, 40, 70)), (0.55, (36, 96, 110)), (1, (96, 160, 140))])
+    stars(img, s, 24, seed=151, max_y=0.4)
+    glow(img, (size[0] * 0.62, size[1] * 0.6), 100 * s, (220, 240, 220), 0.4)
+    mosque(img, s, (10, 26, 44))
+    return img
+
+
+def scene_quran(s: float) -> Image.Image:
+    """An open book on a warm, quiet ground: the reading nudge."""
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (14, 60, 56)), (0.6, (16, 96, 84)), (1, (40, 130, 108))])
+    glow(img, (size[0] * 0.5, size[1] * 0.55), 110 * s, (200, 240, 220), 0.35)
+    draw = ImageDraw.Draw(img)
+    cx, cy = size[0] * 0.5, size[1] * 0.62
+    w, h = 120 * s, 70 * s
+    page = (248, 244, 230)
+    # Two pages, meeting at the spine, slightly angled.
+    draw.polygon([(cx - w, cy - h * 0.35), (cx - 4 * s, cy - h * 0.55), (cx - 4 * s, cy + h * 0.55), (cx - w, cy + h * 0.35)], fill=page)
+    draw.polygon([(cx + w, cy - h * 0.35), (cx + 4 * s, cy - h * 0.55), (cx + 4 * s, cy + h * 0.55), (cx + w, cy + h * 0.35)], fill=page)
+    # Faint lines of text.
+    for k in range(5):
+        yy = cy - h * 0.3 + k * h * 0.15
+        draw.line((cx - w * 0.85, yy + k * 1.5 * s, cx - 12 * s, yy - 6 * s), fill=(200, 190, 160), width=max(1, int(1.2 * s)))
+        draw.line((cx + 12 * s, yy - 6 * s, cx + w * 0.85, yy + k * 1.5 * s), fill=(200, 190, 160), width=max(1, int(1.2 * s)))
+    # Spine shadow.
+    draw.rectangle((cx - 4 * s, cy - h * 0.55, cx + 4 * s, cy + h * 0.55), fill=(210, 200, 180))
+    return img
+
+
 SCENES = {
+    "sunrise": scene_sunrise,
+    "noon": scene_noon,
+    "afternoon": scene_afternoon,
+    "midnight": scene_midnight,
+    "tahajjud": scene_tahajjud,
+    "heat": scene_heat,
+    "storm": scene_storm,
+    "wind": scene_wind,
+    "prayer": scene_prayer,
+    "quran": scene_quran,
     "dawn": scene_dawn,
     "day": scene_day,
     "sunset": scene_sunset,

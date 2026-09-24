@@ -22,6 +22,8 @@ import { Text } from '@/components/ui/Text';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { logger } from '@/lib/monitoring/logger';
 
+import { WidgetAlarm } from '@modules/widget-alarm';
+
 import { refreshWidget } from '../services/updateWidget';
 import { loadWidgetModel, type WidgetModel } from '../services/widgetModel';
 import { WasilahWidget } from './WasilahWidget';
@@ -37,6 +39,8 @@ export function WidgetSettingsSection() {
   const [model, setModel] = useState<WidgetModel | null>(null);
   /** What Android says is placed: how many, and at what size in dp. */
   const [placed, setPlaced] = useState<WidgetInfo[] | null>(null);
+  /** Whether the alarms that change the widget land on the minute. */
+  const [exact, setExact] = useState<boolean>(() => WidgetAlarm.canScheduleExact());
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -46,7 +50,7 @@ export function WidgetSettingsSection() {
       try {
         const [library, loaded, { WIDGET_NAME }] = await Promise.all([
           import('react-native-android-widget'),
-          loadWidgetModel(),
+          loadWidgetModel({ allowWeatherFetch: false }),
           import('../services/widgetTaskHandler'),
         ]);
         if (cancelled) return;
@@ -79,7 +83,7 @@ export function WidgetSettingsSection() {
 
   const refresh = async () => {
     await refreshWidget();
-    setModel(await loadWidgetModel().catch(() => null));
+    setModel(await loadWidgetModel({ allowWeatherFetch: false }).catch(() => null));
     try {
       const [{ getWidgetInfo }, { WIDGET_NAME }] = await Promise.all([
         import('react-native-android-widget'),
@@ -139,6 +143,18 @@ export function WidgetSettingsSection() {
         </Text>
       </View>
 
+      {WidgetAlarm.isAvailable && !exact && (
+        <ListRow
+          label={t('widget.exactAlarms')}
+          hint={t('widget.exactAlarmsHint')}
+          icon="clock"
+          onPress={() => {
+            WidgetAlarm.openExactAlarmSettings();
+            // The system page returns here; re-read once the user is back.
+            setTimeout(() => setExact(WidgetAlarm.canScheduleExact()), 1500);
+          }}
+        />
+      )}
       <ListRow label={t('widget.addToHome')} icon="add" onPress={() => void addToHomeScreen()} />
       <ListRow label={t('widget.refresh')} icon="sync" onPress={() => void refresh()} />
       <ListRow label={t('widget.copyReport')} icon="copy" onPress={() => void copyReport()} />

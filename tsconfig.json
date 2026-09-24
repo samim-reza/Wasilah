@@ -10,7 +10,8 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@app/*": ["./src/app/*"]
+      "@app/*": ["./src/app/*"],
+      "@modules/*": ["./modules/*"]
     },
     "types": ["jest", "node"]
   },

@@ -5,8 +5,8 @@
  * far too slow for the moments that matter: finishing today's reading and
  * looking at the widget, or the app learning the weather has turned to rain.
  * So the app asks for a redraw at those moments, and on every return to the
- * foreground, and the periodic update is only the fallback for a day the app
- * is never opened.
+ * foreground; the alarms set by the tick cover the moments in between, and
+ * the periodic update is only the fallback for a day the app is never opened.
  *
  * Everything here is deliberately best-effort. A widget that fails to refresh
  * is a stale picture; it must never surface an error into a reading session,
@@ -17,7 +17,8 @@ import { Platform } from 'react-native';
 import { logger } from '@/lib/monitoring/logger';
 
 /**
- * Asks Android to redraw every placed widget.
+ * Redraws every placed widget, re-sets the alarms and considers the weather
+ * alert — the same tick the headless task runs, started from the app.
  *
  * No-ops on anything but Android. The library is Android-only, so it is
  * imported lazily — a static import would pull native-backed code into the
@@ -27,12 +28,13 @@ export async function refreshWidget(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
   try {
-    const [{ requestWidgetUpdate }, { WasilahWidget }, { WIDGET_NAME }, { loadWidgetModel }] =
+    const [{ requestWidgetUpdate }, { WasilahWidget }, { WIDGET_NAME }, { loadWidgetModel }, tick] =
       await Promise.all([
         import('react-native-android-widget'),
         import('../components/WasilahWidget'),
         import('./widgetTaskHandler'),
         import('./widgetModel'),
+        import('./widgetTick'),
       ]);
 
     const model = await loadWidgetModel();
@@ -42,10 +44,12 @@ export async function refreshWidget(): Promise<void> {
       renderWidget: (info) => (
         <WasilahWidget model={model} width={info.width} height={info.height} />
       ),
-      // Nothing to do when the user has not added the widget, which is the
-      // overwhelmingly common case.
+      // Nothing to draw when the user has not added the widget; the alarms
+      // and the weather alert below still matter.
       widgetNotFound: () => undefined,
     });
+
+    await tick.runWidgetTick(model);
   } catch (error) {
     logger.debug('widget.updateSkipped', { error });
   }

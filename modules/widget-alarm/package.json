@@ -1,0 +1,7 @@
+{
+  "name": "widget-alarm",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "description": "Wakes the Wasilah home-screen widget at the exact minute its card changes (Android)."
+}

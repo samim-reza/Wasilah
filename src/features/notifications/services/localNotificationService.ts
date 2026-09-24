@@ -69,6 +69,32 @@ export async function scheduleAt(
   }, null);
 }
 
+/**
+ * Shows a notification now.
+ *
+ * For alerts about the present moment — it has started raining — where a
+ * scheduled trigger would only add delay. Used from the widget's background
+ * task as well as the app, so it goes through the same gateway and channels.
+ */
+export async function presentNow(content: NotificationContent): Promise<string | null> {
+  return withNotifications(async (notifications) => {
+    const identifier = await notifications.scheduleNotificationAsync({
+      content: {
+        title: content.title,
+        body: content.body,
+        data: { ...content.data, scheduledFor: new Date().toISOString() },
+        sound: true,
+        ...(Platform.OS === 'android'
+          ? { channelId: categoryChannels[content.data.category] }
+          : {}),
+      },
+      trigger: null,
+    });
+    logger.debug('notifications.presented', { category: content.data.category });
+    return identifier;
+  }, null);
+}
+
 export async function cancel(identifier: string): Promise<void> {
   // Cancelling an already-fired notification is expected, not an error, so the
   // gateway's own swallow-and-log behaviour is the right one here.

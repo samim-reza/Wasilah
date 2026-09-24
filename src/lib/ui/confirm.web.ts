@@ -10,13 +10,20 @@
  * build time, and a destructive action must never proceed merely because the
  * prompt could not be shown.
  */
-import type { ConfirmOptions } from './confirm';
+import type { AlertOptions, ConfirmOptions } from './confirm';
 
-export type { ConfirmOptions };
+export type { AlertOptions, ConfirmOptions };
 
 export function confirm(options: ConfirmOptions): Promise<boolean> {
   if (typeof globalThis.confirm !== 'function') return Promise.resolve(false);
 
   const message = options.message ? `${options.title}\n\n${options.message}` : options.title;
   return Promise.resolve(globalThis.confirm(message));
+}
+
+export function alert(options: AlertOptions): Promise<void> {
+  if (typeof globalThis.alert === 'function') {
+    globalThis.alert(`${options.title}\n\n${options.message}`);
+  }
+  return Promise.resolve();
 }

@@ -65,6 +65,16 @@ export const storageKeys = {
    */
   lastWeather: `${prefix}.widget.lastWeather`,
   lastPrayerSettings: `${prefix}.widget.lastPrayerSettings`,
+  /**
+   * The signed-in user's habit state as the server last reported it. The
+   * local habit store only knows what was read on this device as a guest;
+   * for an account the server is the truth, and the widget draws from this.
+   */
+  habitSnapshot: `${prefix}.widget.habitSnapshot`,
+  /** When each weather alert was last raised, so a long rain is one alert. */
+  weatherAlerts: `${prefix}.widget.weatherAlerts`,
+  /** Which everyday duas the widget has shown lately, so they rotate. */
+  widgetRotation: `${prefix}.widget.rotation`,
 
   /** TanStack Query disk cache, so a cold start can paint real content. */
   queryCache: `${prefix}.queryCache`,
@@ -85,4 +95,6 @@ export const userScopedStorageKeys: StorageKey[] = [
   storageKeys.scheduledReminderIds,
   storageKeys.notificationLog,
   storageKeys.queryCache,
+  storageKeys.habitSnapshot,
+  storageKeys.weatherAlerts,
 ];

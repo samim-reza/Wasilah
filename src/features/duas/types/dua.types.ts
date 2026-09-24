@@ -48,6 +48,22 @@ export interface DuaTrigger {
   newMoon?: boolean;
   /** Only offered when the user has switched on the before-sleep reminder. */
   requiresSleepSchedule?: boolean;
+  /**
+   * Matches the Hijri calendar, from the tabular calendar in `lib/datetime/hijri`
+   * — right to within a day of the sighted month, which is close enough to
+   * offer the words and not close enough to announce a date.
+   */
+  hijri?: {
+    /** 1 = Muharram … 9 = Ramadan … 12 = Dhul-Hijjah. */
+    months?: readonly number[];
+    /** Days of the month, judged by the civil day. */
+    days?: readonly number[];
+    /**
+     * Nights of the month, judged by the Islamic day that begins at sunset:
+     * the night of the 27th is the evening after the 26th's daylight.
+     */
+    nights?: readonly number[];
+  };
 }
 
 /**
@@ -114,6 +130,12 @@ export interface DuaContext {
   moonAgeDays: number;
   /** Set when the user has configured a before-sleep reminder. */
   sleepTime?: TimeOfDay;
+  /**
+   * Whether the sun has set at `now`. From the prayer times when the caller
+   * has them, otherwise a clock guess; it decides which Hijri day a night
+   * belongs to. Absent means "judge by the clock".
+   */
+  afterSunset?: boolean;
   /** Occasion ids already shown recently, so the same dua is not repeated. */
   recentlyShownIds: readonly string[];
 }

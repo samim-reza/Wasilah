@@ -31,3 +31,18 @@ export function confirm(options: ConfirmOptions): Promise<boolean> {
     ]);
   });
 }
+
+export interface AlertOptions {
+  title: string;
+  message: string;
+  dismissLabel: string;
+}
+
+/** A message the user has to dismiss. Resolves once they have. */
+export function alert(options: AlertOptions): Promise<void> {
+  return new Promise((resolve) => {
+    Alert.alert(options.title, options.message, [
+      { text: options.dismissLabel, onPress: () => resolve() },
+    ]);
+  });
+}

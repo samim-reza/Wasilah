@@ -156,13 +156,14 @@ export function planReminders(
     }),
   );
 
-  // Enforce the per-day cap at planning time as well as at send time, so the
-  // OS tray never fills with notifications that will be suppressed anyway.
-  const capped = enforceDailyCap(planned, preferences.maxNotificationsPerDay, timezone);
+  // No daily cap. Each reminder is already limited to once per category per
+  // day by its dedupe key, and beyond that the number sent is whatever the
+  // day calls for: a rain dua, a prayer, the streak, the evening words.
+  const ordered = [...planned].sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
 
   // Weather never adds a reminder. It only changes the wording of one that was
   // already going to be sent, and only when the condition is genuinely notable.
-  return applyWeatherWording(capped, preferences, personalisation.weather);
+  return applyWeatherWording(ordered, preferences, personalisation.weather);
 }
 
 /**
@@ -191,30 +192,6 @@ function streakReminderTime(preferences: {
       : { hour: Math.max(0, quietHoursStart.hour - 1), minute: 45 };
 
   return shifted;
-}
-
-function enforceDailyCap(
-  planned: PlannedReminder[],
-  maxPerDay: number,
-  timezone: string,
-): PlannedReminder[] {
-  const byDay = new Map<string, PlannedReminder[]>();
-
-  for (const reminder of planned) {
-    const day = reminder.dedupeKey.split(':')[1] ?? '';
-    const bucket = byDay.get(day) ?? [];
-    bucket.push(reminder);
-    byDay.set(day, bucket);
-  }
-
-  const kept: PlannedReminder[] = [];
-  for (const bucket of byDay.values()) {
-    bucket.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
-    kept.push(...bucket.slice(0, Math.max(0, maxPerDay)));
-  }
-
-  void timezone;
-  return kept.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
 }
 
 /**

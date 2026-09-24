@@ -13,6 +13,7 @@ import { signUp } from '@/features/auth/services/authService';
 import { hasValidationErrors, validateSignUp } from '@/features/auth/utils/authValidation';
 import type { AuthValidationErrors } from '@/features/auth/types/auth.types';
 import { isAppError } from '@/lib/api/errors';
+import { alert } from '@/lib/ui/confirm';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 export default function SignUpScreen() {
@@ -36,9 +37,18 @@ export default function SignUpScreen() {
       const session = await signUp({ email, password, displayName });
 
       // With email confirmation on there is no session yet; that is a success,
-      // not a failure, and the user needs to be told what happens next.
+      // not a failure, and the user needs to be told what happens next — in a
+      // dialog they have to dismiss, not a toast that slides away while they
+      // are still looking at the form. Then straight to sign-in, which is
+      // where the confirmation link will send them anyway.
       if (!session) {
-        toast.show(t('auth.checkInbox'), { icon: 'mail' });
+        await alert({
+          title: t('auth.confirmSentTitle'),
+          message: t('auth.confirmSentBody', { email }),
+          dismissLabel: t('common.ok'),
+        });
+        router.replace('/(auth)/login');
+        return;
       }
       router.back();
     } catch (error) {

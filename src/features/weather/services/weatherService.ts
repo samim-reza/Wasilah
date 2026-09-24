@@ -45,8 +45,17 @@ interface OpenMeteoResponse {
   };
 }
 
+export interface FetchWeatherOptions {
+  /**
+   * Off when the caller IS the widget's own tick, which would otherwise ask
+   * for a redraw of the very draw that is in progress.
+   */
+  notifyWidget?: boolean;
+}
+
 export async function fetchWeather(
   coordinates: CoarseCoordinates,
+  options: FetchWeatherOptions = {},
 ): Promise<WeatherSnapshot | null> {
   const url =
     `${API_URL}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}` +
@@ -71,7 +80,10 @@ export async function fetchWeather(
   // The home-screen widget draws in a headless context with no network, so
   // the last reading is written down for it. Fire-and-forget: the caller
   // wants the weather, not a storage round trip.
-  void keyValueStore.set(storageKeys.lastWeather, snapshot).then(() => refreshWidget());
+  void keyValueStore.set(storageKeys.lastWeather, snapshot).then(() => {
+    if (options.notifyWidget !== false) return refreshWidget();
+    return undefined;
+  });
 
   return snapshot;
 }

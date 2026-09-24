@@ -15,7 +15,11 @@ import {
   remainingToGoal,
   type DayTotals,
 } from '@/features/goals/utils/goalProgress';
+import { refreshWidget } from '@/features/widget/services/updateWidget';
+import type { HabitSnapshot } from '@/features/widget/services/widgetModel';
 import { queryKeys } from '@/lib/api/queryKeys';
+import { keyValueStore } from '@/lib/storage/keyValueStore';
+import { storageKeys } from '@/lib/storage/storageKeys';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 
 import { fetchGoal, fetchStreak, fetchTodayProgress, saveGoal } from '../services/habitService';
@@ -59,13 +63,27 @@ async function fetchRemoteHabitState(userId: string, today: string): Promise<Loc
     fetchStreak(userId),
   ]);
 
-  return {
+  const state: LocalHabitState = {
     goal,
     todayTotals: progress.totals,
     minimumMet: progress.minimumMet,
     goalMet: progress.goalMet,
     streak,
   };
+
+  // The home-screen widget cannot reach the server, so the answer is written
+  // down for it, and it is redrawn: the streak it shows must be the one the
+  // app shows. Fire-and-forget; the screen wants the state, not the write.
+  void keyValueStore
+    .set(storageKeys.habitSnapshot, {
+      today,
+      currentStreak: resolveCurrentStreak(streak, today),
+      minimumMet: progress.minimumMet,
+      goalMet: progress.goalMet,
+    } satisfies HabitSnapshot)
+    .then(() => refreshWidget());
+
+  return state;
 }
 
 export function useHabitState(): HabitState {

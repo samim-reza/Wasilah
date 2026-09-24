@@ -1,0 +1,22 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.wasilah'
+version = '1.0.0'
+
+android {
+  namespace "com.wasilah.widgetalarm"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // The receiver hands the wake-up to the widget library's own background
+  // task, so the same JS handler that draws the widget runs at the alarm.
+  implementation project(':react-native-android-widget')
+  implementation "androidx.work:work-runtime:2.9.1"
+}

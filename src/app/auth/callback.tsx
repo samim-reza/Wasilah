@@ -64,9 +64,14 @@ export default function AuthCallbackScreen() {
 
       logger.info('auth.confirmed');
       setState('done');
+      // The link has done its job: the address is confirmed. The account is
+      // then entered the ordinary way, with the password, rather than by the
+      // session the exchange handed back — so the first sign-in is a real
+      // one and nobody is left wondering whether they are signed in at all.
+      await supabase.auth.signOut();
       // Replace rather than push: the callback should not sit in the history
       // where a back gesture would re-run a code that is now spent.
-      router.replace('/(tabs)/home');
+      router.replace({ pathname: '/(auth)/login', params: { confirmed: '1' } });
     })();
 
     return () => {

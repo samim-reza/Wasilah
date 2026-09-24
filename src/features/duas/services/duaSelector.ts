@@ -10,6 +10,7 @@
  * branch below is reachable from a test without mocking a clock, the weather
  * or the sky.
  */
+import { hijriDateAt, hijriNightAt } from '@/lib/datetime/hijri';
 import { timeOfDayAt, toMinuteOfDay } from '@/lib/datetime/timeOfDay';
 
 import { readyOccasions } from '../data/duaCatalogue';
@@ -34,7 +35,15 @@ export function triggerSpecificity(trigger: DuaTrigger): number {
   if (trigger.weekdays) score += 2;
   if (trigger.newMoon) score += 3;
   if (trigger.requiresSleepSchedule) score += 3;
+  // A calendar date is the most specific thing an occasion can name.
+  if (trigger.hijri) score += 4;
   return score;
+}
+
+/** Without prayer times, sunset is taken as six in the evening. */
+function isProbablyAfterSunset(context: DuaContext): boolean {
+  const minutes = toMinuteOfDay(timeOfDayAt(context.now, context.timezone));
+  return minutes >= 18 * 60 || minutes < 5 * 60;
 }
 
 /** Which hour band the instant falls into, in the user's own timezone. */
@@ -77,6 +86,20 @@ export function matchesTrigger(trigger: DuaTrigger, context: DuaContext): boolea
   if (trigger.newMoon && !isNewCrescentVisible(context.now)) return false;
 
   if (trigger.requiresSleepSchedule && !context.sleepTime) return false;
+
+  if (trigger.hijri) {
+    const afterSunset = context.afterSunset ?? isProbablyAfterSunset(context);
+    const day = hijriDateAt(context.now, context.timezone);
+    const night = hijriNightAt(context.now, context.timezone, afterSunset);
+    const { months, days, nights } = trigger.hijri;
+    // A month condition is judged against the night's date when nights are
+    // named, so the 29th night of Ramadan still counts as Ramadan after the
+    // sun has set on what the civil calendar calls the 28th.
+    const monthOf = nights ? night.month : day.month;
+    if (months && !months.includes(monthOf)) return false;
+    if (days && !days.includes(day.day)) return false;
+    if (nights && !nights.includes(night.day)) return false;
+  }
 
   // Weather conditions can only be judged when weather is actually known. An
   // absent reading means "cannot tell", which must not be treated as a match —
