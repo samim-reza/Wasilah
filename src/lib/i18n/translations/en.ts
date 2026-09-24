@@ -324,6 +324,10 @@ export const en = {
     streakLabel: 'day streak',
     readToday: 'Read today',
     callToAction: 'Read one ayah',
+    placed: 'On your home screen: {{summary}}',
+    nonePlaced: 'not added yet',
+    copyReport: 'Copy widget report',
+    copied: 'Copied',
   },
   reminders: {
     title: 'Reminders',

@@ -10,9 +10,11 @@
  * Android only. The library is imported lazily so that the iOS bundle never
  * loads it; the web build has its own stub beside this file.
  */
+import * as Clipboard from 'expo-clipboard';
+import * as Device from 'expo-device';
 import { useEffect, useState, type ComponentType } from 'react';
 import { Platform, View } from 'react-native';
-import type { WidgetPreviewProps } from 'react-native-android-widget';
+import type { WidgetInfo, WidgetPreviewProps } from 'react-native-android-widget';
 
 import { useToast } from '@/components/feedback/Toast';
 import { ListRow, ListSection } from '@/components/ui/ListRow';
@@ -33,6 +35,8 @@ export function WidgetSettingsSection() {
   const toast = useToast();
   const [Preview, setPreview] = useState<ComponentType<WidgetPreviewProps> | null>(null);
   const [model, setModel] = useState<WidgetModel | null>(null);
+  /** What Android says is placed: how many, and at what size in dp. */
+  const [placed, setPlaced] = useState<WidgetInfo[] | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -40,13 +44,15 @@ export function WidgetSettingsSection() {
 
     void (async () => {
       try {
-        const [library, loaded] = await Promise.all([
+        const [library, loaded, { WIDGET_NAME }] = await Promise.all([
           import('react-native-android-widget'),
           loadWidgetModel(),
+          import('../services/widgetTaskHandler'),
         ]);
         if (cancelled) return;
         setPreview(() => library.WidgetPreview);
         setModel(loaded);
+        setPlaced(await library.getWidgetInfo(WIDGET_NAME).catch(() => []));
       } catch (error) {
         logger.debug('widget.previewUnavailable', { error });
       }
@@ -74,7 +80,38 @@ export function WidgetSettingsSection() {
   const refresh = async () => {
     await refreshWidget();
     setModel(await loadWidgetModel().catch(() => null));
+    try {
+      const [{ getWidgetInfo }, { WIDGET_NAME }] = await Promise.all([
+        import('react-native-android-widget'),
+        import('../services/widgetTaskHandler'),
+      ]);
+      setPlaced(await getWidgetInfo(WIDGET_NAME));
+    } catch {
+      // The count is a courtesy; the refresh itself already happened.
+    }
     toast.show(t('widget.refreshed'));
+  };
+
+  // A report the user can paste when the home screen shows nothing: which
+  // phone, which Android, and what the system says about the placed widgets.
+  // The preview above is drawn by the same native code as the widget, so
+  // together they say whether the picture or the launcher is at fault.
+  const placedSummary =
+    placed === null
+      ? '…'
+      : placed.length === 0
+        ? t('widget.nonePlaced')
+        : placed.map((info) => `${info.width}×${info.height} dp`).join(', ');
+
+  const copyReport = async () => {
+    const report = [
+      `Wasilah widget report`,
+      `Device: ${Device.brand ?? '?'} ${Device.modelName ?? '?'} · Android ${Device.osVersion ?? '?'}`,
+      `Placed widgets: ${placed?.length ?? 0} (${placedSummary})`,
+      `Scene: ${model?.scene ?? '?'} · occasion: ${model?.occasionId ?? 'none'}`,
+    ].join('\n');
+    await Clipboard.setStringAsync(report);
+    toast.show(t('widget.copied'));
   };
 
   return (
@@ -97,10 +134,14 @@ export function WidgetSettingsSection() {
         <Text variant="caption" tone="muted" className="mt-3 text-center">
           {t('widget.hint')}
         </Text>
+        <Text variant="caption" tone="subtle" className="mt-1 text-center">
+          {t('widget.placed', { summary: placedSummary })}
+        </Text>
       </View>
 
       <ListRow label={t('widget.addToHome')} icon="add" onPress={() => void addToHomeScreen()} />
       <ListRow label={t('widget.refresh')} icon="sync" onPress={() => void refresh()} />
+      <ListRow label={t('widget.copyReport')} icon="copy" onPress={() => void copyReport()} />
     </ListSection>
   );
 }

@@ -322,6 +322,10 @@ export const bn: Translation = {
     streakLabel: 'দিনের ধারা',
     readToday: 'আজ পড়া হয়েছে',
     callToAction: 'একটি আয়াত পড়ুন',
+    placed: 'আপনার হোম স্ক্রিনে: {{summary}}',
+    nonePlaced: 'এখনো যোগ করা হয়নি',
+    copyReport: 'উইজেট রিপোর্ট কপি করুন',
+    copied: 'কপি হয়েছে',
   },
   reminders: {
     title: 'রিমাইন্ডার',

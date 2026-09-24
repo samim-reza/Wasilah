@@ -75,6 +75,7 @@
     "eslint-config-expo": "^57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.5",
+    "patch-package": "^8.0.1",
     "prettier": "^3.9.8",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "react-test-renderer": "^19.2.3",
@@ -104,7 +105,8 @@
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "functions:serve": "supabase functions serve --env-file supabase/.env",
     "verify": "npm run theme:build && npm run typecheck && npm run lint && npm run test",
-    "store:assets": "node --experimental-strip-types --no-warnings scripts/generate-store-assets.ts"
+    "store:assets": "node --experimental-strip-types --no-warnings scripts/generate-store-assets.ts",
+    "postinstall": "patch-package"
   },
   "private": true
 }

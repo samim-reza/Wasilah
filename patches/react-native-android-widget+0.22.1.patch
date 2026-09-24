@@ -1,0 +1,90 @@
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+index 5650d1e..6193433 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidget.java
+@@ -4,6 +4,8 @@ import android.app.PendingIntent;
+ import android.appwidget.AppWidgetManager;
+ import android.content.ComponentName;
+ import android.content.Intent;
++import android.content.pm.PackageManager;
++import android.content.pm.ResolveInfo;
+ import android.graphics.Bitmap;
+ import android.graphics.Canvas;
+ import android.graphics.Rect;
+@@ -74,8 +76,7 @@ public class RNWidget {
+         );
+ 
+         Bitmap bitmap = drawViewToBitmap(widgetWithViews.getRootView());
+-        Uri bitmapUri = saveBitmapToDisk(widgetId, "light", bitmap);
+-        remoteWidgetView.setImageViewUri(R.id.rn_widget_image_light, bitmapUri);
++        setWidgetImage(remoteWidgetView, R.id.rn_widget_image_light, widgetId, "light", bitmap);
+ 
+         if (widgetWithViews.getRootAccessibilityLabel() != null) {
+             remoteWidgetView.setContentDescription(R.id.rn_widget_clickable_container, widgetWithViews.getRootAccessibilityLabel());
+@@ -90,8 +91,7 @@ public class RNWidget {
+             );
+ 
+             Bitmap darkBitmap = drawViewToBitmap(darkWidgetWithViews.getRootView());
+-            Uri darkBitmapUri = saveBitmapToDisk(widgetId, "dark", darkBitmap);
+-            remoteWidgetView.setImageViewUri(R.id.rn_widget_image_dark, darkBitmapUri);
++            setWidgetImage(remoteWidgetView, R.id.rn_widget_image_dark, widgetId, "dark", darkBitmap);
+ 
+             List<CollectionView> lightCollectionViews = widgetWithViews.getCollectionViews();
+             List<CollectionView> darkCollectionViews = darkWidgetWithViews.getCollectionViews();
+@@ -101,7 +101,7 @@ public class RNWidget {
+                 RNWidgetCollectionService.storeCollection(appContext, widgetId, i, darkCollectionViews.get(i).getRenderedViews(), "dark");
+             }
+         } else {
+-            remoteWidgetView.setImageViewUri(R.id.rn_widget_image_dark, bitmapUri);
++            setWidgetImage(remoteWidgetView, R.id.rn_widget_image_dark, widgetId, "light", bitmap);
+ 
+             List<CollectionView> collectionViews = widgetWithViews.getCollectionViews();
+             for (int i = 0; i < Math.min(collectionViews.size(), RNWidgetCollectionService.MAX_COLLECTION_WIDGETS); i++) {
+@@ -134,6 +134,47 @@ public class RNWidget {
+         return preview;
+     }
+ 
++    /**
++     * Bitmaps up to this size travel inside the RemoteViews itself. Pixel data
++     * is parcelled through shared memory, so the binder transaction limit does
++     * not apply to it, and the AppWidgetService's own per-app bitmap budget is
++     * several times the screen. Only a very large widget on a very dense
++     * screen exceeds this, and it falls back to the content URI.
++     */
++    private static final int MAX_INLINE_BITMAP_BYTES = 8 * 1024 * 1024;
++
++    /**
++     * Hands the drawn bitmap to the launcher.
++     *
++     * Inline where it fits: a bitmap inside the RemoteViews is displayed by
++     * every launcher, with no permission or provider between the two apps.
++     * The content-URI path is kept for oversized bitmaps, and the launcher is
++     * granted read access to it explicitly rather than relying on the
++     * provider being exported.
++     */
++    private void setWidgetImage(RemoteViews remoteWidgetView, int viewId, int widgetId, String mode, Bitmap bitmap) {
++        if (bitmap.getByteCount() <= MAX_INLINE_BITMAP_BYTES) {
++            remoteWidgetView.setImageViewBitmap(viewId, bitmap);
++            return;
++        }
++
++        Uri bitmapUri = saveBitmapToDisk(widgetId, mode, bitmap);
++        grantReadToLaunchers(bitmapUri);
++        remoteWidgetView.setImageViewUri(viewId, bitmapUri);
++    }
++
++    private void grantReadToLaunchers(Uri uri) {
++        try {
++            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
++            List<ResolveInfo> launchers = appContext.getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DEFAULT_ONLY);
++            for (ResolveInfo launcher : launchers) {
++                appContext.grantUriPermission(launcher.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
++            }
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++    }
++
+     private Bitmap drawViewToBitmap(View rootView) {
+         Bitmap bitmap = Bitmap.createBitmap(
+             rootView.getMeasuredWidth(),
