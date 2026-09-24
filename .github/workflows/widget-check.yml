@@ -1,0 +1,65 @@
+# Reproduces the home-screen widget on an Android emulator and keeps the
+# evidence: screenshots of the home screen with the widget placed, the
+# system log filtered to the widget, and the app-widget service's own view of
+# the widget. For when a phone shows a blank widget and nobody can attach a
+# debugger to it.
+#
+# Takes the run id of a "Build Android APK" run made with abi x86_64 (the
+# emulator is x86-64; a phone build has no code for it).
+name: Widget check (emulator)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Run id of a Build Android APK run made with abi "x86_64".
+        required: true
+        type: string
+      api_level:
+        description: Android API level for the emulator image.
+        type: string
+        default: '35'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # Hardware acceleration for the emulator; without it a boot takes the
+      # whole job. GitHub's Linux runners expose KVM but not to the runner
+      # user until this rule is in place.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: wasilah-preview-apk
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ inputs.api_level }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci/widget-check.sh apk/wasilah-preview.apk
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: widget-check
+          path: widget-check-out

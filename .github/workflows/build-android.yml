@@ -29,7 +29,14 @@ on:
         default: arm64-v8a
         options:
           - arm64-v8a
+          - x86_64
           - all
+      publish:
+        description: >-
+          Attach the APK to a GitHub Release. Switch off for a build meant for
+          the emulator check, which should not become "the latest APK".
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -124,7 +131,16 @@ jobs:
           echo "size=$(stat -c%s wasilah-preview.apk)" >> "$GITHUB_OUTPUT"
           echo "sha256=$(sha256sum wasilah-preview.apk | cut -c1-64)" >> "$GITHUB_OUTPUT"
 
+      # Always kept as a run artifact, so the emulator check can fetch a build
+      # by run id whether or not it was released.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasilah-preview-apk
+          path: wasilah-preview.apk
+          retention-days: 7
+
       - name: Publish as a release
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-${{ github.run_number }}
