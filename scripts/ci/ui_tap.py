@@ -4,7 +4,11 @@ Taps the first on-screen element whose text or description contains the
 given words, using uiautomator's view dump. Exits 1 when nothing matches, so
 a shell loop can scroll and try again.
 
-    python3 scripts/ci/ui_tap.py "Add to home screen"
+    python3 scripts/ci/ui_tap.py "Add to home screen" [--scroll-guard]
+
+With --scroll-guard, an element still under the navigation bar counts as not
+found, so a scrolling loop brings it fully into view first. Dialog buttons
+legitimately sit near the bottom, so the guard is off by default.
 """
 import re
 import subprocess
@@ -37,7 +41,7 @@ def main() -> int:
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
             # A row still half under the navigation bar is not tappable yet;
             # report it as not found so the caller scrolls and tries again.
-            if cy > screen_height() - 260:
+            if "--scroll-guard" in sys.argv and cy > screen_height() - 260:
                 print(f"'{sys.argv[1]}' is at the bottom edge ({cy}); scroll first", file=sys.stderr)
                 return 1
             subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)

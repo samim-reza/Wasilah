@@ -36,7 +36,7 @@ shot 02-settings
 echo "== find the add-to-home-screen row"
 found=0
 for i in $(seq 1 10); do
-  if python3 scripts/ci/ui_tap.py "Add to home screen"; then found=1; break; fi
+  if python3 scripts/ci/ui_tap.py "Add to home screen" --scroll-guard; then found=1; break; fi
   adb shell input swipe 540 1900 540 600 400
   sleep 2
 done
