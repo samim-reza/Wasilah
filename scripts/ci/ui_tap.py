@@ -18,6 +18,12 @@ def dump() -> ET.Element:
     return ET.fromstring(raw)
 
 
+def screen_height() -> int:
+    out = subprocess.run(["adb", "shell", "wm", "size"], check=True, capture_output=True).stdout.decode()
+    m = re.search(r"(\d+)x(\d+)", out)
+    return int(m.group(2)) if m else 2400
+
+
 def main() -> int:
     needle = sys.argv[1].lower()
     root = dump()
@@ -29,6 +35,11 @@ def main() -> int:
                 continue
             x1, y1, x2, y2 = map(int, m.groups())
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+            # A row still half under the navigation bar is not tappable yet;
+            # report it as not found so the caller scrolls and tries again.
+            if cy > screen_height() - 260:
+                print(f"'{sys.argv[1]}' is at the bottom edge ({cy}); scroll first", file=sys.stderr)
+                return 1
             subprocess.run(["adb", "shell", "input", "tap", str(cx), str(cy)], check=True)
             print(f"tapped '{node.get('text') or node.get('content-desc')}' at {cx},{cy}")
             return 0
