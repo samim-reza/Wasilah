@@ -24,7 +24,9 @@ export const defaultReminderPreferences: ReminderPreferences = {
   todaysAyahEnabled: true,
   prayerRemindersEnabled: false,
   weatherRemindersEnabled: false,
-  duaRemindersEnabled: false,
+  // On by default now that the catalogue has its words; see the migration
+  // of the same name for the server-side default.
+  duaRemindersEnabled: true,
   sleepDuaEnabled: false,
   sleepTime: { hour: 23, minute: 0 },
   quietHoursEnabled: true,

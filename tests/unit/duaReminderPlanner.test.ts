@@ -67,6 +67,7 @@ describe('planDuaReminders', () => {
       input({
         preferences: {
           ...defaultReminderPreferences,
+          duaRemindersEnabled: false,
           sleepDuaEnabled: true,
           sleepTime: { hour: 23, minute: 0 },
         },
@@ -85,7 +86,11 @@ describe('planDuaReminders', () => {
   it('plans one nightly prompt per day in the horizon', () => {
     const plan = planDuaReminders(
       input({
-        preferences: { ...defaultReminderPreferences, sleepDuaEnabled: true },
+        preferences: {
+          ...defaultReminderPreferences,
+          duaRemindersEnabled: false,
+          sleepDuaEnabled: true,
+        },
         horizonDays: 2,
       }),
     );
@@ -98,6 +103,7 @@ describe('planDuaReminders', () => {
         now: new Date('2026-09-16T23:30:00Z'),
         preferences: {
           ...defaultReminderPreferences,
+          duaRemindersEnabled: false,
           sleepDuaEnabled: true,
           sleepTime: { hour: 23, minute: 0 },
         },
