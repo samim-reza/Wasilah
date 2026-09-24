@@ -11,6 +11,9 @@
  * without the other.
  */
 import { httpRequest } from '@/lib/api/httpClient';
+import { refreshWidget } from '@/features/widget/services/updateWidget';
+import { keyValueStore } from '@/lib/storage/keyValueStore';
+import { storageKeys } from '@/lib/storage/storageKeys';
 import type { CoarseCoordinates } from '@/features/prayer/types/prayer.types';
 
 import type { WeatherCondition, WeatherSnapshot } from '../types/weather.types';
@@ -58,12 +61,19 @@ export async function fetchWeather(
 
   if (!response?.current || response.current.weather_code === undefined) return null;
 
-  return {
+  const snapshot: WeatherSnapshot = {
     condition: toCondition(response.current.weather_code),
     temperatureCelsius: response.current.temperature_2m ?? 0,
     isDaytime: response.current.is_day === 1,
     fetchedAt: new Date().toISOString(),
   };
+
+  // The home-screen widget draws in a headless context with no network, so
+  // the last reading is written down for it. Fire-and-forget: the caller
+  // wants the weather, not a storage round trip.
+  void keyValueStore.set(storageKeys.lastWeather, snapshot).then(() => refreshWidget());
+
+  return snapshot;
 }
 
 /**

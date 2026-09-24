@@ -313,6 +313,18 @@ export const en = {
     deleteTitle: 'Delete this tasbeeh?',
     deleteBody: '"{{name}}" and its count will be removed.',
   },
+  widget: {
+    title: 'Home screen widget',
+    appName: 'Wasilah',
+    hint: 'Shows the dua for this moment — sunset, rain, a new moon — and your streak. It updates on its own.',
+    addToHome: 'Add to home screen',
+    refresh: 'Refresh widget',
+    refreshed: 'Widget refreshed',
+    pinUnsupported: 'Your launcher does not allow this. Long-press the home screen, choose Widgets, and look for Wasilah.',
+    streakLabel: 'day streak',
+    readToday: 'Read today',
+    callToAction: 'Read one ayah',
+  },
   reminders: {
     title: 'Reminders',
     dailyReminder: 'Daily reminder',

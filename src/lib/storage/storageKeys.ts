@@ -54,6 +54,18 @@ export const storageKeys = {
 
   featureFlagOverrides: `${prefix}.featureFlags`,
 
+  /**
+   * The last weather reading and the last coarse location, kept for the
+   * home-screen widget.
+   *
+   * The widget is drawn in a headless context with no network, no location
+   * permission prompt and no React tree, so it can only show what the app
+   * last saw. Both are written whenever the app fetches them and read only by
+   * the widget; neither is user data worth syncing.
+   */
+  lastWeather: `${prefix}.widget.lastWeather`,
+  lastPrayerSettings: `${prefix}.widget.lastPrayerSettings`,
+
   /** TanStack Query disk cache, so a cold start can paint real content. */
   queryCache: `${prefix}.queryCache`,
 } as const;

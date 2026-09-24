@@ -20,6 +20,7 @@ import {
   useReaderPreferences,
 } from '@/features/reader/hooks/useReaderPreferences';
 import { useAppPreferences } from '@/features/settings/hooks/useAppPreferences';
+import { WidgetSettingsSection } from '@/features/widget/components/WidgetSettingsSection';
 import { localeNames, supportedLocales, type Locale } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { confirm } from '@/lib/ui/confirm';
@@ -165,6 +166,8 @@ export default function SettingsScreen() {
             onPress={() => router.push('/notification-settings')}
           />
         </ListSection>
+
+        <WidgetSettingsSection />
 
         <ListSection title={t('settings.privacy')}>
           <View className="px-4">

@@ -12,6 +12,10 @@ import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
 
+import { refreshWidget } from '@/features/widget/services/updateWidget';
+import { keyValueStore } from '@/lib/storage/keyValueStore';
+import { storageKeys } from '@/lib/storage/storageKeys';
+
 import { calculatePrayerTimes, nextPrayer } from '../services/prayerTimeService';
 import { isValidCoordinates, toCoarse } from '../utils/coordinates';
 import type {
@@ -84,6 +88,15 @@ export function usePrayerTimes(): UsePrayerTimesResult {
       cancelled = true;
     };
   }, [userId]);
+
+  // The home-screen widget anchors its dawn and sunset to the real sun, and
+  // it draws in a headless context that cannot reach Supabase or ask for
+  // location. So the settings are written down on the device whenever they
+  // include a position, and the widget is redrawn with the new sky.
+  useEffect(() => {
+    if (!settings.coordinates) return;
+    void keyValueStore.set(storageKeys.lastPrayerSettings, settings).then(() => refreshWidget());
+  }, [settings]);
 
   const persist = useCallback(
     async (next: PrayerSettings) => {

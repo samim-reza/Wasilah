@@ -181,15 +181,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         widgets: [
           {
-            // Must match STREAK_WIDGET_NAME in features/widget.
+            // Must match WIDGET_NAME in features/widget. Renaming it changes
+            // the receiver class, which Android treats as a different widget:
+            // everyone would have to remove and re-add theirs.
             name: 'Streak',
-            label: 'Wasilah streak',
-            description: 'Your current reading streak',
-            minWidth: '110dp',
-            minHeight: '110dp',
-            targetCellWidth: 2,
+            label: 'Wasilah',
+            description: 'The dua for this moment, and your streak',
+            minWidth: '180dp',
+            minHeight: '100dp',
+            targetCellWidth: 4,
             targetCellHeight: 2,
             resizeMode: 'horizontal|vertical',
+            // What the widget picker shows before the widget is placed.
+            previewImage: './assets/widget/preview.png',
             // Half-hourly is the floor Android honours for a widget update
             // anyway; the app also pushes an update the moment a session is
             // recorded, so this is only the fallback for a day the app is
@@ -197,6 +201,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             updatePeriodMillis: 1800000,
           },
         ],
+        // Copied into the APK's assets so the widget can set Arabic in the
+        // reader's own face; the widget draws natively and cannot use the
+        // fonts the JS bundle loads.
+        fonts: ['./assets/fonts/Amiri-Regular.ttf'],
       },
     ],
     [
