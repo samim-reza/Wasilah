@@ -345,21 +345,23 @@ def scene_quran(s: float) -> Image.Image:
     """An open book on a warm, quiet ground: the reading nudge."""
     size = (int(BASE_W * s), int(BASE_H * s))
     img = vertical_gradient(size, [(0, (14, 60, 56)), (0.6, (16, 96, 84)), (1, (40, 130, 108))])
-    glow(img, (size[0] * 0.5, size[1] * 0.55), 110 * s, (200, 240, 220), 0.35)
+    glow(img, (size[0] * 0.8, size[1] * 0.6), 80 * s, (200, 240, 220), 0.3)
     draw = ImageDraw.Draw(img)
-    cx, cy = size[0] * 0.5, size[1] * 0.62
-    w, h = 120 * s, 70 * s
-    page = (248, 244, 230)
+    # Small and to the right, in muted tones, so the words on the left sit on
+    # plain ground rather than on top of the book.
+    cx, cy = size[0] * 0.8, size[1] * 0.64
+    w, h = 62 * s, 38 * s
+    page = (196, 216, 204)
     # Two pages, meeting at the spine, slightly angled.
     draw.polygon([(cx - w, cy - h * 0.35), (cx - 4 * s, cy - h * 0.55), (cx - 4 * s, cy + h * 0.55), (cx - w, cy + h * 0.35)], fill=page)
     draw.polygon([(cx + w, cy - h * 0.35), (cx + 4 * s, cy - h * 0.55), (cx + 4 * s, cy + h * 0.55), (cx + w, cy + h * 0.35)], fill=page)
     # Faint lines of text.
     for k in range(5):
         yy = cy - h * 0.3 + k * h * 0.15
-        draw.line((cx - w * 0.85, yy + k * 1.5 * s, cx - 12 * s, yy - 6 * s), fill=(200, 190, 160), width=max(1, int(1.2 * s)))
-        draw.line((cx + 12 * s, yy - 6 * s, cx + w * 0.85, yy + k * 1.5 * s), fill=(200, 190, 160), width=max(1, int(1.2 * s)))
+        draw.line((cx - w * 0.85, yy + k * 1.5 * s, cx - 8 * s, yy - 4 * s), fill=(150, 176, 164), width=max(1, int(1.0 * s)))
+        draw.line((cx + 8 * s, yy - 4 * s, cx + w * 0.85, yy + k * 1.5 * s), fill=(150, 176, 164), width=max(1, int(1.0 * s)))
     # Spine shadow.
-    draw.rectangle((cx - 4 * s, cy - h * 0.55, cx + 4 * s, cy + h * 0.55), fill=(210, 200, 180))
+    draw.rectangle((cx - 3 * s, cy - h * 0.55, cx + 3 * s, cy + h * 0.55), fill=(160, 186, 174))
     return img
 
 

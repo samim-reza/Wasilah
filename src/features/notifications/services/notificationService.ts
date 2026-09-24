@@ -118,26 +118,32 @@ export async function configureChannels(): Promise<void> {
   await withNotifications(async (notifications) => {
     const accent = getPalette('light').primary;
 
+    // HIGH importance is what makes a notification heads-up and felt: it
+    // buzzes and shows over whatever is open. The pattern is two firm pulses.
+    // A rain dua or a prayer that arrives silently is a notification nobody
+    // saw. The user can still quieten a channel in system settings.
+    const felt = {
+      importance: notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 300, 200, 300],
+      enableVibrate: true,
+      lightColor: accent,
+      sound: 'default',
+    };
+
     await notifications.setNotificationChannelAsync(notificationChannels.dailyReminders, {
       name: t('notifications.channelDailyReminders'),
-      importance: notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 200],
-      lightColor: accent,
+      ...felt,
       lockscreenVisibility: notifications.AndroidNotificationVisibility.PUBLIC,
     });
 
     await notifications.setNotificationChannelAsync(notificationChannels.streak, {
       name: t('notifications.channelStreak'),
-      importance: notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 200],
-      lightColor: accent,
+      ...felt,
     });
 
     await notifications.setNotificationChannelAsync(notificationChannels.prayer, {
       name: t('notifications.channelPrayer'),
-      // Lower importance: prayer-adjacent nudges should never interrupt.
-      importance: notifications.AndroidImportance.LOW,
-      lightColor: accent,
+      ...felt,
     });
 
     logger.debug('notifications.channelsConfigured');

@@ -245,7 +245,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         route: '/(tabs)/home?focus=todays-ayah',
         scheduledFor: new Date().toISOString(),
       },
-      channelId: isStreakRescue ? 'streak-reminders' : 'daily-reminders',
+      channelId: isStreakRescue ? 'streak-reminders-v2' : 'daily-reminders-v2',
       sound: 'default',
     });
 

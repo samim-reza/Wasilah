@@ -53,6 +53,9 @@ export function useNotificationPermissions(): UseNotificationPermissionsResult {
     const next = await getPermissionState();
     setState(next);
     setIsLoading(false);
+    // Permission already granted on an earlier run: make sure the channels
+    // exist with their current settings, since an update can rename them.
+    if (next.status === 'granted') await configureChannels();
   }, []);
 
   useEffect(() => {

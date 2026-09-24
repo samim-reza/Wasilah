@@ -3,10 +3,14 @@ import type { NotificationCategory } from '@/lib/supabase/database.types';
 export type { NotificationCategory };
 
 /** Android notification channels. Users can mute these individually in system settings. */
+//
+// The ids carry a version. Android fixes a channel's importance and vibration
+// the first time it is created and ignores later changes, so making the
+// channels vibrate meant new channels; the old ones simply fall silent.
 export const notificationChannels = {
-  dailyReminders: 'daily-reminders',
-  streak: 'streak-reminders',
-  prayer: 'prayer-reminders',
+  dailyReminders: 'daily-reminders-v2',
+  streak: 'streak-reminders-v2',
+  prayer: 'prayer-reminders-v2',
 } as const;
 
 export type NotificationChannelId =

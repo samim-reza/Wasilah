@@ -18,7 +18,10 @@
 import { findOccasion } from '@/features/duas/data/duaCatalogue';
 import { buildDuaNotification } from '@/features/duas/utils/duaNotification';
 import { presentNow } from '@/features/notifications/services/localNotificationService';
-import { getPermissionState } from '@/features/notifications/services/notificationService';
+import {
+  configureChannels,
+  getPermissionState,
+} from '@/features/notifications/services/notificationService';
 import { logger } from '@/lib/monitoring/logger';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
@@ -42,6 +45,10 @@ async function raiseWeatherAlert(model: WidgetModel, now: Date): Promise<void> {
   const permission = await getPermissionState();
   if (permission.status !== 'granted') return;
 
+  // The channel must exist before anything is posted on it, and this may be
+  // the first code to run after an update that renamed the channels.
+  await configureChannels();
+
   const occasion = findOccasion(card.occasionId);
   if (!occasion) return;
 
@@ -55,10 +62,32 @@ async function raiseWeatherAlert(model: WidgetModel, now: Date): Promise<void> {
   }
 }
 
+/** A wake-up this often even when no card is due to change. */
+const SAFETY_TICK_MS = 20 * 60_000;
+const SAFETY_HORIZON_MS = 2 * 3_600_000;
+
+/**
+ * The card's own change instants, plus a tick every twenty minutes for the
+ * next two hours. The ticks are the net under the alarms: if a change was
+ * missed — the phone was asleep, the launcher was slow — the next tick
+ * redraws, and re-arms everything from a fresh reading of the clock.
+ */
+export function withSafetyTicks(changes: readonly Date[], now: Date): Date[] {
+  const instants = new Set(changes.map((d) => d.getTime()));
+  for (
+    let at = now.getTime() + SAFETY_TICK_MS;
+    at <= now.getTime() + SAFETY_HORIZON_MS;
+    at += SAFETY_TICK_MS
+  ) {
+    instants.add(at);
+  }
+  return [...instants].sort((a, b) => a - b).map((ms) => new Date(ms));
+}
+
 export async function runWidgetTick(model: WidgetModel, now: Date = new Date()): Promise<void> {
   try {
     if (WidgetAlarm.isAvailable) {
-      WidgetAlarm.schedule(model.changes);
+      WidgetAlarm.schedule(withSafetyTicks(model.changes, now));
     }
   } catch (error) {
     logger.warn('widget.alarmScheduleFailed', { error });

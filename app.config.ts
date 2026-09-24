@@ -224,7 +224,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         color: BRAND,
         // Reminders are scheduled locally, so the app must be allowed to post
         // them without a network round-trip.
-        defaultChannel: 'daily-reminders',
+        defaultChannel: 'daily-reminders-v2',
       },
     ],
     [

@@ -62,6 +62,21 @@ async function load(): Promise<WidgetModel> {
   }
 }
 
+async function redrawAllWidgets(model: WidgetModel): Promise<void> {
+  try {
+    const { requestWidgetUpdate } = await import('react-native-android-widget');
+    await requestWidgetUpdate({
+      widgetName: WIDGET_NAME,
+      renderWidget: (info) => (
+        <WasilahWidget model={model} width={info.width} height={info.height} />
+      ),
+      widgetNotFound: () => undefined,
+    });
+  } catch (error) {
+    logger.warn('widget.redrawFailed', { error });
+  }
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const { widgetInfo, widgetAction, renderWidget } = props;
 
@@ -76,6 +91,11 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         renderWidget(
           <WasilahWidget model={model} width={widgetInfo.width} height={widgetInfo.height} />,
         );
+      } else {
+        // Woken by an alarm, not by Android: nothing was handed to us to draw
+        // on, so every placed widget is redrawn through the library — this is
+        // the redraw the alarm exists for.
+        await redrawAllWidgets(model);
       }
       await runWidgetTick(model);
       break;
