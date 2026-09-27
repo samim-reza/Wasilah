@@ -11,6 +11,7 @@ import {
   getStreakStatus,
   resolveCurrentStreak,
   type CompletedDay,
+  resolveRecordedStreak,
 } from '@/features/streak/utils/streakRules';
 import { emptyStreakState, type StreakState } from '@/features/streak/types/streak.types';
 
@@ -269,5 +270,38 @@ describe('getStreakStatus', () => {
         minutesUntilMidnight: 600,
       }),
     ).toBe('none');
+  });
+});
+
+describe('resolveRecordedStreak', () => {
+  const recordedOn = '2026-09-24';
+
+  it('keeps the streak on the day it was recorded', () => {
+    expect(
+      resolveRecordedStreak({ currentStreak: 2, completedThatDay: false }, recordedOn, recordedOn),
+    ).toBe(2);
+  });
+
+  it('keeps a completed day’s streak through the next day', () => {
+    expect(
+      resolveRecordedStreak({ currentStreak: 2, completedThatDay: true }, recordedOn, '2026-09-25'),
+    ).toBe(2);
+  });
+
+  it('breaks once a whole day has been missed', () => {
+    // Read on the 23rd and 24th, nothing on the 25th: by the 26th it is gone.
+    expect(
+      resolveRecordedStreak({ currentStreak: 2, completedThatDay: true }, recordedOn, '2026-09-26'),
+    ).toBe(0);
+  });
+
+  it('breaks the day after an incomplete day', () => {
+    expect(
+      resolveRecordedStreak(
+        { currentStreak: 2, completedThatDay: false },
+        recordedOn,
+        '2026-09-25',
+      ),
+    ).toBe(0);
   });
 });

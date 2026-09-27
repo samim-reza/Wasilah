@@ -1,15 +1,17 @@
 /**
  * Today's Ayah — the card the whole app is built around.
  *
- * It is the one place a user can complete their day without navigating
- * anywhere, so it carries a primary action rather than only a link. Everything
- * else on the home screen defers to it.
+ * Two ways into the reader sit under it: on from today's ayah, and back to
+ * wherever the user last left off. The day's target is time spent reading,
+ * so there is no "mark as read" here any more — a tap is not ten minutes.
  */
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
+import { Pressable } from '@/components/ui/Pressable';
 import { Skeleton } from '@/components/feedback/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { ArabicText } from '@/features/quran/components/ArabicText';
@@ -28,13 +30,17 @@ export interface TodaysAyahCardProps {
   languageCode: string;
   isBookmarked: boolean;
   isPlaying: boolean;
-  /** True once today's minimum has been met. */
-  completed: boolean;
   onPlay: () => void;
   onBookmark: () => void;
   onShare: () => void;
-  onMarkAsRead: () => void;
+  /** Opens the reader at today's ayah. */
   onOpenInReader: () => void;
+  /**
+   * Where the user last stopped reading, e.g. "Al-Baqarah · 2:45", or null
+   * when they have not read anything yet.
+   */
+  lastReadLabel: string | null;
+  onResumeLastRead: () => void;
 }
 
 export function TodaysAyahCard({
@@ -47,12 +53,12 @@ export function TodaysAyahCard({
   languageCode,
   isBookmarked,
   isPlaying,
-  completed,
   onPlay,
   onBookmark,
   onShare,
-  onMarkAsRead,
   onOpenInReader,
+  lastReadLabel,
+  onResumeLastRead,
 }: TodaysAyahCardProps) {
   const { t } = useTranslation();
 
@@ -125,24 +131,35 @@ export function TodaysAyahCard({
         {reference}
       </Text>
 
-      {completed ? (
+      <View className="gap-2">
         <Button
           label={t('home.continueReading')}
           onPress={onOpenInReader}
-          variant="secondary"
           icon="forward"
           iconPosition="trailing"
           fullWidth
+          accessibilityHint={t('home.continueReadingHint')}
         />
-      ) : (
-        <Button
-          label={t('home.markAsRead')}
-          onPress={onMarkAsRead}
-          icon="check"
-          fullWidth
-          accessibilityHint={t('home.minimumIncomplete')}
-        />
-      )}
+
+        {lastReadLabel && (
+          <Pressable
+            onPress={onResumeLastRead}
+            className="flex-row items-center gap-3 rounded-xl border border-border bg-surface-muted px-4 py-3"
+            enforceMinTapTarget={false}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('home.fromLastRead')}. ${lastReadLabel}`}
+          >
+            <Icon name="bookmark" size={18} color="primary" />
+            <View className="flex-1">
+              <Text className="font-semibold">{t('home.fromLastRead')}</Text>
+              <Text variant="caption" tone="muted" numberOfLines={1}>
+                {lastReadLabel}
+              </Text>
+            </View>
+            <Icon name="forward" size={18} color="textSubtle" />
+          </Pressable>
+        )}
+      </View>
     </Card>
   );
 }

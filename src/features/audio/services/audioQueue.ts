@@ -12,30 +12,71 @@ export interface QueueState {
   tracks: AudioTrack[];
   currentIndex: number;
   repeatMode: RepeatMode;
+  /** How many times each ayah is recited before moving on. At least 1. */
+  repeatEach: number;
+  /** How many times the whole queue is played. 0 means until stopped. */
+  repeatRange: number;
+  /** Completed recitations of the current ayah in this pass. */
+  plays: number;
+  /** Completed passes through the whole queue. */
+  passes: number;
 }
 
-export const emptyQueue: QueueState = { tracks: [], currentIndex: -1, repeatMode: 'off' };
+/** How a queue repeats, as chosen in the reader's play sheet. */
+export interface RepeatOptions {
+  repeatEach: number;
+  repeatRange: number;
+}
+
+export const noRepeat: RepeatOptions = { repeatEach: 1, repeatRange: 1 };
+
+export const emptyQueue: QueueState = {
+  tracks: [],
+  currentIndex: -1,
+  repeatMode: 'off',
+  ...noRepeat,
+  plays: 0,
+  passes: 0,
+};
 
 export function currentTrack(queue: QueueState): AudioTrack | null {
   return queue.tracks[queue.currentIndex] ?? null;
 }
 
 /**
- * The index to play after the current one finishes NATURALLY.
+ * The queue after the current ayah finishes NATURALLY, or null when playback
+ * is over.
  *
  * Distinct from `nextIndex`: repeat-one replays the same ayah when it ends on
  * its own, but pressing "next" must still advance. Conflating the two makes the
  * skip button appear broken in repeat-one mode.
+ *
+ * The counters live in the returned state rather than in the player, so the
+ * memorisation case — "each ayah three times, the whole passage twice" — is
+ * decided here, where it can be tested without any audio.
  */
-export function indexAfterCompletion(queue: QueueState): number | null {
+export function stepAfterCompletion(queue: QueueState): QueueState | null {
   if (queue.tracks.length === 0) return null;
 
-  if (queue.repeatMode === 'one') return queue.currentIndex;
+  if (queue.repeatMode === 'one') return { ...queue, plays: queue.plays + 1 };
+
+  const plays = queue.plays + 1;
+  if (plays < Math.max(1, queue.repeatEach)) return { ...queue, plays };
 
   const next = queue.currentIndex + 1;
-  if (next < queue.tracks.length) return next;
+  if (next < queue.tracks.length) return { ...queue, currentIndex: next, plays: 0 };
 
-  return queue.repeatMode === 'all' ? 0 : null;
+  const passes = queue.passes + 1;
+  const passesLeft = queue.repeatRange <= 0 || passes < queue.repeatRange;
+  if (queue.repeatMode === 'all' || passesLeft) {
+    return { ...queue, currentIndex: 0, plays: 0, passes };
+  }
+  return null;
+}
+
+/** The index `stepAfterCompletion` moves to, or null when playback is over. */
+export function indexAfterCompletion(queue: QueueState): number | null {
+  return stepAfterCompletion(queue)?.currentIndex ?? null;
 }
 
 /** The index for an explicit "next" press. */

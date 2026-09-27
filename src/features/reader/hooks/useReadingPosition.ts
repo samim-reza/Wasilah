@@ -4,9 +4,15 @@
  * Saves are throttled hard: the reader would otherwise call this on every
  * scroll frame, and a write per frame would thrash both AsyncStorage and the
  * sync queue for a value nobody needs updated more than a few times a minute.
+ *
+ * The throttle keeps the LAST position, not the first. It used to drop every
+ * save inside the window, so someone who read on for a few seconds and closed
+ * the surah came back to where they had been ten seconds earlier. Now the
+ * latest ayah is written when the window ends, and at once when the reader
+ * closes.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -30,6 +36,8 @@ export function useReadingPosition() {
 
   const lastSavedAt = useRef(0);
   const lastSavedKey = useRef<string | null>(null);
+  const pendingKey = useRef<string | null>(null);
+  const trailingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const query = useQuery<ReadingPosition | null>({
     queryKey,
@@ -48,18 +56,11 @@ export function useReadingPosition() {
     },
   });
 
-  const save = useCallback(
+  const write = useCallback(
     (verseKey: string) => {
-      const now = Date.now();
-      const isSameVerse = lastSavedKey.current === verseKey;
-      const isThrottled = now - lastSavedAt.current < SAVE_THROTTLE_MS;
-
-      // Re-saving the same verse is always pointless; a different verse still
-      // waits out the throttle window.
-      if (isSameVerse || isThrottled) return;
-
-      lastSavedAt.current = now;
+      lastSavedAt.current = Date.now();
       lastSavedKey.current = verseKey;
+      pendingKey.current = null;
 
       void savePosition(verseKey, userId)
         .then(() => queryClient.invalidateQueries({ queryKey }))
@@ -67,6 +68,40 @@ export function useReadingPosition() {
     },
     [userId, queryClient, queryKey],
   );
+
+  const flush = useCallback(() => {
+    if (trailingTimer.current) clearTimeout(trailingTimer.current);
+    trailingTimer.current = null;
+    if (pendingKey.current && pendingKey.current !== lastSavedKey.current) {
+      write(pendingKey.current);
+    }
+  }, [write]);
+
+  const save = useCallback(
+    (verseKey: string) => {
+      // Re-saving the same verse is always pointless.
+      if (lastSavedKey.current === verseKey && pendingKey.current === null) return;
+
+      const wait = SAVE_THROTTLE_MS - (Date.now() - lastSavedAt.current);
+      if (wait <= 0) {
+        write(verseKey);
+        return;
+      }
+
+      // Inside the window: remember the newest ayah and write it when the
+      // window closes.
+      pendingKey.current = verseKey;
+      trailingTimer.current ??= setTimeout(flush, wait);
+    },
+    [write, flush],
+  );
+
+  // Leaving the reader writes wherever it was left.
+  const flushRef = useRef(flush);
+  useEffect(() => {
+    flushRef.current = flush;
+  }, [flush]);
+  useEffect(() => () => flushRef.current(), []);
 
   return { position: query.data ?? null, isLoading: query.isLoading, save };
 }

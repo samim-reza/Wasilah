@@ -13,8 +13,8 @@
  *   3. the "continue reading" position is updated as the user moves.
  */
 import { FlashList, type FlashListRef, type ListRenderItem } from '@shopify/flash-list';
-import { useCallback, useEffect, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, View, type ScrollViewProps } from 'react-native';
 
 import { AyahCard } from '@/features/quran/components/AyahCard';
 import type { Verse, WordSegment } from '@/features/quran/types/quran.types';
@@ -33,15 +33,29 @@ export interface VirtualizedAyahListProps {
   bookmarkedKeys: ReadonlySet<string>;
   notedKeys: ReadonlySet<string>;
   playingVerseKey: string | null;
+  /** Briefly marked after the reader opened at it. */
+  highlightedVerseKey?: string | null;
+  /**
+   * The ayah to open at. Read once, when the list mounts: FlashList's
+   * `initialScrollIndex` renders from that item on the first layout, which is
+   * the only reliable way to land on it — `scrollToIndex` straight after the
+   * data arrives runs before the items are measured and lands short.
+   */
+  initialVerseNumber?: number;
   /** Word being recited in the playing ayah; null when nothing is playing. */
   activeWordPosition: number | null;
   showTafsirAction: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
   onEndReached: () => void;
+  /** Pages before the first loaded one, when the reader opened mid-surah. */
+  hasPreviousPage?: boolean;
+  isFetchingPreviousPage?: boolean;
+  onStartReached?: () => void;
   /** Reported once per ayah as it becomes visible. */
   onVerseVisible: (verse: Verse) => void;
-  onPlay: (verse: Verse) => void;
+  /** The ayah at the top of the viewport — where the reader "is". */
+  onTopVerseChange?: (verse: Verse) => void;
   onPlaySingle: (verse: Verse) => void;
   arabicFont: ArabicFontKey;
   onTafsir: (verse: Verse) => void;
@@ -51,6 +65,19 @@ export interface VirtualizedAyahListProps {
   onWordPress: (word: WordSegment) => void;
   ListHeaderComponent?: React.ReactElement | null;
   ListFooterComponent?: React.ReactElement | null;
+  /** Space kept clear under the last ayah, for the reader's bottom bar. */
+  bottomInset?: number;
+  /** Scroll events, for auto-scroll. */
+  scrollHandlers?: Pick<
+    ScrollViewProps,
+    | 'onScroll'
+    | 'onScrollBeginDrag'
+    | 'onScrollEndDrag'
+    | 'onMomentumScrollBegin'
+    | 'onMomentumScrollEnd'
+    | 'onContentSizeChange'
+    | 'onLayout'
+  >;
 }
 
 /**
@@ -79,13 +106,18 @@ export function VirtualizedAyahList({
   bookmarkedKeys,
   notedKeys,
   playingVerseKey,
+  highlightedVerseKey = null,
+  initialVerseNumber,
   activeWordPosition,
   showTafsirAction,
   isFetchingNextPage,
   hasNextPage,
   onEndReached,
+  hasPreviousPage = false,
+  isFetchingPreviousPage = false,
+  onStartReached,
   onVerseVisible,
-  onPlay,
+  onTopVerseChange,
   onPlaySingle,
   arabicFont,
   onTafsir,
@@ -95,16 +127,28 @@ export function VirtualizedAyahList({
   onWordPress,
   ListHeaderComponent,
   ListFooterComponent,
+  bottomInset = 0,
+  scrollHandlers,
 }: VirtualizedAyahListProps) {
+  // Captured at mount and never recomputed: pages loaded above later shift
+  // every index, and FlashList must not be handed a different start point.
+  const [initialScrollIndex] = useState(() => {
+    if (!initialVerseNumber) return undefined;
+    const index = verses.findIndex((verse) => verse.verseNumber === initialVerseNumber);
+    return index > 0 ? index : undefined;
+  });
+
   // FlashList refuses to accept a new `onViewableItemsChanged` identity after
   // mount, so the callback is held behind a ref that stays stable while the
   // value it points at is kept current. The ref is updated in an effect rather
   // than during render, which is what keeps it safe under concurrent rendering.
   const onVerseVisibleRef = useRef(onVerseVisible);
+  const onTopVerseChangeRef = useRef(onTopVerseChange);
 
   useEffect(() => {
     onVerseVisibleRef.current = onVerseVisible;
-  }, [onVerseVisible]);
+    onTopVerseChangeRef.current = onTopVerseChange;
+  }, [onVerseVisible, onTopVerseChange]);
 
   // Empty dependency list: the identity must never change, and the ref above is
   // what keeps the behaviour current. The ref is read when the list scrolls,
@@ -114,6 +158,9 @@ export function VirtualizedAyahList({
       for (const entry of viewableItems) {
         if (entry.item) onVerseVisibleRef.current(entry.item);
       }
+      // Items arrive in list order, so the first is the one at the top.
+      const top = viewableItems.find((entry) => entry.item)?.item;
+      if (top) onTopVerseChangeRef.current?.(top);
     },
     [],
   );
@@ -130,12 +177,12 @@ export function VirtualizedAyahList({
         isBookmarked={bookmarkedKeys.has(item.verseKey)}
         hasNote={notedKeys.has(item.verseKey)}
         isPlaying={playingVerseKey === item.verseKey}
+        isHighlighted={highlightedVerseKey === item.verseKey}
         // Only the playing ayah receives a position, so a tick from the player
         // re-renders one card instead of every card in the list.
         activeWordPosition={playingVerseKey === item.verseKey ? activeWordPosition : null}
         showTafsirAction={showTafsirAction}
         onWordPress={onWordPress}
-        onPlay={onPlay}
         onPlaySingle={onPlaySingle}
         arabicFont={arabicFont}
         onTafsir={onTafsir}
@@ -153,9 +200,9 @@ export function VirtualizedAyahList({
       bookmarkedKeys,
       notedKeys,
       playingVerseKey,
+      highlightedVerseKey,
       activeWordPosition,
       showTafsirAction,
-      onPlay,
       onPlaySingle,
       arabicFont,
       onTafsir,
@@ -174,11 +221,27 @@ export function VirtualizedAyahList({
       data={verses}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
+      initialScrollIndex={initialScrollIndex}
       onEndReached={onEndReached}
       onEndReachedThreshold={END_REACHED_THRESHOLD}
+      // Opened mid-surah, the earlier ayahs load as the top comes near.
+      // FlashList keeps the visible ayah still while they are inserted above.
+      onStartReached={hasPreviousPage ? onStartReached : undefined}
+      onStartReachedThreshold={END_REACHED_THRESHOLD}
       onViewableItemsChanged={handleViewableItemsChanged}
       viewabilityConfig={VIEWABILITY_CONFIG}
-      ListHeaderComponent={ListHeaderComponent}
+      {...scrollHandlers}
+      scrollEventThrottle={16}
+      contentContainerStyle={{ paddingBottom: bottomInset }}
+      ListHeaderComponent={
+        hasPreviousPage || isFetchingPreviousPage ? (
+          <View className="items-center py-6">
+            <ActivityIndicator />
+          </View>
+        ) : (
+          ListHeaderComponent
+        )
+      }
       ListFooterComponent={
         <>
           {isFetchingNextPage && (

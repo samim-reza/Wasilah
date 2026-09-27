@@ -242,9 +242,57 @@ function duaContentFor(occasionId: string) {
   return buildDuaNotification(occasion);
 }
 
-export async function applySchedule(
+/**
+ * Rescheduling passes, newest wins.
+ *
+ * A pass reads the network (notification history, weather) before it knows
+ * what to schedule, and several screens can start one at once. Unserialised,
+ * a slow pass that began with the old settings could finish last and replace
+ * the new schedule with the old one — a reminder moved to 8:00 still arriving
+ * at the time it was moved from — and two passes interleaving their cancel and
+ * schedule steps left the same reminder queued twice.
+ *
+ * So each pass takes a number when it starts, only the newest may apply, and
+ * applies run one at a time.
+ */
+let latestPass = 0;
+let applying: Promise<unknown> = Promise.resolve();
+
+/** Starts a pass. Any pass started earlier will no longer apply. */
+export function beginSchedulePass(): number {
+  latestPass += 1;
+  return latestPass;
+}
+
+function serialised<T>(work: () => Promise<T>): Promise<T> {
+  const result = applying.then(work, work);
+  applying = result.catch(() => undefined);
+  return result;
+}
+
+/**
+ * Replaces everything Wasilah had scheduled with `planned`.
+ *
+ * Resolves to null, having changed nothing, when `pass` has been overtaken by
+ * a newer one.
+ */
+export function applySchedule(
   planned: PlannedReminder[],
   variables: ScheduleVariables = {},
+  pass: number = beginSchedulePass(),
+): Promise<ScheduledNotification[] | null> {
+  return serialised(async () => {
+    if (pass !== latestPass) {
+      logger.debug('reminders.passSuperseded', { pass, latestPass });
+      return null;
+    }
+    return replaceSchedule(planned, variables);
+  });
+}
+
+async function replaceSchedule(
+  planned: PlannedReminder[],
+  variables: ScheduleVariables,
 ): Promise<ScheduledNotification[]> {
   await cancelAll();
 
@@ -311,7 +359,11 @@ export async function getNextScheduledReminder(): Promise<StoredScheduleEntry | 
   return upcoming[0] ?? null;
 }
 
-export async function clearSchedule(): Promise<void> {
-  await cancelAll();
-  await keyValueStore.remove(storageKeys.scheduledReminderIds);
+export function clearSchedule(): Promise<void> {
+  // A pass of its own, so a plan still in flight cannot re-arm what this clears.
+  beginSchedulePass();
+  return serialised(async () => {
+    await cancelAll();
+    await keyValueStore.remove(storageKeys.scheduledReminderIds);
+  });
 }

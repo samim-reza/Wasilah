@@ -10,13 +10,16 @@ import { ScrollView, View } from 'react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
+import { Pressable } from '@/components/ui/Pressable';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 import type { ReadingModeValue } from '@/lib/supabase/database.types';
+import { arabicFontKeys } from '@/theme/fonts';
 
-import type { ReaderPreferences } from '../hooks/useReaderPreferences';
+import { arabicScripts, type ReaderPreferences } from '../hooks/useReaderPreferences';
+import { ArabicSample } from './ArabicSample';
 
 export interface ReaderPreferencesSheetProps {
   visible: boolean;
@@ -56,7 +59,7 @@ export function ReaderPreferencesSheet({
       visible={visible}
       onClose={onClose}
       title={t('reader.preferences')}
-      heightRatio={0.7}
+      heightRatio={0.8}
     >
       <ScrollView className="px-4" contentContainerClassName="pb-8">
         <View className="py-4">
@@ -73,6 +76,13 @@ export function ReaderPreferencesSheet({
 
         <Divider />
 
+        {/* The font settings live here, beside the text they change, as well
+            as in Settings: the sample below redraws as each one is chosen,
+            and the ayahs behind the sheet do too. */}
+        <Text variant="label" tone="subtle" className="pt-4">
+          {t('reader.fontSettings')}
+        </Text>
+
         <SizeStepper
           label={t('reader.arabicSize')}
           value={preferences.arabicFontSize}
@@ -86,6 +96,27 @@ export function ReaderPreferencesSheet({
             onStep={onStepTranslation}
           />
         )}
+
+        <ChipGroup
+          label={t('reader.arabicScript')}
+          options={arabicScripts.map((script) => ({
+            value: script,
+            label: t(`reader.script${script.charAt(0).toUpperCase()}${script.slice(1)}`),
+          }))}
+          value={preferences.arabicScript}
+          onChange={(arabicScript) => void onUpdate({ arabicScript })}
+        />
+
+        <ChipGroup
+          label={t('reader.arabicFont')}
+          options={arabicFontKeys.map((font) => ({ value: font, label: t(`reader.font${font}`) }))}
+          value={preferences.arabicFont}
+          onChange={(arabicFont) => void onUpdate({ arabicFont })}
+        />
+
+        <View className="mb-2 overflow-hidden rounded-xl border border-border pt-3">
+          <ArabicSample script={preferences.arabicScript} fontFamily={preferences.arabicFont} />
+        </View>
 
         <Divider />
 
@@ -152,6 +183,50 @@ function SizeStepper({
           filled
           size={18}
         />
+      </View>
+    </View>
+  );
+}
+
+function ChipGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View className="gap-2 py-3">
+      <Text>{label}</Text>
+      <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup">
+        {options.map((option) => {
+          const selected = option.value === value;
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onChange(option.value)}
+              className={`rounded-full border px-3 py-1.5 ${
+                selected ? 'border-primary bg-primary-muted' : 'border-border bg-surface'
+              }`}
+              enforceMinTapTarget={false}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={option.label}
+            >
+              <Text
+                variant="caption"
+                className={selected ? 'font-semibold text-primary' : ''}
+                numberOfLines={1}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

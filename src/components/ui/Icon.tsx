@@ -36,6 +36,9 @@ const iconMap = {
   skipPrevious: 'play-skip-back',
   stop: 'stop',
   speed: 'speedometer-outline',
+  repeat: 'repeat',
+  autoScroll: 'arrow-down-circle-outline',
+  autoScrollOn: 'arrow-down-circle',
   volume: 'volume-medium-outline',
 
   bookmark: 'bookmark-outline',
@@ -60,6 +63,9 @@ const iconMap = {
   filter: 'options-outline',
 
   settings: 'settings-outline',
+  // Three bars: the reader's settings, where a text-size glyph undersold
+  // everything else the sheet holds.
+  menu: 'menu',
   notifications: 'notifications-outline',
   notificationsOff: 'notifications-off-outline',
   theme: 'contrast-outline',

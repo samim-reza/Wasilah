@@ -32,18 +32,28 @@ import {
   currentTrack as getCurrentTrack,
   emptyQueue,
   findTrackIndex,
-  indexAfterCompletion,
   nextIndex,
+  noRepeat,
   previousIndex,
   shouldRestartInsteadOfPrevious,
+  stepAfterCompletion,
   trackToPrefetch,
   type QueueState,
+  type RepeatOptions,
 } from '../services/audioQueue';
 import type { AudioState, AudioTrack, QueueId, RepeatMode } from '../types/audio.types';
 
 export interface AudioControls extends AudioState {
-  /** Loads a queue and starts at `startIndex`. `id` says what the queue is. */
-  playQueue: (tracks: AudioTrack[], startIndex?: number, id?: QueueId) => void;
+  /**
+   * Loads a queue and starts at `startIndex`. `id` says what the queue is;
+   * `repeat` says how many times each ayah and the whole queue are recited.
+   */
+  playQueue: (
+    tracks: AudioTrack[],
+    startIndex?: number,
+    id?: QueueId,
+    repeat?: RepeatOptions,
+  ) => void;
   /** Plays a single ayah, replacing any queue. */
   playTrack: (track: AudioTrack) => void;
   /** Jumps to an ayah already in the queue. */
@@ -90,6 +100,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [playbackRate, setRateState] = useState(1);
   const [queueId, setQueueId] = useState<QueueId>(null);
   const [error, setError] = useState<unknown>(null);
+  // True once the queue has played out. Without it, "play" after the last
+  // ayah finished called `play()` on a player parked at its end, which does
+  // nothing — the single-ayah button looked dead the second time it was used.
+  const [hasEnded, setHasEnded] = useState(false);
+
+  // Read by `toggle` at press time. A toggle that closed over `status.playing`
+  // was only as current as the last render of whoever held it, and the ayah
+  // cards deliberately skip re-renders — so a card could pause a player that
+  // was already paused, and the tap did nothing.
+  const playingRef = useRef(status.playing);
+
+  useEffect(() => {
+    playingRef.current = status.playing;
+  }, [status.playing]);
 
   // Mirrors the queue for the completion and control callbacks, which must keep
   // a stable identity so the player's event subscription is not torn down and
@@ -122,6 +146,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         applyPlaybackRate(player, playbackRate);
         if (autoPlay) player.play();
         setError(null);
+        setHasEnded(false);
       } catch (replaceError) {
         logger.warn('audio.loadFailed', { error: replaceError });
         setError(replaceError);
@@ -131,11 +156,24 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const playQueue = useCallback(
-    (tracks: AudioTrack[], startIndex = 0, id: QueueId = null) => {
+    (
+      tracks: AudioTrack[],
+      startIndex = 0,
+      id: QueueId = null,
+      repeat: RepeatOptions = noRepeat,
+    ) => {
       if (tracks.length === 0) return;
 
       const index = Math.min(Math.max(0, startIndex), tracks.length - 1);
-      setQueue((current) => ({ ...current, tracks, currentIndex: index }));
+      setQueue((current) => ({
+        ...current,
+        tracks,
+        currentIndex: index,
+        repeatEach: Math.max(1, repeat.repeatEach),
+        repeatRange: Math.max(0, repeat.repeatRange),
+        plays: 0,
+        passes: 0,
+      }));
       setQueueId(id);
       loadIndex(index, tracks, true);
 
@@ -154,16 +192,24 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const index = findTrackIndex(queueRef.current, verseKey);
       if (index === -1) return;
 
-      setQueue((current) => ({ ...current, currentIndex: index }));
+      setQueue((current) => ({ ...current, currentIndex: index, plays: 0 }));
       loadIndex(index, queueRef.current.tracks, true);
     },
     [loadIndex],
   );
 
   const toggle = useCallback(() => {
-    if (status.playing) player.pause();
-    else player.play();
-  }, [player, status.playing]);
+    if (playingRef.current) {
+      player.pause();
+      return;
+    }
+    if (hasEnded) {
+      // Finished: start the current ayah again rather than resume at its end.
+      void player.seekTo(0);
+      setHasEnded(false);
+    }
+    player.play();
+  }, [player, hasEnded]);
 
   const pause = useCallback(() => player.pause(), [player]);
 
@@ -172,6 +218,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     player.seekTo(0);
     setQueue(emptyQueue);
     setQueueId(null);
+    setHasEnded(false);
   }, [player]);
 
   const next = useCallback(() => {
@@ -180,7 +227,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       player.pause();
       return;
     }
-    setQueue((current) => ({ ...current, currentIndex: index }));
+    setQueue((current) => ({ ...current, currentIndex: index, plays: 0 }));
     loadIndex(index, queueRef.current.tracks, true);
   }, [player, loadIndex]);
 
@@ -197,7 +244,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       player.seekTo(0);
       return;
     }
-    setQueue((current) => ({ ...current, currentIndex: index }));
+    setQueue((current) => ({ ...current, currentIndex: index, plays: 0 }));
     loadIndex(index, queueRef.current.tracks, true);
   }, [player, status.currentTime, loadIndex]);
 
@@ -225,14 +272,18 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!status.didJustFinish) return;
 
-    const index = indexAfterCompletion(queueRef.current);
-    if (index === null) {
+    const following = stepAfterCompletion(queueRef.current);
+    if (following === null) {
+      setHasEnded(true);
       trackEvent('audio_completed', { duration_seconds: Math.round(status.duration ?? 0) });
       return;
     }
 
-    setQueue((current) => ({ ...current, currentIndex: index }));
-    loadIndex(index, queueRef.current.tracks, true);
+    // The ref is updated here as well as in its effect, so a second completion
+    // arriving before the re-render still counts from the right place.
+    queueRef.current = following;
+    setQueue(following);
+    loadIndex(following.currentIndex, following.tracks, true);
   }, [status.didJustFinish, status.duration, loadIndex]);
 
   // Warm the next ayah's audio while the current one plays, so the transition
@@ -266,6 +317,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       positionSeconds: status.currentTime ?? 0,
       durationSeconds: status.duration ?? 0,
       repeatMode: queue.repeatMode,
+      repeatEach: queue.repeatEach,
+      repeatRange: queue.repeatRange,
+      hasEnded,
       playbackRate,
       error,
       playQueue,
@@ -289,6 +343,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     status.duration,
     playbackRate,
     error,
+    hasEnded,
     playQueue,
     playTrack,
     playVerse,

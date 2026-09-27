@@ -47,6 +47,12 @@ export interface AudioState {
   positionSeconds: number;
   durationSeconds: number;
   repeatMode: RepeatMode;
+  /** Recitations of each ayah before moving on. */
+  repeatEach: number;
+  /** Passes through the whole queue; 0 means until stopped. */
+  repeatRange: number;
+  /** True once the queue has played out and nothing more will follow. */
+  hasEnded: boolean;
   playbackRate: number;
   error: unknown;
 }

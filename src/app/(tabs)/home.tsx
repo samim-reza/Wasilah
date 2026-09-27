@@ -27,9 +27,7 @@ import { useResolvedTranslationIds } from '@/features/quran/hooks/useResolvedTra
 import { useReaderPreferences } from '@/features/reader/hooks/useReaderPreferences';
 import { useReadingPosition } from '@/features/reader/hooks/useReadingPosition';
 import { useHabitState } from '@/features/streak/hooks/useHabitState';
-import { useRecordReading } from '@/features/streak/hooks/useRecordReading';
 import { shareVerse } from '@/features/quran/services/shareService';
-import { trackEvent } from '@/lib/analytics/analytics';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -46,8 +44,11 @@ export default function HomeScreen() {
   const { data: chapters } = useChapters();
   const bookmarks = useBookmarks();
   const audio = useAudio();
-  const recordReading = useRecordReading();
-  const refresh = usePullToRefresh([queryKeys.habit.all, queryKeys.quran.all, queryKeys.library.all]);
+  const refresh = usePullToRefresh([
+    queryKeys.habit.all,
+    queryKeys.quran.all,
+    queryKeys.library.all,
+  ]);
 
   const translationIds = useResolvedTranslationIds(preferences.translationIds);
   const dailyAyah = useDailyAyah({ translationIds });
@@ -72,36 +73,6 @@ export default function HomeScreen() {
     router.push(`/quran/${dailyAyah.selection.chapterId}?ayah=${dailyAyah.selection.verseNumber}`);
   }, [dailyAyah.selection]);
 
-  /**
-   * Completing the day from the home screen.
-   *
-   * Recorded as a genuine one-ayah session rather than a special "mark done"
-   * flag, so the habit engine has a single notion of what reading is and the
-   * streak, totals and history all stay consistent.
-   */
-  const handleMarkAsRead = useCallback(async () => {
-    if (!dailyAyah.selection) return;
-
-    const startedAt = new Date(Date.now() - 20_000);
-    const result = await recordReading({
-      startedAt,
-      endedAt: new Date(),
-      versesRead: 1,
-      chapterId: dailyAyah.selection.chapterId,
-      startVerse: dailyAyah.selection.verseNumber,
-      endVerse: dailyAyah.selection.verseNumber,
-      source: 'daily_ayah',
-    });
-
-    trackEvent('todays_ayah_completed', {});
-
-    if (result.completedMinimum) {
-      toast.show(t('streak.extended'), { tone: 'success', icon: 'streak' });
-    } else {
-      toast.show(t('home.markedAsRead'), { icon: 'check' });
-    }
-  }, [dailyAyah.selection, recordReading, toast, t]);
-
   const handleBookmark = useCallback(async () => {
     if (!dailyAyah.selection) return;
     const added = await bookmarks.toggle(dailyAyah.selection.verseKey);
@@ -120,8 +91,16 @@ export default function HomeScreen() {
       audio.toggle();
       return;
     }
-    await playAyah(dailyAyah.selection.verseKey);
-  }, [dailyAyah.selection, audio, playAyah]);
+    try {
+      await playAyah(dailyAyah.selection.verseKey);
+    } catch {
+      toast.show(t('errors.audioUnavailable'), { tone: 'error', icon: 'error' });
+    }
+  }, [dailyAyah.selection, audio, playAyah, toast, t]);
+
+  const lastReadLabel = position
+    ? `${positionChapter?.nameSimple ?? t('quran.surahNumber', { number: position.chapterId })} · ${position.verseKey}`
+    : null;
 
   if (habit.error && !habit.isLoading) {
     return (
@@ -163,12 +142,12 @@ export default function HomeScreen() {
             audio.state === 'playing' &&
             audio.currentTrack?.verseKey === dailyAyah.selection?.verseKey
           }
-          completed={habit.minimumMet}
           onPlay={() => void handlePlay()}
           onBookmark={() => void handleBookmark()}
           onShare={() => void handleShare()}
-          onMarkAsRead={() => void handleMarkAsRead()}
           onOpenInReader={handleOpenTodaysAyah}
+          lastReadLabel={lastReadLabel}
+          onResumeLastRead={handleContinueReading}
         />
 
         <DailyGoalCard
@@ -177,14 +156,19 @@ export default function HomeScreen() {
           completionRatio={habit.completionRatio}
           minimumMet={habit.minimumMet}
           goalMet={habit.goalMet}
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('/daily-goal')}
         />
 
-        <ContinueReadingCard
-          position={position}
-          chapter={positionChapter}
-          onPress={handleContinueReading}
-        />
+        {/* The way back to the last position normally sits inside the card
+            above. This one covers what it cannot: a first launch, with
+            nothing read yet, and a day when today's ayah failed to load. */}
+        {(!position || dailyAyah.error) && (
+          <ContinueReadingCard
+            position={position}
+            chapter={positionChapter}
+            onPress={handleContinueReading}
+          />
+        )}
 
         {dailyAyah.error && (
           <ErrorState error={dailyAyah.error} onRetry={dailyAyah.refetch} compact />

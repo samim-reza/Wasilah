@@ -15,6 +15,7 @@
 import { calculatePrayerTimes } from '@/features/prayer/services/prayerTimeService';
 import type { PrayerSettings } from '@/features/prayer/types/prayer.types';
 import { getLocalHabitState } from '@/features/streak/services/localHabitStore';
+import { resolveRecordedStreak } from '@/features/streak/utils/streakRules';
 import { fetchWeather } from '@/features/weather/services/weatherService';
 import type { WeatherSnapshot } from '@/features/weather/types/weather.types';
 import { getDeviceTimezone, todayLocalDate, type LocalDate } from '@/lib/datetime/localDate';
@@ -82,11 +83,7 @@ function withDeadline<T>(promise: Promise<T>, ms: number, fallback: T): Promise<
   });
 }
 
-function toDayTimes(
-  settings: PrayerSettings,
-  now: Date,
-  dayOffset: number,
-): DayTimes | null {
+function toDayTimes(settings: PrayerSettings, now: Date, dayOffset: number): DayTimes | null {
   if (!settings.coordinates) return null;
   const date = new Date(now.getTime() + dayOffset * 24 * 3_600_000);
   const times = calculatePrayerTimes(settings.coordinates, date, settings);
@@ -108,13 +105,20 @@ function toDayTimes(
  * For a signed-in user the server is the truth and the app writes a snapshot
  * of it; the local store only knows what this device read as a guest. A
  * snapshot from an earlier day still knows the streak — a streak is not lost
- * until a day is missed — but says nothing about today's reading.
+ * until a day is missed — but says nothing about today's reading, and the
+ * streak it holds is aged to today before it is shown.
  */
-async function loadHabit(today: LocalDate): Promise<{ currentStreak: number; minimumMet: boolean }> {
+async function loadHabit(
+  today: LocalDate,
+): Promise<{ currentStreak: number; minimumMet: boolean }> {
   const snapshot = await keyValueStore.get<HabitSnapshot>(storageKeys.habitSnapshot);
   if (snapshot) {
     return {
-      currentStreak: snapshot.currentStreak,
+      currentStreak: resolveRecordedStreak(
+        { currentStreak: snapshot.currentStreak, completedThatDay: snapshot.minimumMet },
+        snapshot.today,
+        today,
+      ),
       minimumMet: snapshot.today === today ? snapshot.minimumMet : false,
     };
   }

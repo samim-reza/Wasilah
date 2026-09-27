@@ -6,7 +6,7 @@
  * takes tracks. The player stays ignorant of the Quran API, and the Quran
  * service stays ignorant of playback.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -18,6 +18,7 @@ import {
 import type { VerseKey } from '@/features/quran/types/quran.types';
 
 import { useAudio } from './AudioPlayerProvider';
+import { noRepeat, type RepeatOptions } from '../services/audioQueue';
 import type { AudioTrack } from '../types/audio.types';
 
 function toTrack(
@@ -37,6 +38,16 @@ function toTrack(
   };
 }
 
+/** A day: the list of URLs for a surah's recitation does not change. */
+const CHAPTER_AUDIO_STALE_MS = 24 * 60 * 60 * 1000;
+
+async function loadChapterTracks(recitationId: number, chapterId: number): Promise<AudioTrack[]> {
+  const files = await fetchChapterRecitation(recitationId, chapterId);
+  return files
+    .map((file) => toTrack(file.verseKey, file.url, file.segments))
+    .filter((track): track is AudioTrack => track !== null);
+}
+
 /**
  * Loads every ayah's audio for a chapter.
  *
@@ -47,47 +58,65 @@ function toTrack(
 export function useChapterAudio(recitationId: number, chapterId: number | null) {
   return useQuery({
     queryKey: queryKeys.audio.chapterRecitation(recitationId, chapterId ?? 0),
-    queryFn: async () => {
-      const files = await fetchChapterRecitation(recitationId, chapterId as number);
-      return files
-        .map((file) => toTrack(file.verseKey, file.url, file.segments))
-        .filter((track): track is AudioTrack => track !== null);
-    },
+    queryFn: () => loadChapterTracks(recitationId, chapterId as number),
     enabled: chapterId !== null && chapterId > 0,
-    staleTime: 24 * 60 * 60 * 1000,
+    staleTime: CHAPTER_AUDIO_STALE_MS,
   });
 }
 
 export interface UseAyahPlaybackResult {
-  /** Plays one ayah on its own. */
+  /** Plays one ayah on its own. Rejects when the ayah has no recitation. */
   playAyah: (verseKey: VerseKey) => Promise<void>;
   /** Plays a chapter from a given ayah onwards. */
   playFrom: (chapterId: number, verseKey: VerseKey) => Promise<void>;
+  /**
+   * Plays ayahs `fromVerse` to `toVerse` of a chapter, inclusive, repeated as
+   * asked. The queue is still identified as the chapter's, so the reader
+   * treats it as "this surah is playing".
+   */
+  playRange: (
+    chapterId: number,
+    fromVerse: number,
+    toVerse: number,
+    repeat?: RepeatOptions,
+  ) => Promise<void>;
   isPlayingVerse: (verseKey: VerseKey) => boolean;
 }
 
 export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
   const audio = useAudio();
+  const queryClient = useQueryClient();
+
+  // Through the query cache, so pressing play again — or repeating a passage
+  // — reuses the list already fetched instead of waiting on the network.
+  const chapterTracks = useCallback(
+    (chapterId: number) =>
+      queryClient.fetchQuery({
+        queryKey: queryKeys.audio.chapterRecitation(recitationId, chapterId),
+        queryFn: () => loadChapterTracks(recitationId, chapterId),
+        staleTime: CHAPTER_AUDIO_STALE_MS,
+      }),
+    [queryClient, recitationId],
+  );
 
   const playAyah = useCallback(
     async (verseKey: VerseKey) => {
       // Single-ayah playback fetches just that file, so tapping the play icon
       // on one ayah does not pull the whole surah's audio list.
       const file = await fetchAyahRecitation(recitationId, verseKey);
-      if (!file) return;
+      const track = file ? toTrack(verseKey, file.url, file.segments) : null;
+      // Thrown, not swallowed: a silent return is what made a missing
+      // recitation look like a play button that did nothing.
+      if (!track) throw new Error(`No recitation for ${verseKey}`);
 
-      const track = toTrack(verseKey, file.url, file.segments);
-      if (track) audio.playTrack(track);
+      audio.playTrack(track);
     },
     [recitationId, audio],
   );
 
   const playFrom = useCallback(
     async (chapterId: number, verseKey: VerseKey) => {
-      const files = await fetchChapterRecitation(recitationId, chapterId);
-      const tracks = files
-        .map((file) => toTrack(file.verseKey, file.url, file.segments))
-        .filter((track): track is AudioTrack => track !== null);
+      const tracks = await chapterTracks(chapterId);
 
       const startIndex = Math.max(
         0,
@@ -95,7 +124,20 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
       );
       audio.playQueue(tracks, startIndex, `chapter:${chapterId}`);
     },
-    [recitationId, audio],
+    [chapterTracks, audio],
+  );
+
+  const playRange = useCallback(
+    async (chapterId: number, fromVerse: number, toVerse: number, repeat = noRepeat) => {
+      const tracks = await chapterTracks(chapterId);
+      const low = Math.min(fromVerse, toVerse);
+      const high = Math.max(fromVerse, toVerse);
+      const range = tracks.filter((track) => track.verseNumber >= low && track.verseNumber <= high);
+      if (range.length === 0) throw new Error(`No audio for ${chapterId}:${low}-${high}`);
+
+      audio.playQueue(range, 0, `chapter:${chapterId}`, repeat);
+    },
+    [chapterTracks, audio],
   );
 
   const isPlayingVerse = useCallback(
@@ -103,5 +145,5 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
     [audio.state, audio.currentTrack],
   );
 
-  return { playAyah, playFrom, isPlayingVerse };
+  return { playAyah, playFrom, playRange, isPlayingVerse };
 }

@@ -29,6 +29,12 @@ export interface UseVersesOptions {
   script: ArabicScript;
   /** Skip fetching, e.g. while the route param is still resolving. */
   enabled?: boolean;
+  /**
+   * An ayah the reader opens at. Loading starts from the page that holds it
+   * and earlier pages follow as the user scrolls up, so opening Al-Baqarah at
+   * ayah 255 is one request rather than thirteen in a row.
+   */
+  anchorVerse?: number;
 }
 
 export type VerseSource =
@@ -61,12 +67,21 @@ function keyFor(source: VerseSource, scope: VerseQueryScope) {
   }
 }
 
+/** The page a chapter ayah falls on, at the reader's page size. */
+export function pageForVerse(verseNumber: number): number {
+  return Math.max(1, Math.ceil(verseNumber / readerPageSize));
+}
+
 export interface UseVersesResult {
   verses: Verse[];
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
   fetchNextPage: () => void;
+  /** True while pages before the first loaded one still exist. */
+  hasPreviousPage: boolean;
+  isFetchingPreviousPage: boolean;
+  fetchPreviousPage: () => void;
   error: unknown;
   refetch: () => void;
   totalVerses: number;
@@ -82,8 +97,16 @@ export function useVerses(source: VerseSource, options: UseVersesOptions): UseVe
     script: options.script,
   };
 
+  // Anchoring only applies to a chapter; juz and page routes are short and
+  // always open at their start.
+  const anchorPage =
+    source.kind === 'chapter' && options.anchorVerse ? pageForVerse(options.anchorVerse) : 1;
+
   const query = useInfiniteQuery<VersePage>({
-    queryKey: keyFor(source, scope),
+    // A cache entry that starts mid-surah is a different list from one that
+    // starts at ayah 1, so it gets its own key; the unanchored key is unchanged.
+    queryKey:
+      anchorPage > 1 ? [...keyFor(source, scope), { fromPage: anchorPage }] : keyFor(source, scope),
     queryFn: ({ pageParam }) =>
       fetcherFor(source)({
         translationIds: options.translationIds,
@@ -93,10 +116,12 @@ export function useVerses(source: VerseSource, options: UseVersesOptions): UseVe
         page: pageParam as number,
         perPage: readerPageSize,
       }),
-    initialPageParam: 1,
+    initialPageParam: anchorPage,
     // The API tells us directly whether another page exists; deriving it from
     // the returned count would break on a final page that happens to be full.
     getNextPageParam: (lastPage) => lastPage.page.nextPage ?? undefined,
+    getPreviousPageParam: (firstPage) =>
+      firstPage.page.currentPage > 1 ? firstPage.page.currentPage - 1 : undefined,
     enabled: options.enabled ?? true,
     // Quran content is immutable; refetching it is pure cost.
     staleTime: Number.POSITIVE_INFINITY,
@@ -116,6 +141,11 @@ export function useVerses(source: VerseSource, options: UseVersesOptions): UseVe
     hasNextPage: query.hasNextPage,
     fetchNextPage: () => {
       if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
+    },
+    hasPreviousPage: query.hasPreviousPage,
+    isFetchingPreviousPage: query.isFetchingPreviousPage,
+    fetchPreviousPage: () => {
+      if (query.hasPreviousPage && !query.isFetchingPreviousPage) void query.fetchPreviousPage();
     },
     error: query.error,
     refetch: () => void query.refetch(),

@@ -48,6 +48,8 @@ export const storageKeys = {
    */
   tasbeeh: `${prefix}.tasbeeh`,
   reminderPreferences: `${prefix}.reminders.preferences`,
+  /** Which round of default changes this device's reminder settings have had. */
+  reminderDefaultsVersion: `${prefix}.reminders.defaultsVersion`,
   notificationPermissionAsked: `${prefix}.notifications.permissionAsked`,
   scheduledReminderIds: `${prefix}.notifications.scheduledIds`,
   notificationLog: `${prefix}.notifications.log`,

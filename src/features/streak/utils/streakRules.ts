@@ -246,3 +246,28 @@ export function getStreakStatus(state: StreakState, options: StreakStatusOptions
 
   return minutesUntilMidnight <= atRiskThresholdMinutes ? 'at_risk' : 'pending';
 }
+
+/**
+ * A streak recorded on `recordedOn`, as it stands on `today`.
+ *
+ * For a figure written down earlier and read later without the history
+ * behind it — the widget's copy of the server's answer. It used to be shown
+ * as written, so a widget last updated on a two-day streak went on showing
+ * two days after a day was missed, until the app was next opened.
+ *
+ * A day that was completed keeps the streak alive through the day after it;
+ * a day that was not only carries a run that ended the day before, which
+ * breaks as soon as that day is over.
+ */
+export function resolveRecordedStreak(
+  recorded: { currentStreak: number; completedThatDay: boolean },
+  recordedOn: LocalDate,
+  today: LocalDate,
+): number {
+  const gap = daysBetweenLocalDates(recordedOn, today);
+
+  // Same day, or a clock that moved backwards: nothing to age.
+  if (gap <= 0) return recorded.currentStreak;
+  if (gap === 1 && recorded.completedThatDay) return recorded.currentStreak;
+  return 0;
+}

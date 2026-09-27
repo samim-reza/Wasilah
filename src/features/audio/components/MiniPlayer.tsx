@@ -28,8 +28,15 @@ import { useAudio } from '../hooks/AudioPlayerProvider';
 /** Height of the tab bar this has to clear on tab screens. */
 const TAB_BAR_HEIGHT = 49;
 
-/** Route prefixes that render a tab bar underneath the player. */
-const TAB_ROUTES = ['/home', '/quran', '/progress', '/profile'];
+/** Routes that render a tab bar underneath the player. */
+const TAB_ROUTES = ['/home', '/quran', '/progress', '/tasbeeh', '/profile'];
+
+/**
+ * The surah reader, which has its own bottom bar with the same controls. The
+ * player would otherwise sit on top of it — and the reader's path starts with
+ * `/quran/`, which the prefix check below used to mistake for the Quran tab.
+ */
+const READER_ROUTE = /^\/quran\/\d+/;
 
 export function MiniPlayer() {
   const audio = useAudio();
@@ -38,21 +45,17 @@ export function MiniPlayer() {
   const pathname = usePathname();
 
   if (!audio.currentTrack || audio.state === 'idle') return null;
+  if (READER_ROUTE.test(pathname)) return null;
 
   // On a tab screen the bar is below us and must not be covered; everywhere
   // else the player can sit directly on the safe area.
-  const isTabScreen = TAB_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  const isTabScreen = TAB_ROUTES.includes(pathname);
   const bottom = insets.bottom + (isTabScreen ? TAB_BAR_HEIGHT : 0);
 
   const progress = audio.durationSeconds > 0 ? audio.positionSeconds / audio.durationSeconds : 0;
 
   return (
-    <View
-      className="absolute inset-x-0 border-t border-border bg-surface"
-      style={{ bottom }}
-    >
+    <View className="absolute inset-x-0 border-t border-border bg-surface" style={{ bottom }}>
       <ProgressBar value={progress} height={2} accessibilityLabel={t('audio.nowPlaying')} />
 
       <View className="flex-row items-center gap-2 px-3 py-2">

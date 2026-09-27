@@ -10,9 +10,8 @@
  * text from the accessibility tree.
  */
 import { memo } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { Text } from '@/components/ui/Text';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
@@ -36,6 +35,11 @@ export interface AyahCardProps {
   hasNote: boolean;
   /** True while this ayah is being recited. */
   isPlaying: boolean;
+  /**
+   * True briefly after the reader opened at this ayah — from a bookmark, a
+   * search result or "continue reading" — so the eye lands on the right one.
+   */
+  isHighlighted?: boolean;
   /** Hidden when the tafsir flag is off or no edition is selected. */
   showTafsirAction: boolean;
   /**
@@ -48,9 +52,10 @@ export interface AyahCardProps {
   onWordPress?: (word: WordSegment) => void;
   /** The face the Arabic is drawn in — the user's choice, from settings. */
   arabicFont: ArabicFontKey;
-  /** Plays from this ayah and continues through the surah. */
-  onPlay: (verse: Verse) => void;
-  /** Plays this ayah alone and stops. */
+  /**
+   * Plays this ayah alone and stops; pauses when it is the one playing.
+   * Playing on through the surah belongs to the reader's bottom bar.
+   */
   onPlaySingle: (verse: Verse) => void;
   onTafsir: (verse: Verse) => void;
   onBookmark: (verse: Verse) => void;
@@ -68,11 +73,11 @@ function AyahCardComponent({
   isBookmarked,
   hasNote,
   isPlaying,
+  isHighlighted = false,
   showTafsirAction,
   activeWordPosition = null,
   onWordPress,
   arabicFont,
-  onPlay,
   onPlaySingle,
   onTafsir,
   onBookmark,
@@ -85,7 +90,9 @@ function AyahCardComponent({
 
   return (
     <View
-      className={`border-b border-border px-4 py-5 ${isPlaying ? 'bg-primary-muted/40' : ''}`}
+      className={`border-b border-border px-4 py-5 ${
+        isPlaying ? 'bg-primary-muted/40' : isHighlighted ? 'bg-accent-muted/40' : ''
+      }`}
       accessible
       accessibilityLabel={
         primaryTranslation
@@ -97,34 +104,17 @@ function AyahCardComponent({
         <AyahNumber verseNumber={verse.verseNumber} active={isPlaying} />
 
         <View className="flex-row items-center">
-          {/* Two play controls, not a chooser sheet. The plain one continues
-              through the surah, which is how most listening starts; the one
-              marked ¹ plays this ayah alone. A sheet asking which on every tap
-              was the worse of both worlds. */}
+          {/* One play control: this ayah alone. There used to be two side by
+              side — "from here" and "this one" — and their touch areas
+              overlapped, so a tap often started the other one. Playing on
+              through the surah now lives in the bottom bar. */}
           <IconButton
             name={isPlaying ? 'pause' : 'play'}
             size={18}
             color={isPlaying ? 'primary' : 'textMuted'}
-            onPress={() => onPlay(verse)}
-            accessibilityLabel={t('a11y.playFromHere', { reference })}
-          />
-          <Pressable
             onPress={() => onPlaySingle(verse)}
-            accessibilityRole="button"
-            accessibilityLabel={t('a11y.playAyah', { reference })}
-            hitSlop={8}
-            className="flex-row items-start px-2 py-2"
-          >
-            <Icon name="play" size={18} color="textMuted" />
-            <Text
-              variant="caption"
-              tone="muted"
-              className="-ml-0.5 text-[9px] font-bold"
-              accessible={false}
-            >
-              1
-            </Text>
-          </Pressable>
+            accessibilityLabel={isPlaying ? t('audio.pause') : t('a11y.playAyah', { reference })}
+          />
           <IconButton
             name={isBookmarked ? 'bookmarkFilled' : 'bookmark'}
             size={18}
@@ -214,6 +204,12 @@ function AyahCardComponent({
  * object from the query cache, so comparing the handful of fields that actually
  * affect rendering avoids re-rendering every visible ayah when an unrelated
  * piece of parent state changes.
+ *
+ * Callbacks are deliberately NOT compared, which means the caller must pass
+ * callbacks whose identity never changes and which read current state when
+ * called. A callback that closes over state goes stale inside a card that has
+ * not re-rendered — that is how a play button once paused a player that was
+ * already paused.
  */
 export const AyahCard = memo(AyahCardComponent, (previous, next) => {
   return (
@@ -227,6 +223,7 @@ export const AyahCard = memo(AyahCardComponent, (previous, next) => {
     previous.isBookmarked === next.isBookmarked &&
     previous.hasNote === next.hasNote &&
     previous.isPlaying === next.isPlaying &&
+    previous.isHighlighted === next.isHighlighted &&
     previous.showTafsirAction === next.showTafsirAction &&
     previous.languageCode === next.languageCode
   );

@@ -1,5 +1,9 @@
 /**
- * The reader's top bar: where you are, and the controls for how it looks.
+ * The reader's top bar: where you are, and the way into the reader's settings.
+ *
+ * Playback lives in the bottom bar, next to the rest of the listening
+ * controls; a second play button up here only raised the question of which
+ * one to press.
  */
 import { View } from 'react-native';
 import { router } from 'expo-router';
@@ -14,17 +18,9 @@ export interface ReaderHeaderProps {
   /** The ayah currently at the top of the viewport. */
   currentVerse: number | null;
   onOpenPreferences: () => void;
-  onPlayChapter: () => void;
-  isPlaying: boolean;
 }
 
-export function ReaderHeader({
-  chapter,
-  currentVerse,
-  onOpenPreferences,
-  onPlayChapter,
-  isPlaying,
-}: ReaderHeaderProps) {
+export function ReaderHeader({ chapter, currentVerse, onOpenPreferences }: ReaderHeaderProps) {
   const { t } = useTranslation();
 
   const handleBack = () => {
@@ -50,13 +46,7 @@ export function ReaderHeader({
       </View>
 
       <IconButton
-        name={isPlaying ? 'pause' : 'play'}
-        onPress={onPlayChapter}
-        color={isPlaying ? 'primary' : 'text'}
-        accessibilityLabel={isPlaying ? t('audio.pause') : t('audio.play')}
-      />
-      <IconButton
-        name="textSize"
+        name="menu"
         onPress={onOpenPreferences}
         accessibilityLabel={t('reader.preferences')}
       />

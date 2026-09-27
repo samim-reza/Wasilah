@@ -19,9 +19,20 @@ const RAIN: WeatherSnapshot = {
   fetchedAt: NOW.toISOString(),
 };
 
+/**
+ * Both dua switches off. Stated here rather than inherited from the app's
+ * defaults, which now have both on, so each test switches on only what it is
+ * about.
+ */
+const switchesOff = {
+  ...defaultReminderPreferences,
+  duaRemindersEnabled: false,
+  sleepDuaEnabled: false,
+};
+
 function input(overrides: Partial<DuaPlanInput> = {}): DuaPlanInput {
   return {
-    preferences: { ...defaultReminderPreferences },
+    preferences: { ...switchesOff },
     now: NOW,
     timezone: 'Europe/London',
     today: '2026-09-16',
@@ -44,7 +55,7 @@ describe('planDuaReminders', () => {
     // Everyday duas match everything; without a specificity floor they would
     // fire on every app open.
     const plan = planDuaReminders(
-      input({ preferences: { ...defaultReminderPreferences, duaRemindersEnabled: true } }),
+      input({ preferences: { ...switchesOff, duaRemindersEnabled: true } }),
     );
     expect(plan).toEqual([]);
   });
@@ -52,7 +63,7 @@ describe('planDuaReminders', () => {
   it('plans a contextual dua when it is raining', () => {
     const plan = planDuaReminders(
       input({
-        preferences: { ...defaultReminderPreferences, duaRemindersEnabled: true },
+        preferences: { ...switchesOff, duaRemindersEnabled: true },
         weather: RAIN,
       }),
     );

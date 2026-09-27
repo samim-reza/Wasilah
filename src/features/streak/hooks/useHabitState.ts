@@ -6,10 +6,10 @@
  * whether an account exists. That branch lives here and nowhere else.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
-import type { Goal } from '@/features/goals/types/goal.types';
+import { defaultGoal, isTimeGoal, timeGoal, type Goal } from '@/features/goals/types/goal.types';
 import {
   goalCompletionRatio,
   remainingToGoal,
@@ -21,6 +21,7 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
+import { logger } from '@/lib/monitoring/logger';
 
 import { fetchGoal, fetchStreak, fetchTodayProgress, saveGoal } from '../services/habitService';
 import {
@@ -86,6 +87,23 @@ async function fetchRemoteHabitState(userId: string, today: string): Promise<Loc
   return state;
 }
 
+/**
+ * Set once the move of an ayah-based goal to a time-based one has started,
+ * so the dozen screens that read habit state do not each attempt it.
+ */
+let legacyGoalMigrationStarted = false;
+
+/**
+ * The target for a goal saved before targets were measured in time.
+ *
+ * A goal already in minutes keeps its amount; anything else — a count of
+ * ayahs, pages or rukus, which no longer has a place in the app — becomes the
+ * default five minutes, which the user can change from the goal card.
+ */
+function migratedGoal(goal: Goal): Goal {
+  return goal.unit === 'minutes' ? timeGoal(goal.amount) : defaultGoal;
+}
+
 export function useHabitState(): HabitState {
   const userId = useUserId();
   const { today, minutesUntilMidnight } = useLocalDate();
@@ -117,17 +135,27 @@ export function useHabitState(): HabitState {
     [userId, today, queryClient],
   );
 
+  // Daily targets are time now. A goal stored before that — "1 ayah" — is
+  // moved over once, so the streak stops being kept by an ayah glimpsed in
+  // passing. Days are re-evaluated against it, on the device and the server.
+  const storedGoal = query.data?.goal;
+  useEffect(() => {
+    if (!storedGoal || isTimeGoal(storedGoal) || legacyGoalMigrationStarted) return;
+
+    legacyGoalMigrationStarted = true;
+    updateGoal(migratedGoal(storedGoal)).catch((error: unknown) => {
+      // Offline, most likely; try again the next time habit state loads.
+      legacyGoalMigrationStarted = false;
+      logger.warn('habit.goalMigrationFailed', { error });
+    });
+  }, [storedGoal, updateGoal]);
+
   return useMemo<HabitState>(() => {
     const data = query.data;
     const streak = data?.streak ?? emptyStreakState;
     const minimumMet = data?.minimumMet ?? false;
 
-    const goal = data?.goal ?? {
-      unit: 'ayahs',
-      amount: 5,
-      minimumUnit: 'ayahs',
-      minimumAmount: 1,
-    };
+    const goal = data?.goal ?? defaultGoal;
     const todayTotals = data?.todayTotals ?? {
       versesRead: 0,
       secondsRead: 0,

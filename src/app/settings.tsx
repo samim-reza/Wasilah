@@ -15,10 +15,8 @@ import { Switch } from '@/components/ui/Switch';
 import { ArabicSample } from '@/features/reader/components/ArabicSample';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/features/auth/hooks/AuthProvider';
-import {
-  arabicScripts,
-  useReaderPreferences,
-} from '@/features/reader/hooks/useReaderPreferences';
+import { useHabitState } from '@/features/streak/hooks/useHabitState';
+import { arabicScripts, useReaderPreferences } from '@/features/reader/hooks/useReaderPreferences';
 import { useAppPreferences } from '@/features/settings/hooks/useAppPreferences';
 import { WidgetSettingsSection } from '@/features/widget/components/WidgetSettingsSection';
 import { localeNames, supportedLocales, type Locale } from '@/lib/i18n';
@@ -34,6 +32,7 @@ export default function SettingsScreen() {
   const { isGuest } = useAuth();
   const appPreferences = useAppPreferences();
   const { preferences: reader, update: updateReader } = useReaderPreferences();
+  const habit = useHabitState();
 
   const themeOptions: { value: ThemePreference; label: string }[] = [
     { value: 'light', label: t('settings.themeLight') },
@@ -83,6 +82,16 @@ export default function SettingsScreen() {
         </ListSection>
 
         <ListSection title={t('settings.reading')}>
+          <ListRow
+            label={t('goals.dailyTarget')}
+            value={
+              habit.goal.unit === 'minutes'
+                ? t('goals.minutesPerDay', { count: habit.goal.amount })
+                : undefined
+            }
+            icon="goal"
+            onPress={() => router.push('/daily-goal')}
+          />
           <ListRow
             label={t('reader.arabicSize')}
             value={String(reader.arabicFontSize)}

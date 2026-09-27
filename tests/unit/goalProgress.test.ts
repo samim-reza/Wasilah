@@ -45,9 +45,16 @@ describe('meetsTarget', () => {
 });
 
 describe('isMinimumMet', () => {
-  it('is satisfied by a single ayah on the default goal', () => {
-    expect(isMinimumMet(totals({ versesRead: 1 }), defaultGoal)).toBe(true);
-    expect(isGoalMet(totals({ versesRead: 1 }), defaultGoal)).toBe(false);
+  it('is met by reading for the default goal’s time, and not before', () => {
+    expect(isMinimumMet(totals({ secondsRead: 5 * 60 }), defaultGoal)).toBe(true);
+    expect(isGoalMet(totals({ secondsRead: 5 * 60 }), defaultGoal)).toBe(true);
+    expect(isMinimumMet(totals({ secondsRead: 5 * 60 - 1 }), defaultGoal)).toBe(false);
+  });
+
+  it('is not met by an ayah glimpsed in passing', () => {
+    // The bug this default exists to prevent: opening the reader for a
+    // moment used to complete the day.
+    expect(isMinimumMet(totals({ versesRead: 1, secondsRead: 3 }), defaultGoal)).toBe(false);
   });
 
   it('is false for a day with no reading', () => {
@@ -57,11 +64,11 @@ describe('isMinimumMet', () => {
 
 describe('goalCompletionRatio', () => {
   it('reports partial progress', () => {
-    expect(goalCompletionRatio(totals({ versesRead: 2 }), defaultGoal)).toBeCloseTo(0.4);
+    expect(goalCompletionRatio(totals({ secondsRead: 120 }), defaultGoal)).toBeCloseTo(0.4);
   });
 
   it('clamps rather than overflowing past the goal', () => {
-    expect(goalCompletionRatio(totals({ versesRead: 50 }), defaultGoal)).toBe(1);
+    expect(goalCompletionRatio(totals({ secondsRead: 3_600 }), defaultGoal)).toBe(1);
   });
 
   it('treats a zero goal as complete rather than dividing by zero', () => {
@@ -83,7 +90,7 @@ describe('remainingToGoal', () => {
   });
 
   it('is zero once the goal is met', () => {
-    expect(remainingToGoal(totals({ versesRead: 10 }), defaultGoal)).toBe(0);
+    expect(remainingToGoal(totals({ secondsRead: 600 }), defaultGoal)).toBe(0);
   });
 });
 

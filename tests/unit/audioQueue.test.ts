@@ -4,6 +4,7 @@ import {
   findTrackIndex,
   indexAfterCompletion,
   nextIndex,
+  stepAfterCompletion,
   previousIndex,
   shouldRestartInsteadOfPrevious,
   trackToPrefetch,
@@ -21,8 +22,18 @@ function track(verseNumber: number): AudioTrack {
   };
 }
 
-function queue(currentIndex: number, repeatMode: QueueState['repeatMode'] = 'off'): QueueState {
-  return { tracks: [track(1), track(2), track(3)], currentIndex, repeatMode };
+function queue(
+  currentIndex: number,
+  repeatMode: QueueState['repeatMode'] = 'off',
+  repeat: Partial<QueueState> = {},
+): QueueState {
+  return {
+    ...emptyQueue,
+    tracks: [track(1), track(2), track(3)],
+    currentIndex,
+    repeatMode,
+    ...repeat,
+  };
 }
 
 describe('currentTrack', () => {
@@ -54,6 +65,37 @@ describe('indexAfterCompletion', () => {
 
   it('is null for an empty queue', () => {
     expect(indexAfterCompletion(emptyQueue)).toBeNull();
+  });
+});
+
+describe('stepAfterCompletion with repeat counts', () => {
+  it('recites each ayah the chosen number of times before moving on', () => {
+    const first = stepAfterCompletion(queue(0, 'off', { repeatEach: 3 }));
+    expect(first).toMatchObject({ currentIndex: 0, plays: 1 });
+
+    const second = stepAfterCompletion(first!);
+    expect(second).toMatchObject({ currentIndex: 0, plays: 2 });
+
+    const third = stepAfterCompletion(second!);
+    expect(third).toMatchObject({ currentIndex: 1, plays: 0 });
+  });
+
+  it('plays the whole range again until the passes are used up', () => {
+    const wrapped = stepAfterCompletion(queue(2, 'off', { repeatRange: 2 }));
+    expect(wrapped).toMatchObject({ currentIndex: 0, passes: 1 });
+
+    expect(stepAfterCompletion({ ...wrapped!, currentIndex: 2 })).toBeNull();
+  });
+
+  it('repeats the range until stopped when the count is 0', () => {
+    const state = queue(2, 'off', { repeatRange: 0, passes: 40 });
+    expect(stepAfterCompletion(state)).toMatchObject({ currentIndex: 0, passes: 41 });
+  });
+
+  it('finishes the last ayah’s repeats before ending', () => {
+    const state = queue(2, 'off', { repeatEach: 2 });
+    expect(stepAfterCompletion(state)).toMatchObject({ currentIndex: 2, plays: 1 });
+    expect(stepAfterCompletion({ ...state, plays: 1 })).toBeNull();
   });
 });
 

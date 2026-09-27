@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/analytics/analytics';
 
 import {
   applySchedule,
+  beginSchedulePass,
   clearSchedule,
   getNextScheduledReminder,
   planReminders,
@@ -54,6 +55,17 @@ export interface UseReminderSettingsResult {
   reschedule: () => Promise<void>;
 }
 
+/**
+ * Every mounted copy of this hook, told when any one of them changes a
+ * setting.
+ *
+ * Several screens hold reminder settings at once (notification settings over
+ * prayer times, say), each with its own state. Without this, a copy that had
+ * not seen a change still held the old time and, the next time anything it
+ * depends on moved, rescheduled the old time over the new one.
+ */
+const preferenceListeners = new Set<(preferences: ReminderPreferences) => void>();
+
 export function useReminderSettings(): UseReminderSettingsResult {
   const userId = useUserId();
   const { today, timezone } = useLocalDate();
@@ -64,6 +76,13 @@ export function useReminderSettings(): UseReminderSettingsResult {
   const [preferences, setPreferences] = useState<ReminderPreferences>(defaultReminderPreferences);
   const [isLoading, setIsLoading] = useState(true);
   const [nextReminder, setNextReminder] = useState<StoredScheduleEntry | null>(null);
+
+  useEffect(() => {
+    preferenceListeners.add(setPreferences);
+    return () => {
+      preferenceListeners.delete(setPreferences);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +121,10 @@ export function useReminderSettings(): UseReminderSettingsResult {
       setNextReminder(null);
       return;
     }
+
+    // Claimed before the network reads below, so a pass that starts later —
+    // with newer settings — wins even if this one finishes after it.
+    const pass = beginSchedulePass();
 
     const history = userId ? await fetchNotificationHistory(userId).catch(() => []) : [];
     const now = new Date();
@@ -142,11 +165,16 @@ export function useReminderSettings(): UseReminderSettingsResult {
       { prayerTimes: prayer.times, prayerRules, weather },
     );
 
-    await applySchedule(planned, {
-      streakDays: habit.currentStreak,
-      remainingVerses: habit.remaining,
-      weatherCondition: weather?.condition,
-    });
+    const applied = await applySchedule(
+      planned,
+      {
+        streakDays: habit.currentStreak,
+        remainingVerses: habit.remaining,
+        weatherCondition: weather?.condition,
+      },
+      pass,
+    );
+    if (applied === null) return;
     setNextReminder(await getNextScheduledReminder());
   }, [
     permissions.canShowAlerts,
@@ -175,7 +203,7 @@ export function useReminderSettings(): UseReminderSettingsResult {
   const update = useCallback(
     async (patch: ReminderPreferenceUpdate) => {
       const next = { ...preferences, ...patch };
-      setPreferences(next);
+      for (const listener of preferenceListeners) listener(next);
 
       // Written first and unconditionally. This is what makes a change stick
       // for a guest, and what stops a failed network write from throwing the

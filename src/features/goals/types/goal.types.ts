@@ -12,11 +12,13 @@ export interface Goal {
 }
 
 /**
- * The presets offered during onboarding and in settings.
+ * The daily targets offered during onboarding and on the daily-target screen.
  *
- * Ordered from smallest to largest, and the list deliberately starts at a
- * single ayah: the product's core promise is that the minimum stays trivially
- * achievable on a bad day.
+ * Time, not ayahs. A count of ayahs was met by opening the reader for a
+ * moment — one ayah drifting across the screen completed the day — so a streak
+ * could survive a day on which nothing was really read. Minutes spent reading
+ * are what the user actually chooses to give, and what the clock measures
+ * honestly (it pauses when the app is in the background).
  */
 export interface GoalPreset {
   id: string;
@@ -26,29 +28,33 @@ export interface GoalPreset {
   labelKey: string;
 }
 
-export const goalPresets: readonly GoalPreset[] = [
-  { id: 'ayahs-1', unit: 'ayahs', amount: 1, labelKey: 'goals.ayahs' },
-  { id: 'ayahs-3', unit: 'ayahs', amount: 3, labelKey: 'goals.ayahs' },
-  { id: 'ayahs-5', unit: 'ayahs', amount: 5, labelKey: 'goals.ayahs' },
-  { id: 'ayahs-10', unit: 'ayahs', amount: 10, labelKey: 'goals.ayahs' },
-  { id: 'pages-1', unit: 'pages', amount: 1, labelKey: 'goals.pages' },
-  { id: 'minutes-5', unit: 'minutes', amount: 5, labelKey: 'goals.minutes' },
-  { id: 'minutes-10', unit: 'minutes', amount: 10, labelKey: 'goals.minutes' },
-  { id: 'rukus-1', unit: 'rukus', amount: 1, labelKey: 'goals.rukus' },
-];
+export const dailyMinuteChoices = [2, 5, 10, 15, 20, 30, 45, 60] as const;
+
+export const goalPresets: readonly GoalPreset[] = dailyMinuteChoices.map((minutes) => ({
+  id: `minutes-${minutes}`,
+  unit: 'minutes' as const,
+  amount: minutes,
+  labelKey: 'goals.minutes',
+}));
 
 /**
- * The default goal.
+ * A daily target of `minutes`.
  *
- * One ayah as the minimum, five as the goal: low enough that nobody has an
- * excuse to break the chain, high enough that the goal still means something.
+ * The target and the streak's minimum are the same thing: the streak grows on
+ * each day the chosen time is reached. A separate, lower floor was what let a
+ * one-ayah glance keep a streak alive.
  */
-export const defaultGoal: Goal = {
-  unit: 'ayahs',
-  amount: 5,
-  minimumUnit: 'ayahs',
-  minimumAmount: 1,
-};
+export function timeGoal(minutes: number): Goal {
+  return { unit: 'minutes', amount: minutes, minimumUnit: 'minutes', minimumAmount: minutes };
+}
+
+/** True for a goal measured in time on both counts — every goal from now on. */
+export function isTimeGoal(goal: Goal): boolean {
+  return goal.unit === 'minutes' && goal.minimumUnit === 'minutes';
+}
+
+/** Five minutes: enough to read with attention, short enough for any day. */
+export const defaultGoal: Goal = timeGoal(5);
 
 /** Bounds for the custom-goal input, per unit. */
 export const goalLimits: Record<GoalUnit, { min: number; max: number }> = {

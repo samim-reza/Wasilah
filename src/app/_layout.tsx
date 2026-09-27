@@ -94,6 +94,7 @@ function RootNavigator() {
         <Stack.Screen name="quran/[surahId]" />
         <Stack.Screen name="search" options={{ animation: 'fade_from_bottom' }} />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="daily-goal" />
         <Stack.Screen name="notification-settings" />
         <Stack.Screen name="bookmarks" />
         <Stack.Screen name="notes" />

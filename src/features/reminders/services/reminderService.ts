@@ -22,12 +22,15 @@ export const defaultReminderPreferences: ReminderPreferences = {
   streakReminderEnabled: true,
   goalReminderEnabled: false,
   todaysAyahEnabled: true,
+  // Needs location, so it stays off until the user sets prayer times up.
   prayerRemindersEnabled: false,
-  weatherRemindersEnabled: false,
-  // On by default now that the catalogue has its words; see the migration
-  // of the same name for the server-side default.
+  // On by default, all three: the duas and the weather are what make a
+  // reminder feel like it belongs to the day. Anyone who does not want them
+  // switches them off; see the migration `reminders_on_by_default` for the
+  // server-side defaults.
+  weatherRemindersEnabled: true,
   duaRemindersEnabled: true,
-  sleepDuaEnabled: false,
+  sleepDuaEnabled: true,
   sleepTime: { hour: 23, minute: 0 },
   quietHoursEnabled: true,
   quietHoursStart: { hour: 22, minute: 30 },
@@ -81,7 +84,39 @@ export async function loadLocalReminderPreferences(): Promise<ReminderPreference
     isRecord,
   );
   if (!stored) return defaultReminderPreferences;
-  return { ...defaultReminderPreferences, ...stored };
+
+  const merged = { ...defaultReminderPreferences, ...stored };
+  return applyNewDefaultsOnce(merged);
+}
+
+/**
+ * Bumped when a reminder's default changes from off to on.
+ *
+ * A device that saved its settings before then holds the old "off" as though
+ * the user had chosen it, and merging over the defaults would keep it off
+ * forever. So each device takes the new defaults once; anything switched off
+ * after that stays off.
+ */
+const REMINDER_DEFAULTS_VERSION = 2;
+
+async function applyNewDefaultsOnce(
+  preferences: ReminderPreferences,
+): Promise<ReminderPreferences> {
+  const version = await keyValueStore.get<number>(
+    storageKeys.reminderDefaultsVersion,
+    (value): value is number => typeof value === 'number',
+  );
+  if (version !== null && version >= REMINDER_DEFAULTS_VERSION) return preferences;
+
+  const upgraded: ReminderPreferences = {
+    ...preferences,
+    weatherRemindersEnabled: true,
+    duaRemindersEnabled: true,
+    sleepDuaEnabled: true,
+  };
+  await keyValueStore.set(storageKeys.reminderPreferences, upgraded);
+  await keyValueStore.set(storageKeys.reminderDefaultsVersion, REMINDER_DEFAULTS_VERSION);
+  return upgraded;
 }
 
 export async function saveLocalReminderPreferences(
