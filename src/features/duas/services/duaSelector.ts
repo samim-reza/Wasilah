@@ -40,10 +40,19 @@ export function triggerSpecificity(trigger: DuaTrigger): number {
   return score;
 }
 
-/** Without prayer times, sunset is taken as six in the evening. */
-function isProbablyAfterSunset(context: DuaContext): boolean {
+/**
+ * Whether today's sun has set — the evening only.
+ *
+ * Without prayer times, sunset is taken as six in the evening. The small
+ * hours after midnight are NOT "after sunset" here: that sunset was
+ * yesterday's, and the civil date has already caught up with the Islamic one.
+ * Counting them rolled the Islamic day forward a second time, so at 2am on a
+ * Thursday the app thought it was Saturday night.
+ */
+function isAfterSunset(context: DuaContext): boolean {
+  if (context.afterSunset !== undefined) return context.afterSunset;
   const minutes = toMinuteOfDay(timeOfDayAt(context.now, context.timezone));
-  return minutes >= 18 * 60 || minutes < 5 * 60;
+  return minutes >= 18 * 60;
 }
 
 /** Which hour band the instant falls into, in the user's own timezone. */
@@ -64,12 +73,21 @@ function currentTimeOfDay(context: DuaContext): 'morning' | 'afternoon' | 'eveni
  * traveller whose profile timezone has not changed — and Friday being right is
  * the whole point of several entries here.
  */
-function weekdayInTimezone(now: Date, timezone: string): number {
+export function weekdayInTimezone(now: Date, timezone: string): number {
   const name = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: timezone }).format(
     now,
   );
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return days.indexOf(name);
+}
+
+/**
+ * The weekday of the ISLAMIC day: it begins at sunset, so Thursday evening
+ * is already Friday and Friday evening is Saturday.
+ */
+export function islamicWeekday(now: Date, timezone: string, afterSunset: boolean): number {
+  const civil = weekdayInTimezone(now, timezone);
+  return afterSunset ? (civil + 1) % 7 : civil;
 }
 
 /** Whether every condition a trigger states is met. An empty trigger matches. */
@@ -78,8 +96,12 @@ export function matchesTrigger(trigger: DuaTrigger, context: DuaContext): boolea
     return false;
   }
 
+  const afterSunset = isAfterSunset(context);
+
+  if (trigger.beforeSunset && afterSunset) return false;
+
   if (trigger.weekdays) {
-    const weekday = weekdayInTimezone(context.now, context.timezone);
+    const weekday = islamicWeekday(context.now, context.timezone, afterSunset);
     if (!trigger.weekdays.includes(weekday)) return false;
   }
 
@@ -88,7 +110,6 @@ export function matchesTrigger(trigger: DuaTrigger, context: DuaContext): boolea
   if (trigger.requiresSleepSchedule && !context.sleepTime) return false;
 
   if (trigger.hijri) {
-    const afterSunset = context.afterSunset ?? isProbablyAfterSunset(context);
     const day = hijriDateAt(context.now, context.timezone);
     const night = hijriNightAt(context.now, context.timezone, afterSunset);
     const { months, days, nights } = trigger.hijri;

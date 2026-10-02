@@ -23,6 +23,7 @@
  * beyond calling `t` with the locale it was given.
  */
 import { duaCatalogue, findOccasion, hasRealContent } from '@/features/duas/data/duaCatalogue';
+import { islamicWeekday } from '@/features/duas/services/duaSelector';
 import type { DuaOccasion } from '@/features/duas/types/dua.types';
 import { isNewCrescentVisible } from '@/features/duas/utils/moonPhase';
 import type { WeatherCondition } from '@/features/weather/types/weather.types';
@@ -47,6 +48,10 @@ export type WidgetScene =
   | 'heat'
   | 'cold'
   | 'mosque'
+  | 'mosqueDawn'
+  | 'mosqueDay'
+  | 'mosqueAfternoon'
+  | 'mosqueSunset'
   | 'prayer'
   | 'quran';
 
@@ -110,6 +115,38 @@ const ARABIC_GLANCE_LENGTH = 70;
 
 type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 const PRAYERS: readonly PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+/**
+ * The mosque under the sky of each prayer. It used to be the same starry
+ * night for all five, so Dhuhr at noon showed a mosque under the stars.
+ */
+const PRAYER_SCENES: Record<PrayerName, WidgetScene> = {
+  fajr: 'mosqueDawn',
+  dhuhr: 'mosqueDay',
+  asr: 'mosqueAfternoon',
+  maghrib: 'mosqueSunset',
+  isha: 'prayer',
+};
+
+/** The mosque under the sky as it is at `now`. */
+function mosqueSceneAt(now: Date, day: DayTimes): WidgetScene {
+  const t = now.getTime();
+  if (t < day.fajr.getTime() || t >= day.isha.getTime()) return 'mosque';
+  if (t < day.sunrise.getTime()) return 'mosqueDawn';
+  if (t < day.asr.getTime()) return 'mosqueDay';
+  if (t < day.maghrib.getTime()) return 'mosqueAfternoon';
+  return 'mosqueSunset';
+}
+
+/** The open sky at `now`, for a daytime card with no picture of its own. */
+function skySceneAt(now: Date, day: DayTimes): WidgetScene {
+  const t = now.getTime();
+  if (t < day.fajr.getTime() || t >= day.isha.getTime()) return 'night';
+  if (t < day.sunrise.getTime()) return 'dawn';
+  if (t < day.asr.getTime()) return 'day';
+  if (t < day.maghrib.getTime()) return 'afternoon';
+  return 'sunset';
+}
 
 function minutesAfter(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * MINUTE);
@@ -190,20 +227,45 @@ function occasionCard(
 function weatherCard(input: CardInput): Omit<WidgetCard, 'until'> | null {
   const { weather } = input;
   if (!weather) return null;
-  if (input.now.getTime() - weather.fetchedAt.getTime() > WEATHER_FRESH_MINUTES * MINUTE) return null;
+  if (input.now.getTime() - weather.fetchedAt.getTime() > WEATHER_FRESH_MINUTES * MINUTE)
+    return null;
 
   const { locale } = input;
   if (weather.condition === 'storm') {
-    return occasionCard('weather', 'storm', 'thunder', localised('widget.weather.storm', locale), '');
+    return occasionCard(
+      'weather',
+      'storm',
+      'thunder',
+      localised('widget.weather.storm', locale),
+      '',
+    );
   }
   if (weather.condition === 'rain') {
-    return occasionCard('weather', 'rain', 'rain-falling', localised('widget.weather.rain', locale), '');
+    return occasionCard(
+      'weather',
+      'rain',
+      'rain-falling',
+      localised('widget.weather.rain', locale),
+      '',
+    );
   }
   if (weather.condition === 'snow' || weather.temperatureCelsius <= 2) {
-    return occasionCard('weather', 'cold', 'intense-cold', localised('widget.weather.cold', locale), '');
+    return occasionCard(
+      'weather',
+      'cold',
+      'intense-cold',
+      localised('widget.weather.cold', locale),
+      '',
+    );
   }
   if (weather.temperatureCelsius >= 35) {
-    return occasionCard('weather', 'heat', 'intense-heat', localised('widget.weather.heat', locale), '');
+    return occasionCard(
+      'weather',
+      'heat',
+      'intense-heat',
+      localised('widget.weather.heat', locale),
+      '',
+    );
   }
   return null;
 }
@@ -223,10 +285,12 @@ function prayerWindows(input: CardInput, day: DayTimes): Window[] {
         const title = `${localised(`prayer.${name}`, locale)} · ${formatTime(at, timezone, locale)}`;
         // Maghrib in Ramadan is iftar before it is anything else.
         const occasionId = name === 'maghrib' && ramadan ? 'ramadan-iftar' : 'after-adhan';
-        const card = occasionCard('prayer', 'prayer', occasionId, title, '');
+        const card = occasionCard('prayer', PRAYER_SCENES[name], occasionId, title, '');
         return {
           ...card,
-          line: localised('widget.prayer.now', locale, { prayer: localised(`prayer.${name}`, locale) }),
+          line: localised('widget.prayer.now', locale, {
+            prayer: localised(`prayer.${name}`, locale),
+          }),
         };
       },
     };
@@ -244,19 +308,34 @@ function momentWindows(input: CardInput, day: DayTimes, next: DayTimes, prev: Da
   ): Window => ({
     start,
     end,
-    build: () => occasionCard('moment', scene, occasionId, localised(`widget.moment.${key}`, locale), ''),
+    build: () =>
+      occasionCard('moment', scene, occasionId, localised(`widget.moment.${key}`, locale), ''),
   });
 
   const nightLength = day.fajr.getTime() - prev.maghrib.getTime();
   const tahajjudStart = new Date(day.fajr.getTime() - nightLength / 3);
-  const solarMidnight = new Date(day.maghrib.getTime() + (next.fajr.getTime() - day.maghrib.getTime()) / 2);
+  const solarMidnight = new Date(
+    day.maghrib.getTime() + (next.fajr.getTime() - day.maghrib.getTime()) / 2,
+  );
 
   return [
     // The last third of the night, up to fajr.
     moment('tahajjud', 'tahajjud', 'tahajjud', tahajjudStart, day.fajr),
     // Between the fajr card and sunrise: the morning remembrance.
-    moment('dawn', 'dawn', 'morning-adhkar', minutesAfter(day.fajr, PRAYER_WINDOW_MINUTES), day.sunrise),
-    moment('sunrise', 'sunrise', 'waking-up', day.sunrise, minutesAfter(day.sunrise, MOMENT_WINDOW_MINUTES)),
+    moment(
+      'dawn',
+      'dawn',
+      'morning-adhkar',
+      minutesAfter(day.fajr, PRAYER_WINDOW_MINUTES),
+      day.sunrise,
+    ),
+    moment(
+      'sunrise',
+      'sunrise',
+      'waking-up',
+      day.sunrise,
+      minutesAfter(day.sunrise, MOMENT_WINDOW_MINUTES),
+    ),
     moment(
       'day',
       'morning',
@@ -264,9 +343,27 @@ function momentWindows(input: CardInput, day: DayTimes, next: DayTimes, prev: Da
       minutesAfter(day.sunrise, 60),
       minutesAfter(day.sunrise, 60 + MOMENT_WINDOW_MINUTES),
     ),
-    moment('noon', 'noon', 'between-adhan-and-iqamah', minutesAfter(day.dhuhr, -MOMENT_WINDOW_MINUTES), day.dhuhr),
-    moment('afternoon', 'afternoon', 'after-fard-prayer', minutesAfter(day.asr, -MOMENT_WINDOW_MINUTES), day.asr),
-    moment('sunset', 'sunset', 'evening-adhkar', minutesAfter(day.maghrib, -MOMENT_WINDOW_MINUTES - 5), day.maghrib),
+    moment(
+      'noon',
+      'noon',
+      'between-adhan-and-iqamah',
+      minutesAfter(day.dhuhr, -MOMENT_WINDOW_MINUTES),
+      day.dhuhr,
+    ),
+    moment(
+      'afternoon',
+      'afternoon',
+      'after-fard-prayer',
+      minutesAfter(day.asr, -MOMENT_WINDOW_MINUTES),
+      day.asr,
+    ),
+    moment(
+      'sunset',
+      'sunset',
+      'evening-adhkar',
+      minutesAfter(day.maghrib, -MOMENT_WINDOW_MINUTES - 5),
+      day.maghrib,
+    ),
     moment(
       'night',
       'night',
@@ -323,35 +420,77 @@ function shiftDay(day: DayTimes, days: number): DayTimes {
 
 // --- Sky and calendar --------------------------------------------------------
 
-function afterSunset(input: CardInput): boolean {
+/**
+ * Two different questions about the evening, kept apart.
+ *
+ * `afterMaghrib` — has TODAY's sun set? That is when the Islamic day turns
+ * over, so it decides which Hijri date and which weekday it is. The hours
+ * after midnight are not "after maghrib": that sunset was yesterday's, and
+ * the civil date has already caught up. Counting them turned the Islamic day
+ * over a second time.
+ *
+ * `isNight` — is it dark? That decides whether a night card (the crescent,
+ * Laylat al-Qadr) makes sense, and it does include the small hours.
+ */
+function eveningState(input: CardInput): {
+  afterMaghrib: boolean;
+  isNight: boolean;
+  today: DayTimes;
+} {
   const today = input.times?.today ?? approximateDayTimes(input.now, input.timezone);
-  const minutes = toMinuteOfDay(timeOfDayAt(input.now, input.timezone));
-  return input.now.getTime() >= today.maghrib.getTime() || minutes < 4 * 60;
+  const t = input.now.getTime();
+  const afterMaghrib = t >= today.maghrib.getTime();
+  return { afterMaghrib, isNight: afterMaghrib || t < today.fajr.getTime(), today };
 }
 
 function skyAndCalendarCard(input: CardInput): Omit<WidgetCard, 'until'> | null {
   const { now, timezone, locale } = input;
-  const sunset = afterSunset(input);
-  const night = hijriNightAt(now, timezone, sunset);
-  const day = hijriDateAt(now, timezone);
+  const { afterMaghrib, isNight, today } = eveningState(input);
+  // The Islamic date: the next civil day's once the sun has set.
+  const islamicDay = hijriNightAt(now, timezone, afterMaghrib);
 
-  if (sunset && isQadrNight(night)) {
-    return occasionCard('calendar', 'tahajjud', 'laylat-al-qadr', localised('widget.calendar.qadr', locale), '');
+  if (isNight && isQadrNight(islamicDay)) {
+    return occasionCard(
+      'calendar',
+      'tahajjud',
+      'laylat-al-qadr',
+      localised('widget.calendar.qadr', locale),
+      '',
+    );
   }
-  if (sunset && isNewCrescentVisible(now)) {
-    const occasionId = night.day <= 2 ? 'new-hijri-month' : 'new-crescent';
-    return occasionCard('moon', 'moon', occasionId, localised('widget.calendar.crescent', locale), '');
+  if (isNight && isNewCrescentVisible(now)) {
+    const occasionId = islamicDay.day <= 2 ? 'new-hijri-month' : 'new-crescent';
+    return occasionCard(
+      'moon',
+      'moon',
+      occasionId,
+      localised('widget.calendar.crescent', locale),
+      '',
+    );
   }
-  if (!sunset && day.day === 1) {
-    return occasionCard('calendar', 'moon', 'new-hijri-month', localised('widget.calendar.newMonth', locale), '');
+  if (!isNight && islamicDay.day === 1) {
+    return occasionCard(
+      'calendar',
+      skySceneAt(now, today),
+      'new-hijri-month',
+      localised('widget.calendar.newMonth', locale),
+      '',
+    );
   }
 
-  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: timezone }).format(now);
-  if (weekday === 'Fri' && !sunset) {
+  // Friday from Thursday's maghrib to Friday's. Its salawat through the night
+  // and the morning; Surah al-Kahf, read on the night or the day, from late
+  // morning until the sun sets on it.
+  if (islamicWeekday(now, timezone, afterMaghrib) === 5) {
     const minutes = toMinuteOfDay(timeOfDayAt(now, timezone));
-    // Friday's own words at the start of the day; Surah al-Kahf through it.
-    const occasionId = minutes < 11 * 60 ? 'friday' : 'surah-al-kahf';
-    return occasionCard('friday', 'mosque', occasionId, localised('widget.calendar.friday', locale), '');
+    const occasionId = !afterMaghrib && minutes >= 11 * 60 ? 'surah-al-kahf' : 'friday';
+    return occasionCard(
+      'friday',
+      mosqueSceneAt(now, today),
+      occasionId,
+      localised('widget.calendar.friday', locale),
+      '',
+    );
   }
   return null;
 }
@@ -398,7 +537,8 @@ function rotationCard(input: CardInput): Omit<WidgetCard, 'until'> {
       kind: 'everyday',
       scene: 'quran',
       title: localised('widget.everyday.title', locale),
-      line: localised('widget.everyday.prompt', locale, { occasion: occasion.title.toLowerCase() }),
+      // The cue, as in the notification: "Say this when you leave the house."
+      line: occasion.prompt,
       arabic: glanceArabic(occasion),
       occasionId: occasion.id,
     };
@@ -434,7 +574,8 @@ export function resolveWidgetCard(input: CardInput): WidgetCard {
   const windows = allWindows(input);
   const nextWindowStart = windows.find((w) => w.start.getTime() > now.getTime())?.start ?? null;
   const rotationEnd = endOfHour(now);
-  const untilRotation = nextWindowStart && nextWindowStart < rotationEnd ? nextWindowStart : rotationEnd;
+  const untilRotation =
+    nextWindowStart && nextWindowStart < rotationEnd ? nextWindowStart : rotationEnd;
 
   const weather = weatherCard(input);
   if (weather) {

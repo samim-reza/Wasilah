@@ -99,6 +99,39 @@ export async function enqueue(operation: SyncPayload, userId: string): Promise<v
   logger.debug('sync.enqueued', { type: operation.type });
 }
 
+/**
+ * Queues a write that supersedes any earlier one for the same record.
+ *
+ * For state that is sent whole — a tasbeeh counter — where only the latest
+ * matters: two hundred presses made offline become one row, not two hundred,
+ * and a delete replaces a pending update of what it deletes.
+ */
+export async function enqueueLatest(
+  operation: SyncPayload,
+  userId: string,
+  supersedes: readonly SyncOperationType[],
+  recordId: string,
+): Promise<void> {
+  const database = await getDatabase();
+  const placeholders = supersedes.map(() => '?').join(', ');
+
+  await database.withTransactionAsync(async () => {
+    await database.runAsync(
+      `DELETE FROM sync_queue WHERE user_id = ? AND type IN (${placeholders}) AND json_extract(payload, '$.id') = ?`,
+      userId,
+      ...supersedes,
+      recordId,
+    );
+    await database.runAsync(
+      'INSERT INTO sync_queue (type, payload, user_id, created_at) VALUES (?, ?, ?, ?)',
+      operation.type,
+      JSON.stringify(operation.data),
+      userId,
+      new Date().toISOString(),
+    );
+  });
+}
+
 /** Oldest-first, so writes replay in the order the user made them. */
 export async function peekBatch(userId: string, limit = 50): Promise<QueuedOperation[]> {
   const database = await getDatabase();

@@ -42,12 +42,15 @@ export function CollectionFilterBar({
   return (
     <ScrollView
       horizontal
+      // A horizontal ScrollView in a column grows to fill the height it is
+      // given, which stretched this row of chips down the screen.
+      style={{ flexGrow: 0 }}
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="gap-2 px-4 pb-3"
       accessibilityRole="tablist"
     >
       <Chip
-        label={t('bookmarks.title')}
+        label={t('bookmarks.all')}
         selected={selected === null}
         onPress={() => onSelect(null)}
       />

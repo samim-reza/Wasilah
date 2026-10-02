@@ -341,6 +341,47 @@ def scene_prayer(s: float) -> Image.Image:
     return img
 
 
+def scene_mosque_dawn(s: float) -> Image.Image:
+    """The mosque at fajr: the sky lightening behind it, the last stars going."""
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (30, 40, 92)), (0.5, (120, 96, 148)), (0.8, (236, 160, 120)), (1, (250, 206, 150))])
+    stars(img, s, 12, seed=161, max_y=0.3)
+    glow(img, (size[0] * 0.62, size[1] * 0.85), 110 * s, (255, 210, 160), 0.55)
+    mosque(img, s, (44, 34, 66))
+    return img
+
+
+def scene_mosque_day(s: float) -> Image.Image:
+    """The mosque under a clear midday sky, for Dhuhr and a Friday morning."""
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (46, 124, 214)), (0.6, (120, 182, 236)), (1, (196, 226, 246))])
+    glow(img, (size[0] * 0.18, size[1] * 0.2), 70 * s, (255, 252, 214), 0.8)
+    disc(img, (size[0] * 0.18, size[1] * 0.2), 18 * s, (255, 254, 236))
+    cloud(img, s, 300, 40, 14, (246, 250, 255))
+    mosque(img, s, (40, 92, 104))
+    return img
+
+
+def scene_mosque_afternoon(s: float) -> Image.Image:
+    """The mosque in the long light after Asr."""
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (84, 140, 206)), (0.55, (200, 196, 190)), (1, (242, 210, 160))])
+    glow(img, (size[0] * 0.16, size[1] * 0.5), 80 * s, (255, 236, 186), 0.7)
+    disc(img, (size[0] * 0.16, size[1] * 0.5), 18 * s, (255, 246, 214))
+    mosque(img, s, (70, 74, 70))
+    return img
+
+
+def scene_mosque_sunset(s: float) -> Image.Image:
+    """The mosque against the sunset, for Maghrib and Friday's last light."""
+    size = (int(BASE_W * s), int(BASE_H * s))
+    img = vertical_gradient(size, [(0, (52, 32, 92)), (0.45, (168, 70, 110)), (0.72, (238, 118, 72)), (1, (250, 186, 96))])
+    glow(img, (size[0] * 0.2, size[1] * 0.86), 80 * s, (255, 196, 120), 0.7)
+    disc(img, (size[0] * 0.2, size[1] * 0.9), 22 * s, (255, 222, 170))
+    mosque(img, s, (46, 18, 46))
+    return img
+
+
 def scene_quran(s: float) -> Image.Image:
     """An open book on a warm, quiet ground: the reading nudge."""
     size = (int(BASE_W * s), int(BASE_H * s))
@@ -384,6 +425,10 @@ SCENES = {
     "rain": scene_rain,
     "cold": scene_cold,
     "mosque": scene_mosque,
+    "mosqueDawn": scene_mosque_dawn,
+    "mosqueDay": scene_mosque_day,
+    "mosqueAfternoon": scene_mosque_afternoon,
+    "mosqueSunset": scene_mosque_sunset,
 }
 
 
@@ -420,13 +465,21 @@ def preview() -> Image.Image:
 
 
 def main() -> None:
+    """Draws every scene, or only the ones named on the command line."""
+    import sys
+
+    only = set(sys.argv[1:])
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for name, painter in SCENES.items():
+        if only and name not in only:
+            continue
         for scale in SCALES:
             suffix = "" if scale == 1 else f"@{scale}x"
             path = OUT_DIR / f"{name}{suffix}.png"
             painter(float(scale)).save(path, optimize=True)
             print(f"wrote {path.relative_to(OUT_DIR.parent.parent)}")
+    if only:
+        return
     preview_path = OUT_DIR / "preview.png"
     preview().save(preview_path, optimize=True)
     print(f"wrote {preview_path.relative_to(OUT_DIR.parent.parent)}")

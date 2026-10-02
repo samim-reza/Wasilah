@@ -73,6 +73,8 @@ export const storageKeys = {
    * for an account the server is the truth, and the widget draws from this.
    */
   habitSnapshot: `${prefix}.widget.habitSnapshot`,
+  /** The server's last habit answer, so Home works offline for a signed-in user. */
+  remoteHabitState: `${prefix}.habit.remoteState`,
   /** When each weather alert was last raised, so a long rain is one alert. */
   weatherAlerts: `${prefix}.widget.weatherAlerts`,
   /** Which everyday duas the widget has shown lately, so they rotate. */
@@ -98,5 +100,6 @@ export const userScopedStorageKeys: StorageKey[] = [
   storageKeys.notificationLog,
   storageKeys.queryCache,
   storageKeys.habitSnapshot,
+  storageKeys.remoteHabitState,
   storageKeys.weatherAlerts,
 ];

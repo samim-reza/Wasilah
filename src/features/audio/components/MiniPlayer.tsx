@@ -13,14 +13,19 @@
  *
  * As a root overlay it sits above every screen and owns its own hit area. The
  * only thing it has to know about the tab bar is how far to sit above it.
+ *
+ * Tapping what is playing — the surah's name and the ayah — opens the reader
+ * there, the way a music player's bar opens the song.
  */
-import { usePathname } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui/IconButton';
+import { Pressable } from '@/components/ui/Pressable';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Text } from '@/components/ui/Text';
+import { useChapters } from '@/features/quran/hooks/useChapters';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
 
 import { useAudio } from '../hooks/AudioPlayerProvider';
@@ -43,6 +48,8 @@ export function MiniPlayer() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  // The surah list is cached for the whole app, so this is a lookup, not a fetch.
+  const { data: chapters } = useChapters();
 
   if (!audio.currentTrack || audio.state === 'idle') return null;
   if (READER_ROUTE.test(pathname)) return null;
@@ -53,20 +60,30 @@ export function MiniPlayer() {
   const bottom = insets.bottom + (isTabScreen ? TAB_BAR_HEIGHT : 0);
 
   const progress = audio.durationSeconds > 0 ? audio.positionSeconds / audio.durationSeconds : 0;
+  const { chapterId, verseNumber, verseKey } = audio.currentTrack;
+  const surahName = chapters?.find((chapter) => chapter.id === chapterId)?.nameSimple;
+
+  const openInReader = () => router.push(`/quran/${chapterId}?ayah=${verseNumber}`);
 
   return (
     <View className="absolute inset-x-0 border-t border-border bg-surface" style={{ bottom }}>
       <ProgressBar value={progress} height={2} accessibilityLabel={t('audio.nowPlaying')} />
 
       <View className="flex-row items-center gap-2 px-3 py-2">
-        <View className="flex-1">
+        <Pressable
+          onPress={openInReader}
+          className="flex-1 py-1"
+          enforceMinTapTarget={false}
+          accessibilityRole="button"
+          accessibilityLabel={t('audio.openInReader', { reference: verseKey })}
+        >
           <Text variant="caption" className="font-semibold" numberOfLines={1}>
-            {audio.currentTrack.verseKey}
+            {surahName ? `${surahName} · ${verseKey}` : verseKey}
           </Text>
           <Text variant="caption" tone="subtle" numberOfLines={1}>
             {audio.state === 'loading' ? t('audio.buffering') : t('audio.nowPlaying')}
           </Text>
-        </View>
+        </Pressable>
 
         <IconButton
           name="skipPrevious"

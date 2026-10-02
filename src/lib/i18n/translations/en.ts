@@ -180,6 +180,7 @@ export const en = {
     stop: 'Stop',
     buffering: 'Buffering',
     nowPlaying: 'Now playing',
+    openInReader: 'Open {{reference}} in the Quran',
   },
 
   bookmarks: {
@@ -193,6 +194,11 @@ export const en = {
     collectionName: 'Collection name',
     empty: 'No bookmarks yet',
     emptyBody: 'Bookmark an ayah while reading and it will appear here.',
+    all: 'All',
+    count: { one: '{{count}} saved ayah', other: '{{count}} saved ayahs' },
+    sortLabel: 'Sort bookmarks',
+    sortRecent: 'Recent',
+    sortMushaf: 'Quran order',
   },
 
   notes: {
@@ -335,6 +341,11 @@ export const en = {
     countUp: 'Count',
     stepBack: 'Undo one',
     reset: 'Reset',
+    resetTitle: 'Reset this tasbeeh?',
+    resetBody: 'The count for "{{name}}" ({{count}}) goes back to 0. This cannot be undone.',
+    blindMode: 'Count without looking',
+    blindHint: 'The whole screen counts. The small button in the corner brings the counter back.',
+    blindExit: 'Show the counter',
     deleteTitle: 'Delete this tasbeeh?',
     deleteBody: '"{{name}}" and its count will be removed.',
   },
@@ -384,8 +395,8 @@ export const en = {
       friday: 'Friday',
     },
     everyday: {
-      title: 'Do you know?',
-      prompt: 'Do you know what to say when {{occasion}}?',
+      title: 'Say this',
+      prompt: 'Say this when {{occasion}}.',
     },
     nudge: {
       title: 'Today’s ayah',

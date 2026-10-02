@@ -16,6 +16,8 @@
  *   note_save        — upsert on (user, verse_key)
  *   note_delete      — same as bookmark_remove
  *   position_save    — last write wins, which is the correct semantic here
+ *   tasbeeh_upsert   — the whole counter; only the latest waits in the queue
+ *   tasbeeh_delete   — replaces any pending upsert of the same counter
  */
 export type SyncOperationType =
   | 'reading_session'
@@ -23,7 +25,20 @@ export type SyncOperationType =
   | 'bookmark_remove'
   | 'note_save'
   | 'note_delete'
-  | 'position_save';
+  | 'position_save'
+  | 'tasbeeh_upsert'
+  | 'tasbeeh_delete';
+
+/** A tasbeeh counter as the account stores it. */
+export interface TasbeehPayload {
+  id: string;
+  name: string;
+  dailyTarget: number;
+  totalCount: number;
+  todayCount: number;
+  todayDate: string | null;
+  position: number;
+}
 
 export interface ReadingSessionPayload {
   clientSessionId: string;
@@ -67,7 +82,9 @@ export type SyncPayload =
   | { type: 'bookmark_remove'; data: { verseKey: string } }
   | { type: 'note_save'; data: NotePayload }
   | { type: 'note_delete'; data: { verseKey: string } }
-  | { type: 'position_save'; data: PositionPayload };
+  | { type: 'position_save'; data: PositionPayload }
+  | { type: 'tasbeeh_upsert'; data: TasbeehPayload }
+  | { type: 'tasbeeh_delete'; data: { id: string } };
 
 export interface QueuedOperation {
   id: number;

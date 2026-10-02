@@ -30,7 +30,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'morning-adhkar',
     group: 'daily_rhythm',
     title: 'Morning remembrance',
-    prompt: 'The morning words — shall we?',
+    prompt: 'Say this in the morning.',
     trigger: { timesOfDay: ['morning'] },
     imagery: 'dawn',
     text: {
@@ -48,7 +48,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'evening-adhkar',
     group: 'daily_rhythm',
     title: 'Evening remembrance',
-    prompt: 'The day is closing. The evening words are waiting.',
+    prompt: 'Say this as the evening comes.',
     trigger: { timesOfDay: ['evening'] },
     imagery: 'sun',
     text: {
@@ -66,7 +66,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'before-sleep',
     group: 'daily_rhythm',
     title: 'Before sleeping',
-    prompt: 'Before you sleep tonight.',
+    prompt: 'Say this before you sleep.',
     trigger: { requiresSleepSchedule: true },
     imagery: 'night',
     text: {
@@ -81,7 +81,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'waking-up',
     group: 'daily_rhythm',
     title: 'On waking',
-    prompt: 'The first words of the day.',
+    prompt: 'Say this when you wake up.',
     trigger: { timesOfDay: ['morning'] },
     imagery: 'dawn',
     text: {
@@ -99,7 +99,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'rain-falling',
     group: 'sky_and_weather',
     title: 'When it rains',
-    prompt: "It's raining where you are. There are words for this.",
+    prompt: "It's raining. Say this.",
     trigger: { weather: ['rain'] },
     imagery: 'rain',
     text: {
@@ -114,7 +114,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'rain-heavy',
     group: 'sky_and_weather',
     title: 'When the rain is too heavy',
-    prompt: 'Heavy skies tonight.',
+    prompt: 'Heavy rain. Say this.',
     trigger: { weather: ['storm'] },
     imagery: 'rain',
     text: {
@@ -132,7 +132,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'thunder',
     group: 'sky_and_weather',
     title: 'On hearing thunder',
-    prompt: 'Thunder outside.',
+    prompt: 'Thunder. Say this.',
     trigger: { weather: ['storm'] },
     imagery: 'rain',
     text: {
@@ -148,7 +148,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'strong-wind',
     group: 'sky_and_weather',
     title: 'When the wind is strong',
-    prompt: 'The wind is up.',
+    prompt: 'Strong wind. Say this.',
     trigger: { weather: ['storm'] },
     imagery: 'none',
     text: {
@@ -166,7 +166,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'intense-heat',
     group: 'sky_and_weather',
     title: 'In intense heat',
-    prompt: 'A hot one today.',
+    prompt: 'Intense heat. Say this.',
     trigger: { minTemperatureCelsius: 35 },
     imagery: 'sun',
     text: {
@@ -185,7 +185,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'intense-cold',
     group: 'sky_and_weather',
     title: 'In bitter cold',
-    prompt: 'Cold out there today.',
+    prompt: 'Bitter cold. Say this.',
     trigger: { maxTemperatureCelsius: 2 },
     imagery: 'none',
     text: {
@@ -204,7 +204,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'new-crescent',
     group: 'sky_and_weather',
     title: 'On sighting the new crescent',
-    prompt: 'A new moon tonight.',
+    prompt: 'New moon tonight. Say this.',
     trigger: { newMoon: true, timesOfDay: ['evening', 'night'] },
     imagery: 'moon',
     text: {
@@ -222,7 +222,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'clear-night-sky',
     group: 'sky_and_weather',
     title: 'Under a clear night sky',
-    prompt: 'Clear skies tonight.',
+    prompt: 'Clear sky tonight. Recite this.',
     trigger: { weather: ['clear'], timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -242,7 +242,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'friday',
     group: 'calendar',
     title: 'Friday',
-    prompt: "It's Friday.",
+    prompt: "It's Friday. Send salawat.",
     trigger: { weekdays: [5] },
     imagery: 'mosque',
     text: {
@@ -261,8 +261,9 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'friday-last-hour',
     group: 'calendar',
     title: 'The last hour of Friday',
-    prompt: 'The last hour of Friday is slipping by.',
-    trigger: { weekdays: [5], timesOfDay: ['evening'] },
+    prompt: "Friday's last hour. Ask now.",
+    // Before maghrib only: once the sun sets, Friday is over.
+    trigger: { weekdays: [5], timesOfDay: ['afternoon', 'evening'], beforeSunset: true },
     imagery: 'mosque',
     text: {
       arabic:
@@ -280,7 +281,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'ramadan-iftar',
     group: 'calendar',
     title: 'Breaking the fast',
-    prompt: 'At the moment of iftar.',
+    prompt: 'Say this at iftar.',
     trigger: { hijri: { months: [9] }, timesOfDay: ['evening'] },
     imagery: 'sun',
     text: {
@@ -296,7 +297,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'laylat-al-qadr',
     group: 'calendar',
     title: 'Laylat al-Qadr',
-    prompt: 'These are the nights.',
+    prompt: 'Seek Laylat al-Qadr. Say this.',
     trigger: {
       hijri: { months: [9], nights: [21, 23, 25, 27, 29] },
       timesOfDay: ['evening', 'night'],
@@ -314,7 +315,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'new-hijri-month',
     group: 'calendar',
     title: 'A new Hijri month',
-    prompt: 'A new month begins.',
+    prompt: 'A new month. Say this.',
     trigger: { hijri: { days: [1, 2] } },
     imagery: 'moon',
     text: {
@@ -335,7 +336,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'leaving-home',
     group: 'everyday_actions',
     title: 'Leaving the house',
-    prompt: 'Do you know the dua for leaving the house?',
+    prompt: 'Say this when you leave the house.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -353,7 +354,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'entering-home',
     group: 'everyday_actions',
     title: 'Entering the house',
-    prompt: 'Do you know the dua for coming home?',
+    prompt: 'Say this when you come home.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -371,7 +372,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'entering-washroom',
     group: 'everyday_actions',
     title: 'Entering the washroom',
-    prompt: 'Do you know the dua for entering the washroom?',
+    prompt: 'Say this before entering the washroom.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -386,7 +387,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'leaving-washroom',
     group: 'everyday_actions',
     title: 'Leaving the washroom',
-    prompt: 'Do you know the dua for leaving the washroom?',
+    prompt: 'Say this when you leave the washroom.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -401,7 +402,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'before-wudu',
     group: 'everyday_actions',
     title: 'Before wudu',
-    prompt: 'Do you know the words before wudu?',
+    prompt: 'Say this before wudu.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -416,7 +417,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'after-wudu',
     group: 'everyday_actions',
     title: 'After wudu',
-    prompt: 'Do you know the words after wudu?',
+    prompt: 'Say this when you finish wudu.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -432,10 +433,46 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     },
   },
   {
+    id: 'after-wudu-repentance',
+    group: 'everyday_actions',
+    title: 'After wudu: among the purified',
+    prompt: 'Say this after the shahada of wudu.',
+    trigger: {},
+    imagery: 'none',
+    text: {
+      arabic: 'اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ، وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ',
+      transliteration: "Allahumma-j'alni minat-tawwabin, waj'alni minal-mutatahhirin.",
+      translation:
+        'O Allah, make me among those who turn to You in repentance, and make me among those who purify themselves.',
+      benefit:
+        'Said after the testimony that ends wudu, joining the purity of the body to the purity of repentance.',
+      source: "Jami' at-Tirmidhi 55",
+    },
+  },
+  {
+    id: 'after-wudu-sealed',
+    group: 'everyday_actions',
+    title: 'After wudu: the sealed words',
+    prompt: 'Say this when wudu is done.',
+    trigger: {},
+    imagery: 'none',
+    text: {
+      arabic:
+        'سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا أَنْتَ، أَسْتَغْفِرُكَ وَأَتُوبُ إِلَيْكَ',
+      transliteration:
+        'Subhanaka-llahumma wa bihamdik, ash-hadu al-la ilaha illa ant, astaghfiruka wa atubu ilayk.',
+      translation:
+        'Glory be to You, O Allah, and praise. I bear witness that there is no god but You; I seek Your forgiveness and turn to You in repentance.',
+      benefit:
+        'Whoever says this after wudu, it is written on a parchment and sealed, and the seal is not broken until the Day of Resurrection.',
+      source: "an-Nasa'i, as-Sunan al-Kubra 9909; 'Amal al-Yawm wa al-Laylah 81",
+    },
+  },
+  {
     id: 'before-eating',
     group: 'everyday_actions',
     title: 'Before eating',
-    prompt: 'Do you know the dua before eating?',
+    prompt: 'Say this before you eat.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -451,7 +488,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'after-eating',
     group: 'everyday_actions',
     title: 'After eating',
-    prompt: 'Do you know the dua after eating?',
+    prompt: 'Say this when you finish eating.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -469,7 +506,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'drinking-water',
     group: 'everyday_actions',
     title: 'Drinking water',
-    prompt: 'Do you know the words for drinking?',
+    prompt: 'Say this when you drink.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -485,7 +522,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'wearing-new-clothes',
     group: 'everyday_actions',
     title: 'Wearing new clothes',
-    prompt: 'Do you know the dua for new clothes?',
+    prompt: 'Say this when you put on new clothes.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -503,7 +540,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'entering-masjid',
     group: 'everyday_actions',
     title: 'Entering the masjid',
-    prompt: 'Do you know the dua for entering the masjid?',
+    prompt: 'Say this when you enter the masjid.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -518,7 +555,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'leaving-masjid',
     group: 'everyday_actions',
     title: 'Leaving the masjid',
-    prompt: 'Do you know the dua for leaving the masjid?',
+    prompt: 'Say this when you leave the masjid.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -533,7 +570,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'starting-a-journey',
     group: 'everyday_actions',
     title: 'Setting out on a journey',
-    prompt: 'Do you know the dua for travelling?',
+    prompt: 'Say this when you set out on a journey.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -551,7 +588,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'riding-a-vehicle',
     group: 'everyday_actions',
     title: 'Riding a vehicle',
-    prompt: 'Do you know the words when you board?',
+    prompt: 'Say this when you board.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -570,7 +607,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'returning-from-travel',
     group: 'everyday_actions',
     title: 'Returning from travel',
-    prompt: 'Do you know the dua for coming back?',
+    prompt: 'Say this when you come back from travel.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -586,7 +623,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'entering-market',
     group: 'everyday_actions',
     title: 'Entering the market',
-    prompt: 'Do you know the dua for the marketplace?',
+    prompt: 'Say this when you enter the market.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -605,7 +642,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'hearing-adhan',
     group: 'everyday_actions',
     title: 'Hearing the adhan',
-    prompt: 'Do you know what to say with the adhan?',
+    prompt: 'Say this with the adhan.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -621,7 +658,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'after-adhan',
     group: 'everyday_actions',
     title: 'After the adhan',
-    prompt: 'Do you know the dua after the adhan?',
+    prompt: 'Say this after the adhan.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -640,7 +677,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'sneezing',
     group: 'everyday_actions',
     title: 'When you sneeze',
-    prompt: 'Do you know what to say when you sneeze?',
+    prompt: 'Say this when you sneeze.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -656,7 +693,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'visiting-the-sick',
     group: 'everyday_actions',
     title: 'Visiting someone unwell',
-    prompt: 'Do you know the dua for visiting the sick?',
+    prompt: 'Say this when you visit someone unwell.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -672,7 +709,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'looking-in-mirror',
     group: 'everyday_actions',
     title: 'Looking in the mirror',
-    prompt: 'Do you know the words for the mirror?',
+    prompt: 'Say this when you look in the mirror.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -691,7 +728,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'anger',
     group: 'states_of_heart',
     title: 'When angry',
-    prompt: 'Do you know what to say in anger?',
+    prompt: 'Say this when you are angry.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -707,7 +744,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'anxiety-and-grief',
     group: 'states_of_heart',
     title: 'In worry or grief',
-    prompt: 'There are words for a heavy heart.',
+    prompt: 'Say this when your heart is heavy.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -725,7 +762,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'burdened-by-debt',
     group: 'states_of_heart',
     title: 'Weighed down by debt',
-    prompt: 'There are words for this weight.',
+    prompt: 'Say this when debt weighs on you.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -743,7 +780,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'a-difficult-task',
     group: 'states_of_heart',
     title: 'Facing something difficult',
-    prompt: 'Something hard ahead?',
+    prompt: 'Say this when something is hard.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -761,7 +798,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'seeking-forgiveness',
     group: 'states_of_heart',
     title: 'Seeking forgiveness',
-    prompt: 'A moment for istighfar.',
+    prompt: 'Say this to seek forgiveness.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -780,7 +817,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'gratitude',
     group: 'states_of_heart',
     title: 'On good news',
-    prompt: 'Something good happened?',
+    prompt: 'Say this when good news comes.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -795,7 +832,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'bad-dream',
     group: 'states_of_heart',
     title: 'After a bad dream',
-    prompt: 'There are words for a troubled night.',
+    prompt: 'Say this after a bad dream.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -812,7 +849,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'fear-at-night',
     group: 'states_of_heart',
     title: 'Fear at night',
-    prompt: 'There are words for the dark.',
+    prompt: 'Say this when afraid at night.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -832,7 +869,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'after-fard-prayer',
     group: 'prayer',
     title: 'After an obligatory prayer',
-    prompt: 'The words after salah.',
+    prompt: 'Say this after salah.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -850,7 +887,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'between-adhan-and-iqamah',
     group: 'prayer',
     title: 'Between adhan and iqamah',
-    prompt: 'This is a moment when dua is answered.',
+    prompt: 'Make dua now — before the iqamah.',
     trigger: {},
     imagery: 'mosque',
     text: {
@@ -866,7 +903,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'tahajjud',
     group: 'prayer',
     title: 'In the last third of the night',
-    prompt: 'The quietest hours.',
+    prompt: 'The last third of the night. Say this.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -885,7 +922,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'istikhara',
     group: 'prayer',
     title: 'Seeking guidance (istikhara)',
-    prompt: 'A decision to make?',
+    prompt: 'Say this when you must decide.',
     trigger: {},
     imagery: 'none',
     text: {
@@ -906,7 +943,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'ayat-al-kursi',
     group: 'protective_ayahs',
     title: 'Ayat al-Kursi',
-    prompt: 'One ayah before you sleep.',
+    prompt: 'Recite this before you sleep.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -925,7 +962,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'three-quls',
     group: 'protective_ayahs',
     title: 'The three Quls',
-    prompt: 'Three short surahs, morning and evening.',
+    prompt: 'Recite these morning and evening.',
     trigger: { timesOfDay: ['morning', 'evening'] },
     imagery: 'dawn',
     text: {
@@ -944,7 +981,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'last-two-ayahs-baqarah',
     group: 'protective_ayahs',
     title: 'The last two ayahs of al-Baqarah',
-    prompt: 'Two ayahs are enough for the night.',
+    prompt: 'Recite these at night.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -962,7 +999,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'surah-al-mulk',
     group: 'protective_ayahs',
     title: 'Surah al-Mulk',
-    prompt: 'The surah of the night.',
+    prompt: 'Recite al-Mulk tonight.',
     trigger: { timesOfDay: ['night'] },
     imagery: 'night',
     text: {
@@ -979,7 +1016,7 @@ export const duaCatalogue: readonly DuaOccasion[] = [
     id: 'surah-al-kahf',
     group: 'protective_ayahs',
     title: 'Surah al-Kahf on Friday',
-    prompt: "It's Friday — al-Kahf is waiting.",
+    prompt: "It's Friday. Read al-Kahf.",
     trigger: { weekdays: [5] },
     imagery: 'mosque',
     text: {

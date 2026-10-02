@@ -58,6 +58,27 @@ async function fetchServerSelection(date: LocalDate): Promise<DailyAyahSelection
  * curated ayah partway through the day, which would otherwise change the card
  * under the user.
  */
+/**
+ * The ayah for a future date, without recording it as the day's.
+ *
+ * For fetching ahead: `getDailyAyah` stores its answer as THE day's ayah in a
+ * single slot, so asking it about tomorrow would overwrite today's. This asks
+ * the same two sources in the same order and writes nothing.
+ */
+export async function peekDailyAyah(
+  date: LocalDate,
+  chapters: readonly ChapterVerseCount[],
+): Promise<DailyAyahSelection | null> {
+  const server = await fetchServerSelection(date).catch(() => null);
+  if (server) return server;
+
+  const verseKey = selectDailyVerseKey(date, chapters);
+  if (!verseKey) return null;
+  const [chapterId, verseNumber] = verseKey.split(':').map(Number);
+  if (!chapterId || !verseNumber) return null;
+  return { verseKey, chapterId, verseNumber, origin: 'local' };
+}
+
 export async function getDailyAyah(
   date: LocalDate,
   chapters: readonly ChapterVerseCount[],

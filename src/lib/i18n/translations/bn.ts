@@ -179,6 +179,7 @@ export const bn: Translation = {
     stop: 'বন্ধ',
     buffering: 'লোড হচ্ছে',
     nowPlaying: 'এখন চলছে',
+    openInReader: 'কুরআনে {{reference}} খুলুন',
   },
 
   bookmarks: {
@@ -192,6 +193,11 @@ export const bn: Translation = {
     collectionName: 'সংগ্রহের নাম',
     empty: 'এখনও কোনো বুকমার্ক নেই',
     emptyBody: 'পড়ার সময় কোনো আয়াত বুকমার্ক করলে সেটি এখানে দেখা যাবে।',
+    all: 'সব',
+    count: { one: '{{count}}টি সংরক্ষিত আয়াত', other: '{{count}}টি সংরক্ষিত আয়াত' },
+    sortLabel: 'বুকমার্ক সাজান',
+    sortRecent: 'সাম্প্রতিক',
+    sortMushaf: 'কুরআনের ক্রমে',
   },
 
   notes: {
@@ -334,6 +340,11 @@ export const bn: Translation = {
     countUp: 'গণনা',
     stepBack: 'একটি বাতিল',
     reset: 'রিসেট',
+    resetTitle: 'এই তাসবিহ রিসেট করবেন?',
+    resetBody: '"{{name}}"-এর গণনা ({{count}}) শূন্যে ফিরে যাবে। এটি আর ফেরানো যাবে না।',
+    blindMode: 'না দেখে গুনুন',
+    blindHint: 'পুরো স্ক্রিনে চাপলেই গোনা হবে। কোণের ছোট বোতামে কাউন্টার ফিরে আসবে।',
+    blindExit: 'কাউন্টার দেখান',
     deleteTitle: 'এই তাসবিহ মুছে ফেলবেন?',
     deleteBody: '"{{name}}" এবং এর গণনা মুছে যাবে।',
   },
@@ -383,8 +394,8 @@ export const bn: Translation = {
       friday: 'জুমার দিন',
     },
     everyday: {
-      title: 'জানেন কি?',
-      prompt: '{{occasion}} — তখন কী বলতে হয় জানেন?',
+      title: 'এটি বলুন',
+      prompt: '{{occasion}} — তখন এটি বলুন।',
     },
     nudge: {
       title: 'আজকের আয়াত',

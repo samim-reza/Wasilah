@@ -34,14 +34,45 @@ describe('matchesTrigger', () => {
   it('matches the time of day in the user timezone, not the device one', () => {
     // 08:00 UTC is morning in London but already afternoon in Tokyo.
     expect(matchesTrigger({ timesOfDay: ['morning'] }, context())).toBe(true);
-    expect(
-      matchesTrigger({ timesOfDay: ['morning'] }, context({ timezone: 'Asia/Tokyo' })),
-    ).toBe(false);
+    expect(matchesTrigger({ timesOfDay: ['morning'] }, context({ timezone: 'Asia/Tokyo' }))).toBe(
+      false,
+    );
   });
 
-  it('matches Friday in the user timezone', () => {
-    expect(matchesTrigger({ weekdays: [5] }, context({ now: FRIDAY_EVENING }))).toBe(true);
+  it('matches Friday by the Islamic day, from Thursday sunset to Friday sunset', () => {
+    const fridayAfternoon = new Date('2026-09-18T13:00:00Z'); // 14:00 London
+    const thursdayEvening = new Date('2026-09-17T19:00:00Z'); // 20:00 London
+    const thursdayAfternoon = new Date('2026-09-17T13:00:00Z');
+
+    expect(matchesTrigger({ weekdays: [5] }, context({ now: fridayAfternoon }))).toBe(true);
+    expect(matchesTrigger({ weekdays: [5] }, context({ now: thursdayEvening }))).toBe(true);
+    expect(matchesTrigger({ weekdays: [5] }, context({ now: thursdayAfternoon }))).toBe(false);
+    // After Friday's sunset it is Saturday night.
+    expect(matchesTrigger({ weekdays: [5] }, context({ now: FRIDAY_EVENING }))).toBe(false);
     expect(matchesTrigger({ weekdays: [5] }, context())).toBe(false);
+  });
+
+  it('keeps the small hours on the day they belong to', () => {
+    // 02:00 on Friday is Friday night, not Saturday: the sunset that began it
+    // was Thursday's, and the civil date has already caught up.
+    const fridaySmallHours = new Date('2026-09-18T01:00:00Z');
+    expect(matchesTrigger({ weekdays: [5] }, context({ now: fridaySmallHours }))).toBe(true);
+  });
+
+  it('drops a before-sunset trigger once the sun has set', () => {
+    const lastHour = { weekdays: [5], beforeSunset: true } as const;
+    expect(
+      matchesTrigger(
+        lastHour,
+        context({ now: new Date('2026-09-18T16:00:00Z'), afterSunset: false }),
+      ),
+    ).toBe(true);
+    expect(
+      matchesTrigger(
+        lastHour,
+        context({ now: new Date('2026-09-18T17:30:00Z'), afterSunset: true }),
+      ),
+    ).toBe(false);
   });
 
   it('never matches a weather trigger when weather is unknown', () => {
@@ -68,7 +99,10 @@ describe('matchesTrigger', () => {
   it('only offers a sleep dua once a sleep time is configured', () => {
     expect(matchesTrigger({ requiresSleepSchedule: true }, context())).toBe(false);
     expect(
-      matchesTrigger({ requiresSleepSchedule: true }, context({ sleepTime: { hour: 23, minute: 0 } })),
+      matchesTrigger(
+        { requiresSleepSchedule: true },
+        context({ sleepTime: { hour: 23, minute: 0 } }),
+      ),
     ).toBe(true);
   });
 });
@@ -110,13 +144,17 @@ describe('selectOccasion', () => {
   });
 
   it('repeats rather than returning nothing when everything is recently shown', () => {
-    const everything = eligibleOccasions(context(), fixtureCatalogue).map((occasion) => occasion.id);
+    const everything = eligibleOccasions(context(), fixtureCatalogue).map(
+      (occasion) => occasion.id,
+    );
     const chosen = selectOccasion(context({ recentlyShownIds: everything }), 0, fixtureCatalogue);
     expect(chosen).not.toBeNull();
   });
 
   it('is deterministic for a given seed', () => {
-    expect(selectOccasion(context(), 0.42, fixtureCatalogue)?.id).toBe(selectOccasion(context(), 0.42, fixtureCatalogue)?.id);
+    expect(selectOccasion(context(), 0.42, fixtureCatalogue)?.id).toBe(
+      selectOccasion(context(), 0.42, fixtureCatalogue)?.id,
+    );
   });
 
   it('never indexes past the end of the pool at seed 1', () => {

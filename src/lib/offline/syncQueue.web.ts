@@ -22,7 +22,7 @@
  */
 import { logger } from '@/lib/monitoring/logger';
 
-import type { QueuedOperation, SyncPayload } from './types';
+import type { QueuedOperation, SyncOperationType, SyncPayload } from './types';
 
 const STORAGE_KEY = 'wasilah.offline.queue';
 
@@ -70,6 +70,33 @@ export async function enqueue(operation: SyncPayload, userId: string): Promise<v
     lastError: null,
   });
   write(entries);
+}
+
+/** See the native module: a later write replaces a pending one for the same record. */
+export async function enqueueLatest(
+  operation: SyncPayload,
+  userId: string,
+  supersedes: readonly SyncOperationType[],
+  recordId: string,
+): Promise<void> {
+  const kept = read().filter(
+    (entry) =>
+      !(
+        entry.userId === userId &&
+        supersedes.includes(entry.type) &&
+        (entry.payload as { id?: string }).id === recordId
+      ),
+  );
+  kept.push({
+    id: nextId(kept),
+    type: operation.type,
+    payload: operation.data,
+    userId,
+    createdAt: new Date().toISOString(),
+    attempts: 0,
+    lastError: null,
+  });
+  write(kept);
 }
 
 export async function peekBatch(userId: string, limit = 50): Promise<QueuedOperation[]> {

@@ -11,8 +11,10 @@
  *
  * What it shows, from the back forward: a scene for this moment (the sunset,
  * the rain, the new crescent), a dark scrim so text stays readable over any
- * of them, the dua occasion for the hour, and the streak. Tapping the words
- * opens that dua; tapping anywhere else opens the app.
+ * of them, the dua occasion for the hour, and the streak. While a dua is
+ * showing, a tap ANYWHERE opens it — the whole card, not only the words, which
+ * were a small target and left the rest of the card opening the app instead.
+ * With no dua, a tap opens the app.
  *
  * Sizes are in dp and come from Android via `widgetInfo`. Below roughly two
  * cells wide the middle line is dropped, because two clipped words are worse
@@ -60,6 +62,10 @@ const scenes: Record<WidgetScene, number> = {
   heat: require('../../../../assets/widget/heat.png'),
   cold: require('../../../../assets/widget/cold.png'),
   mosque: require('../../../../assets/widget/mosque.png'),
+  mosqueDawn: require('../../../../assets/widget/mosqueDawn.png'),
+  mosqueDay: require('../../../../assets/widget/mosqueDay.png'),
+  mosqueAfternoon: require('../../../../assets/widget/mosqueAfternoon.png'),
+  mosqueSunset: require('../../../../assets/widget/mosqueSunset.png'),
   prayer: require('../../../../assets/widget/prayer.png'),
   quran: require('../../../../assets/widget/quran.png'),
 };
@@ -75,11 +81,16 @@ const COMPACT_HEIGHT = 120;
 export function WasilahWidget({ model, width, height }: WasilahWidgetProps) {
   const compact = width < COMPACT_WIDTH || height < COMPACT_HEIGHT;
   const duaUri = model.occasionId ? `wasilah://dua/${model.occasionId}` : null;
+  // Set on the root and repeated on the layer drawn over it: a child that
+  // fills the card takes the tap before the root sees it.
+  const click = duaUri
+    ? ({ clickAction: 'OPEN_URI', clickActionData: { uri: duaUri } } as const)
+    : ({ clickAction: 'OPEN_APP' } as const);
 
   return (
     <OverlapWidget
       style={{ height: 'match_parent', width: 'match_parent', borderRadius: RADIUS }}
-      clickAction="OPEN_APP"
+      {...click}
     >
       <ImageWidget
         image={scenes[model.scene]}
@@ -93,6 +104,7 @@ export function WasilahWidget({ model, width, height }: WasilahWidgetProps) {
           shows through where the picture lives and the text sits where the
           picture is darkest anyway. */}
       <FlexWidget
+        {...click}
         style={{
           height: 'match_parent',
           width: 'match_parent',
@@ -123,8 +135,7 @@ export function WasilahWidget({ model, width, height }: WasilahWidgetProps) {
               text={model.arabic}
               maxLines={2}
               truncate="END"
-              clickAction={duaUri ? 'OPEN_URI' : undefined}
-              clickActionData={duaUri ? { uri: duaUri } : undefined}
+              {...click}
               style={{
                 fontSize: 19,
                 color: WHITE,
@@ -138,8 +149,7 @@ export function WasilahWidget({ model, width, height }: WasilahWidgetProps) {
               text={model.line}
               maxLines={2}
               truncate="END"
-              clickAction={duaUri ? 'OPEN_URI' : undefined}
-              clickActionData={duaUri ? { uri: duaUri } : undefined}
+              {...click}
               style={{ fontSize: 13, color: WHITE, fontWeight: 'bold', width: 'match_parent' }}
             />
           ))}

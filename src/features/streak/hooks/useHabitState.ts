@@ -24,6 +24,7 @@ import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { logger } from '@/lib/monitoring/logger';
 
 import { fetchGoal, fetchStreak, fetchTodayProgress, saveGoal } from '../services/habitService';
+import { loadOfflineHabitState, rememberRemoteHabit } from '../services/offlineHabitState';
 import {
   getLocalHabitState,
   setLocalGoal,
@@ -58,11 +59,23 @@ export interface HabitState {
  * loading states and three chances to render a half-populated screen.
  */
 async function fetchRemoteHabitState(userId: string, today: string): Promise<LocalHabitState> {
-  const [goal, progress, streak] = await Promise.all([
-    fetchGoal(userId),
-    fetchTodayProgress(userId, today),
-    fetchStreak(userId),
-  ]);
+  let goal: Goal;
+  let progress: Awaited<ReturnType<typeof fetchTodayProgress>>;
+  let streak: StreakState;
+  try {
+    [goal, progress, streak] = await Promise.all([
+      fetchGoal(userId),
+      fetchTodayProgress(userId, today),
+      fetchStreak(userId),
+    ]);
+  } catch (error) {
+    // Offline, or the server is down: rebuild today from the last answer and
+    // the reading still waiting to be sent, rather than show an error screen.
+    // Only when there is nothing stored for this user does the error stand.
+    const offline = await loadOfflineHabitState(userId, today);
+    if (offline) return offline;
+    throw error;
+  }
 
   const state: LocalHabitState = {
     goal,
@@ -71,6 +84,7 @@ async function fetchRemoteHabitState(userId: string, today: string): Promise<Loc
     goalMet: progress.goalMet,
     streak,
   };
+  void rememberRemoteHabit(userId, today, state);
 
   // The home-screen widget cannot reach the server, so the answer is written
   // down for it, and it is redrawn: the streak it shows must be the one the

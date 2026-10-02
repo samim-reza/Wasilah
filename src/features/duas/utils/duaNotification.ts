@@ -36,18 +36,45 @@ export const duaImageAssets: Record<DuaImagery, number | null> = {
   none: null,
 };
 
+/** Arabic longer than this is left to the dua's screen; the meaning stands in. */
+const NOTIFICATION_ARABIC_LENGTH = 110;
+/** The meaning is cut at a sentence, or at this many characters. */
+const NOTIFICATION_MEANING_LENGTH = 140;
+
+/** The first sentence of `text`, or its first `limit` characters. */
+function shortened(text: string, limit: number): string {
+  const sentence = /^.+?[.!?](?=\s|$)/.exec(text)?.[0] ?? text;
+  if (sentence.length <= limit) return sentence;
+  return `${sentence.slice(0, limit).replace(/\s+\S*$/, '')}…`;
+}
+
+/**
+ * The dua itself, as compact as it can be while still being the words: the
+ * Arabic when it is short, then its meaning, cut to its first sentence when
+ * long. The full text, transliteration and source are one tap away.
+ */
+export function compactDuaText(occasion: DuaOccasion): string {
+  const { arabic, translation } = occasion.text;
+  const meaning = translation ? shortened(translation, NOTIFICATION_MEANING_LENGTH) : '';
+  const lines = [
+    arabic && arabic.length <= NOTIFICATION_ARABIC_LENGTH ? arabic : null,
+    meaning || null,
+  ].filter((line): line is string => line !== null);
+  return lines.join('\n');
+}
+
 /**
  * Builds the notification for an occasion.
  *
- * The body is the occasion's prompt, never the dua itself. Two reasons: the
- * words should be met deliberately rather than glanced at on a lock screen
- * among other alerts, and a lock-screen preview is visible to anyone holding
- * the phone. Tapping through is the point.
+ * Direct and short: the title says when ("Say this when you leave the
+ * house."), and the body is the dua. It used to ask "Do you know the dua
+ * for…?" and hold the words back behind a tap — which meant a reminder that
+ * did not, on its own, remind anyone of anything.
  */
 export function buildDuaNotification(occasion: DuaOccasion): NotificationContent {
   return {
-    title: occasion.title,
-    body: occasion.prompt,
+    title: occasion.prompt,
+    body: compactDuaText(occasion) || occasion.title,
     data: {
       category: 'daily_reminder',
       templateKey: `dua:${occasion.id}`,

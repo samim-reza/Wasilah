@@ -17,9 +17,10 @@
  *
  * Nothing here blindly overwrites server state with a whole local snapshot.
  */
-import { AppError, toAppError } from '@/lib/api/errors';
+import { toAppError } from '@/lib/api/errors';
 import { logger } from '@/lib/monitoring/logger';
 import { supabase } from '@/lib/supabase/client';
+import { fromPostgrestError } from '@/lib/supabase/errors';
 
 import { peekBatch, recordFailure, remove } from './syncQueue';
 import type {
@@ -29,6 +30,7 @@ import type {
   QueuedOperation,
   ReadingSessionPayload,
   SyncResult,
+  TasbeehPayload,
 } from './types';
 
 async function applyReadingSession(payload: ReadingSessionPayload): Promise<void> {
@@ -47,7 +49,7 @@ async function applyReadingSession(payload: ReadingSessionPayload): Promise<void
     p_source: payload.source,
   });
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyBookmarkAdd(payload: BookmarkPayload, userId: string): Promise<void> {
@@ -62,7 +64,7 @@ async function applyBookmarkAdd(payload: BookmarkPayload, userId: string): Promi
     { onConflict: 'user_id,verse_key', ignoreDuplicates: true },
   );
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyBookmarkRemove(verseKey: string, userId: string): Promise<void> {
@@ -72,7 +74,7 @@ async function applyBookmarkRemove(verseKey: string, userId: string): Promise<vo
     .eq('user_id', userId)
     .eq('verse_key', verseKey);
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyNoteSave(payload: NotePayload, userId: string): Promise<void> {
@@ -87,7 +89,7 @@ async function applyNoteSave(payload: NotePayload, userId: string): Promise<void
     { onConflict: 'user_id,verse_key' },
   );
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyNoteDelete(verseKey: string, userId: string): Promise<void> {
@@ -97,7 +99,7 @@ async function applyNoteDelete(verseKey: string, userId: string): Promise<void> 
     .eq('user_id', userId)
     .eq('verse_key', verseKey);
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyPositionSave(payload: PositionPayload, userId: string): Promise<void> {
@@ -121,7 +123,30 @@ async function applyPositionSave(payload: PositionPayload, userId: string): Prom
     verse_number: payload.verseNumber,
   });
 
-  if (error) throw new AppError('server', error.message, { cause: error });
+  if (error) throw fromPostgrestError(error);
+}
+
+async function applyTasbeehUpsert(payload: TasbeehPayload, userId: string): Promise<void> {
+  const { error } = await supabase.from('tasbeeh').upsert(
+    {
+      id: payload.id,
+      user_id: userId,
+      name: payload.name,
+      daily_target: payload.dailyTarget,
+      total_count: payload.totalCount,
+      today_count: payload.todayCount,
+      today_date: payload.todayDate,
+      position: payload.position,
+    },
+    { onConflict: 'id' },
+  );
+
+  if (error) throw fromPostgrestError(error);
+}
+
+async function applyTasbeehDelete(id: string): Promise<void> {
+  const { error } = await supabase.from('tasbeeh').delete().eq('id', id);
+  if (error) throw fromPostgrestError(error);
 }
 
 async function applyOperation(operation: QueuedOperation): Promise<void> {
@@ -144,8 +169,20 @@ async function applyOperation(operation: QueuedOperation): Promise<void> {
       );
     case 'position_save':
       return applyPositionSave(operation.payload as PositionPayload, operation.userId);
+    case 'tasbeeh_upsert':
+      return applyTasbeehUpsert(operation.payload as TasbeehPayload, operation.userId);
+    case 'tasbeeh_delete':
+      return applyTasbeehDelete((operation.payload as { id: string }).id);
   }
 }
+
+/**
+ * The flush in progress, per user. A second request while one runs joins it
+ * rather than starting another: two flushes reading the same batch would
+ * apply the same entry twice — harmless for most writes, but a tasbeeh
+ * upsert from an older batch could land after a newer one.
+ */
+const inFlight = new Map<string, Promise<SyncResult>>();
 
 /**
  * Drains the queue for one user.
@@ -154,7 +191,16 @@ async function applyOperation(operation: QueuedOperation): Promise<void> {
  * retry budget while there is no connection — those failures say nothing about
  * the entries themselves.
  */
-export async function flushQueue(userId: string): Promise<SyncResult> {
+export function flushQueue(userId: string): Promise<SyncResult> {
+  const running = inFlight.get(userId);
+  if (running) return running;
+
+  const flush = drainQueue(userId).finally(() => inFlight.delete(userId));
+  inFlight.set(userId, flush);
+  return flush;
+}
+
+async function drainQueue(userId: string): Promise<SyncResult> {
   const result: SyncResult = { flushed: 0, failed: 0, discarded: 0 };
   const batch = await peekBatch(userId);
 

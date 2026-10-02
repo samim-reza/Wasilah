@@ -36,6 +36,8 @@ export interface ArabicTextProps {
   selectable?: boolean;
   /** Defaults to Amiri Quran; the reader passes the user's chosen face. */
   fontFamily?: ArabicFontKey;
+  /** Clamps a preview, e.g. on a bookmark card; the reader never sets it. */
+  numberOfLines?: number;
 }
 
 export function ArabicText({
@@ -45,6 +47,7 @@ export function ArabicText({
   accessibilityLabel,
   selectable = true,
   fontFamily = 'AmiriQuran',
+  numberOfLines,
 }: ArabicTextProps) {
   return (
     <Text
@@ -60,6 +63,7 @@ export function ArabicText({
       }}
       allowFontScaling={false}
       selectable={selectable}
+      numberOfLines={numberOfLines}
       accessibilityLabel={accessibilityLabel}
     >
       {text}

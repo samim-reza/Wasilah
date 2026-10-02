@@ -16,6 +16,8 @@ import { isRecord } from '@/lib/storage/guards';
 import { keyValueStore } from '@/lib/storage/keyValueStore';
 import { storageKeys } from '@/lib/storage/storageKeys';
 import { logger } from '@/lib/monitoring/logger';
+import { enqueueLatest } from '@/lib/offline/syncQueue';
+import { requestSync } from '@/lib/offline/syncSignal';
 import { supabase } from '@/lib/supabase/client';
 import type { TasbeehRow } from '@/lib/supabase/database.types';
 import type { LocalDate } from '@/lib/datetime/localDate';
@@ -85,29 +87,62 @@ export async function fetchRemote(userId: string): Promise<Tasbeeh[]> {
   return (data ?? []).map(toTasbeeh);
 }
 
-export async function upsertRemote(userId: string, tasbeeh: Tasbeeh): Promise<void> {
-  const { error } = await supabase.from('tasbeeh').upsert(
-    {
-      id: tasbeeh.id,
-      user_id: userId,
-      name: tasbeeh.name,
-      daily_target: tasbeeh.dailyTarget,
-      total_count: tasbeeh.totalCount,
-      today_count: tasbeeh.todayCount,
-      today_date: tasbeeh.todayDate,
-      position: tasbeeh.position,
-    },
-    { onConflict: 'id' },
-  );
+/** Wait this long after the last press before syncing, so a sitting is one write. */
+const SYNC_DEBOUNCE_MS = 2_000;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // A failed sync leaves the device copy intact, which is the authority until
-  // the next successful write. Never worth interrupting counting for.
-  if (error) logger.debug('tasbeeh.syncFailed', { error });
+function syncSoon(): void {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    requestSync();
+  }, SYNC_DEBOUNCE_MS);
 }
 
-export async function deleteRemote(id: string): Promise<void> {
-  const { error } = await supabase.from('tasbeeh').delete().eq('id', id);
-  if (error) logger.debug('tasbeeh.deleteFailed', { error });
+const TASBEEH_OPERATIONS = ['tasbeeh_upsert', 'tasbeeh_delete'] as const;
+
+/**
+ * Queues the counter for the account.
+ *
+ * Through the sync queue, not straight to the server: offline, a direct write
+ * failed and was only logged, so every press made without a connection was
+ * lost to the account. Queued, it waits and goes when the connection is back.
+ * Only the latest state of each counter is kept in the queue.
+ */
+export async function queueUpsert(userId: string, tasbeeh: Tasbeeh): Promise<void> {
+  try {
+    await enqueueLatest(
+      {
+        type: 'tasbeeh_upsert',
+        data: {
+          id: tasbeeh.id,
+          name: tasbeeh.name,
+          dailyTarget: tasbeeh.dailyTarget,
+          totalCount: tasbeeh.totalCount,
+          todayCount: tasbeeh.todayCount,
+          todayDate: tasbeeh.todayDate,
+          position: tasbeeh.position,
+        },
+      },
+      userId,
+      TASBEEH_OPERATIONS,
+      tasbeeh.id,
+    );
+    syncSoon();
+  } catch (error) {
+    // The device copy is already written; the account catches up on the next change.
+    logger.warn('tasbeeh.queueFailed', { error });
+  }
+}
+
+/** Queues a delete, replacing any pending update of the same counter. */
+export async function queueDelete(userId: string, id: string): Promise<void> {
+  try {
+    await enqueueLatest({ type: 'tasbeeh_delete', data: { id } }, userId, TASBEEH_OPERATIONS, id);
+    syncSoon();
+  } catch (error) {
+    logger.warn('tasbeeh.queueFailed', { error });
+  }
 }
 
 /**
@@ -117,7 +152,10 @@ export async function deleteRemote(id: string): Promise<void> {
  * does not is kept — that is the guest's counters being adopted on sign-in,
  * which must not be silently dropped.
  */
-export function mergeByHighestCount(local: readonly Tasbeeh[], remote: readonly Tasbeeh[]): Tasbeeh[] {
+export function mergeByHighestCount(
+  local: readonly Tasbeeh[],
+  remote: readonly Tasbeeh[],
+): Tasbeeh[] {
   const merged = new Map<string, Tasbeeh>();
 
   for (const entry of remote) merged.set(entry.id, entry);

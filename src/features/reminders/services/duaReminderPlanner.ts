@@ -60,6 +60,12 @@ export interface DuaPlanInput {
   weather?: WeatherSnapshot | null;
   /** Occasion ids shown recently, so the nightly prompt keeps moving. */
   recentlyShownIds: readonly string[];
+  /**
+   * Today's maghrib, when prayer times are known. The Islamic day — which
+   * Friday it is, which night of Ramadan — turns over at sunset, and the real
+   * time beats the six-o'clock guess used without it.
+   */
+  sunsetAt?: Date | null;
   /** Injected for reproducible tests. */
   randomSeed?: number;
   /**
@@ -88,8 +94,24 @@ function contextAt(instant: Date, input: DuaPlanInput, sleepTime?: TimeOfDay): D
         : undefined,
     moonAgeDays: moonAgeDays(instant),
     sleepTime,
+    afterSunset: afterSunsetAt(instant, input),
     recentlyShownIds: input.recentlyShownIds,
   };
+}
+
+/**
+ * Whether the sun has set by `instant`, from today's maghrib — or undefined,
+ * leaving the selector to guess by the clock, for an instant on another day.
+ */
+function afterSunsetAt(instant: Date, input: DuaPlanInput): boolean | undefined {
+  const sunset = input.sunsetAt;
+  if (!sunset) return undefined;
+  const sameDay = timeOfDayDate(instant, input.timezone) === timeOfDayDate(sunset, input.timezone);
+  return sameDay ? instant.getTime() >= sunset.getTime() : undefined;
+}
+
+function timeOfDayDate(instant: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(instant);
 }
 
 /** The nightly prompt, for each day inside the horizon. */

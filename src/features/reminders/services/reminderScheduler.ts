@@ -153,6 +153,7 @@ export function planReminders(
       horizonDays: SCHEDULE_HORIZON_DAYS,
       weather: personalisation.weather,
       recentlyShownIds: personalisation.recentDuaOccasionIds ?? [],
+      sunsetAt: personalisation.prayerTimes?.maghrib ?? null,
     }),
   );
 

@@ -14,11 +14,25 @@ const postgrestCodeMap: Record<string, AppError['kind']> = {
   '23503': 'invalid_response', // foreign key violation
 };
 
+/**
+ * What supabase-js returns, rather than throws, when the request never left
+ * the phone: no code, and the fetch failure as the message.
+ */
+const NETWORK_FAILURE =
+  /network request failed|failed to fetch|network ?error|load failed|timed? ?out/i;
+
+export function isNetworkFailure(error: { code?: string; message?: string }): boolean {
+  return !error.code && NETWORK_FAILURE.test(error.message ?? '');
+}
+
 export function fromPostgrestError(
   error: PostgrestError,
   context?: Record<string, unknown>,
 ): AppError {
-  const kind = postgrestCodeMap[error.code] ?? 'server';
+  // Offline, not a server fault. Calling it "server" made the sync queue
+  // spend an entry's retries on every failed flush while the phone had no
+  // connection, and then throw the entry away — losing what was done offline.
+  const kind = isNetworkFailure(error) ? 'offline' : (postgrestCodeMap[error.code] ?? 'server');
   return new AppError(kind, error.message, {
     cause: error,
     context: { ...context, code: error.code, details: error.details },

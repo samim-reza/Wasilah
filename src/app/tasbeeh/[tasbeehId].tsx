@@ -8,22 +8,27 @@
  *
  * Haptics on every press, and on rounds a heavier one: the physical tasbeeh
  * this replaces gives feedback through the fingers, and that is what lets
- * someone count without watching the screen.
+ * someone count without watching the screen. For counting with the eyes
+ * closed there is a dark mode: the screen goes black and all of it counts
+ * (`BlindCounter`).
  */
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { IconButton } from '@/components/ui/IconButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
+import { BlindCounter } from '@/features/tasbeeh/components/BlindCounter';
 import { CounterBead } from '@/features/tasbeeh/components/CounterBead';
 import { Text } from '@/components/ui/Text';
 import { useTasbeeh } from '@/features/tasbeeh/hooks/useTasbeeh';
 import { deriveProgress } from '@/features/tasbeeh/utils/tasbeehProgress';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { useTranslation } from '@/lib/i18n/I18nProvider';
+import { confirm } from '@/lib/ui/confirm';
 import { arabicLineHeightRatio } from '@/theme/tokens';
 
 export default function TasbeehCounterScreen() {
@@ -31,6 +36,7 @@ export default function TasbeehCounterScreen() {
   const { today } = useLocalDate();
   const { tasbeehId } = useLocalSearchParams<{ tasbeehId: string }>();
   const { find, press, stepBack, resetOne, isLoading } = useTasbeeh();
+  const [blind, setBlind] = useState(false);
 
   const tasbeeh = find(tasbeehId ?? '');
 
@@ -58,6 +64,22 @@ export default function TasbeehCounterScreen() {
     press(tasbeeh.id);
   };
 
+  // Asked first: a reset clears today's count AND the lifetime total, and the
+  // button sits close enough to the others to be pressed by mistake.
+  const onReset = async () => {
+    const confirmed = await confirm({
+      title: t('tasbeeh.resetTitle'),
+      message: t('tasbeeh.resetBody', { name: tasbeeh.name, count: progress.totalCount }),
+      confirmLabel: t('tasbeeh.reset'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (confirmed) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      resetOne(tasbeeh.id);
+    }
+  };
+
   return (
     <Screen edges={['top']} noPadding>
       <ScreenHeader title={tasbeeh.name} />
@@ -67,7 +89,7 @@ export default function TasbeehCounterScreen() {
             face and enough leading for the diacritics. */}
         <View className="items-center gap-2 px-4 pt-2">
           <Text
-            className="font-arabic text-center text-content"
+            className="text-center font-arabic text-content"
             style={{ fontSize: 24, lineHeight: 24 * arabicLineHeightRatio }}
             allowFontScaling={false}
           >
@@ -123,8 +145,15 @@ export default function TasbeehCounterScreen() {
               name="sync"
               size={22}
               color="textMuted"
-              onPress={() => resetOne(tasbeeh.id)}
+              onPress={() => void onReset()}
               accessibilityLabel={t('tasbeeh.reset')}
+            />
+            <IconButton
+              name="eyeOff"
+              size={22}
+              color="textMuted"
+              onPress={() => setBlind(true)}
+              accessibilityLabel={t('tasbeeh.blindMode')}
             />
             <IconButton
               name="remove"
@@ -143,6 +172,8 @@ export default function TasbeehCounterScreen() {
           </View>
         </View>
       </View>
+
+      <BlindCounter visible={blind} onCount={onPress} onExit={() => setBlind(false)} />
     </Screen>
   );
 }

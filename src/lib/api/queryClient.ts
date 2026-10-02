@@ -55,7 +55,23 @@ export const queryClient = new QueryClient({
  * unencrypted app storage. The exception is handled by the offline module,
  * which stores pending writes in SQLite with an explicit sync contract.
  */
-const PERSISTED_KEY_PREFIXES = new Set(['quran', 'audio', 'platform']);
+/**
+ * What is kept on the device between launches.
+ *
+ * The Quran text and audio lists, and also the user's own data — habit
+ * progress, bookmarks, notes, collections, the reading position, today's
+ * ayah — so a screen opened offline shows what it showed last instead of an
+ * error or an empty list. The user's own entries are keyed by user id, and
+ * the whole cache is cleared on sign-out, so nothing leaks between accounts.
+ */
+const PERSISTED_KEY_PREFIXES = new Set([
+  'quran',
+  'audio',
+  'platform',
+  'habit',
+  'library',
+  'dailyAyah',
+]);
 
 function isPersistable(queryKey: QueryKey): boolean {
   const root = queryKey[0];

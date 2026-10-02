@@ -17,9 +17,15 @@ export interface UseVerseOptions {
   enabled?: boolean;
 }
 
-export function useVerse(verseKey: VerseKey | null, options: UseVerseOptions) {
-  const { locale } = useTranslation();
-
+/**
+ * The query for one ayah, shared by `useVerse` and by prefetching, so an ayah
+ * fetched ahead of time lands exactly where the hook will look for it.
+ */
+export function verseQueryOptions(
+  verseKey: VerseKey | null,
+  options: UseVerseOptions,
+  locale: string,
+) {
   const scope: VerseQueryScope = {
     translationIds: options.translationIds,
     includeWords: options.includeWords ?? false,
@@ -27,7 +33,7 @@ export function useVerse(verseKey: VerseKey | null, options: UseVerseOptions) {
     script: options.script ?? 'uthmani',
   };
 
-  return useQuery<Verse>({
+  return {
     queryKey: queryKeys.quran.verse(verseKey ?? '', scope),
     queryFn: () =>
       fetchVerse(verseKey as VerseKey, {
@@ -38,5 +44,10 @@ export function useVerse(verseKey: VerseKey | null, options: UseVerseOptions) {
       }),
     enabled: Boolean(verseKey) && (options.enabled ?? true),
     staleTime: Number.POSITIVE_INFINITY,
-  });
+  };
+}
+
+export function useVerse(verseKey: VerseKey | null, options: UseVerseOptions) {
+  const { locale } = useTranslation();
+  return useQuery<Verse>(verseQueryOptions(verseKey, options, locale));
 }

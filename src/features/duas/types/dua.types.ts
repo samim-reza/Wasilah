@@ -42,8 +42,16 @@ export interface DuaTrigger {
   minTemperatureCelsius?: number;
   /** Fires at or below this temperature, in Celsius. */
   maxTemperatureCelsius?: number;
-  /** 0 = Sunday … 5 = Friday … 6 = Saturday, in the user's timezone. */
+  /**
+   * 0 = Sunday … 5 = Friday … 6 = Saturday, by the ISLAMIC day, which begins
+   * at sunset: Friday runs from Thursday's maghrib to Friday's.
+   */
   weekdays?: readonly number[];
+  /**
+   * Only while the sun is still up — for words tied to the closing of a day
+   * (the last hour of Friday), which the next Islamic day must not inherit.
+   */
+  beforeSunset?: boolean;
   /** Requires the visible lunar disc to be within the new-crescent window. */
   newMoon?: boolean;
   /** Only offered when the user has switched on the before-sleep reminder. */
@@ -105,8 +113,10 @@ export interface DuaOccasion {
   /** Short label, e.g. 'When it rains'. Shown in settings and on the screen. */
   title: string;
   /**
-   * The notification's opening line. Written as a question or an invitation
-   * rather than an instruction — it should feel like an offer, not a demand.
+   * The cue: when to say it, in a few words — "Say this when you leave the
+   * house." It is the notification's title and the widget's line, with the
+   * dua itself under it. Direct, because a question ("Do you know the dua
+   * for…?") made the user tap through to find out what to say.
    */
   prompt: string;
   trigger: DuaTrigger;

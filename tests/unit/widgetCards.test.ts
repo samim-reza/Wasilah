@@ -97,14 +97,33 @@ describe('resolveWidgetCard', () => {
     const b = resolveWidgetCard(input({ now: at(9, 55) }));
     expect(a.line).toBe(b.line);
     const seen = new Set<string>();
-    for (let hour = 7; hour < 11; hour += 1) seen.add(resolveWidgetCard(input({ now: at(hour, 5) })).kind);
+    for (let hour = 7; hour < 11; hour += 1)
+      seen.add(resolveWidgetCard(input({ now: at(hour, 5) })).kind);
     expect(seen.has('everyday')).toBe(true);
   });
 
-  it('shows Friday during the day only', () => {
-    // 2026-09-18 is a Friday.
+  it('shows Friday from Thursday sunset to Friday sunset', () => {
+    // 2026-09-18 is a Friday; offset 1 is Thursday the 17th.
     expect(resolveWidgetCard(input({ now: at(9, 5, 2), times: null })).kind).toBe('friday');
+    expect(resolveWidgetCard(input({ now: at(22, 5, 1), times: null })).kind).toBe('friday');
+    expect(resolveWidgetCard(input({ now: at(16, 5, 1), times: null })).kind).not.toBe('friday');
+    // After Friday's maghrib, it is Saturday night.
     expect(resolveWidgetCard(input({ now: at(22, 5, 2), times: null })).kind).not.toBe('friday');
+  });
+
+  it('draws Friday under the sky of the hour, not under the stars at noon', () => {
+    const morning = resolveWidgetCard(input({ now: at(9, 5, 2), times: null }));
+    expect(morning.scene).toBe('mosqueDay');
+    const thursdayNight = resolveWidgetCard(input({ now: at(22, 5, 1), times: null }));
+    expect(thursdayNight.scene).toBe('mosque');
+  });
+
+  it('draws each prayer under its own sky', () => {
+    expect(resolveWidgetCard(input({ now: at(4, 35) })).scene).toBe('mosqueDawn');
+    expect(resolveWidgetCard(input({ now: at(12, 0) })).scene).toBe('mosqueDay');
+    expect(resolveWidgetCard(input({ now: at(15, 25) })).scene).toBe('mosqueAfternoon');
+    expect(resolveWidgetCard(input({ now: at(18, 5) })).scene).toBe('mosqueSunset');
+    expect(resolveWidgetCard(input({ now: at(19, 20) })).scene).toBe('prayer');
   });
 
   it('shows the crescent after sunset on the young-moon nights only', () => {
@@ -127,7 +146,9 @@ describe('resolveWidgetCard', () => {
       maghrib: new Date(Date.UTC(2026, 1, 27, 12, 0)),
       isha: new Date(Date.UTC(2026, 1, 27, 13, 15)),
     };
-    const card = resolveWidgetCard(input({ now: ramadan, times: { yesterday: times, today: times, tomorrow: times } }));
+    const card = resolveWidgetCard(
+      input({ now: ramadan, times: { yesterday: times, today: times, tomorrow: times } }),
+    );
     expect(card.kind).toBe('prayer');
     expect(card.occasionId).toBe('ramadan-iftar');
   });

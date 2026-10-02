@@ -24,15 +24,16 @@ import {
 
 import { useUserId } from '@/features/auth/hooks/AuthProvider';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
+import { flushQueue } from '@/lib/offline/syncProcessor';
 
 import {
-  deleteRemote,
   fetchRemote,
   fromDraft,
   loadLocal,
   mergeByHighestCount,
   saveLocal,
-  upsertRemote,
+  queueDelete,
+  queueUpsert,
 } from '../services/tasbeehStore';
 import {
   decrement as decrementCounter,
@@ -67,6 +68,11 @@ function useTasbeehState(): UseTasbeehResult {
       if (!cancelled) setList(local);
 
       if (userId) {
+        // Send what is waiting first, so the account's copy includes presses,
+        // resets and deletes made offline. Merging an older account copy over
+        // them undid a reset (the higher count won) and brought a deleted
+        // counter back. Offline, this fails fast and the device copy stands.
+        await flushQueue(userId).catch(() => undefined);
         const remote = await fetchRemote(userId);
         if (!cancelled && remote.length > 0) {
           const merged = mergeByHighestCount(local, remote);
@@ -96,7 +102,7 @@ function useTasbeehState(): UseTasbeehResult {
         void saveLocal(next);
 
         const updated = next.find((entry) => entry.id === id);
-        if (userId && updated) void upsertRemote(userId, updated);
+        if (userId && updated) void queueUpsert(userId, updated);
 
         return next;
       });
@@ -125,7 +131,7 @@ function useTasbeehState(): UseTasbeehResult {
         const entry = fromDraft(draft, current.length);
         const next = [...current, entry];
         void saveLocal(next);
-        if (userId) void upsertRemote(userId, entry);
+        if (userId) void queueUpsert(userId, entry);
         return next;
       });
     },
@@ -147,7 +153,7 @@ function useTasbeehState(): UseTasbeehResult {
       setList((current) => {
         const next = current.filter((entry) => entry.id !== id);
         void saveLocal(next);
-        if (userId) void deleteRemote(id);
+        if (userId) void queueDelete(userId, id);
         return next;
       });
     },

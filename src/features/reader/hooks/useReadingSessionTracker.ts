@@ -4,14 +4,18 @@
  * Measuring "time spent reading" honestly is harder than it looks. This hook
  * takes three deliberate positions:
  *
- *   • The clock pauses when the app is backgrounded. A phone left face-down is
- *     not reading time, and counting it would let a minutes-based goal be met
- *     by doing nothing.
+ *   • The clock runs only while the Quran itself is on screen. It pauses when
+ *     the app is backgrounded — a phone left face-down is not reading time —
+ *     and when another screen is opened over the reader: a dua from a
+ *     notification, settings, the translation picker. Those used to keep the
+ *     reader's clock running underneath, so time spent elsewhere in the app
+ *     counted towards the daily target.
  *   • Ayahs are counted once each. Scrolling back over an ayah does not add to
  *     the total, so a session cannot be inflated by flicking up and down.
  *   • The session is flushed on unmount and on background, not on an interval,
  *     so a user who leaves mid-surah still has their reading recorded.
  */
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
@@ -59,8 +63,13 @@ export interface ReadingSessionTracker {
 
 export function useReadingSessionTracker(source: SessionSource = 'reader'): ReadingSessionTracker {
   const recordReading = useRecordReading();
+  const isFocused = useIsFocused();
   const sessionRef = useRef<SessionAccumulator | null>(null);
   const isFlushingRef = useRef(false);
+  // Whether a pause ended a session that should carry on when the reader is
+  // back in front: reading resumes without needing a scroll to restart it.
+  const resumeOnReturnRef = useRef(false);
+  const isFocusedRef = useRef(isFocused);
 
   const ensureSession = useCallback((): SessionAccumulator => {
     sessionRef.current ??= createAccumulator();
@@ -123,28 +132,47 @@ export function useReadingSessionTracker(source: SessionSource = 'reader'): Read
     sessionRef.current = null;
   }, []);
 
-  // Pause the clock in the background, and flush so a session is not lost if
-  // the OS kills the app while it is away.
+  /** Stops the clock and records what was read so far. */
+  const pause = useCallback(() => {
+    const session = sessionRef.current;
+    if (!session) return;
+
+    if (session.activeSince) {
+      session.activeMs += Date.now() - session.activeSince;
+      session.activeSince = null;
+    }
+    resumeOnReturnRef.current = true;
+    void flush();
+  }, [flush]);
+
+  /** Starts the clock again — a fresh session — when the reader is back. */
+  const resume = useCallback(() => {
+    if (!resumeOnReturnRef.current) return;
+    resumeOnReturnRef.current = false;
+    sessionRef.current ??= createAccumulator();
+  }, []);
+
+  // Another screen over the reader pauses it; coming back resumes it.
+  useEffect(() => {
+    isFocusedRef.current = isFocused;
+    if (isFocused) resume();
+    else pause();
+  }, [isFocused, pause, resume]);
+
+  // The same in the background, flushing so a session is not lost if the OS
+  // kills the app while it is away.
   useEffect(() => {
     function handleAppStateChange(state: AppStateStatus) {
-      const session = sessionRef.current;
-      if (!session) return;
-
       if (state === 'active') {
-        session.activeSince ??= Date.now();
+        if (isFocusedRef.current) resume();
         return;
       }
-
-      if (session.activeSince) {
-        session.activeMs += Date.now() - session.activeSince;
-        session.activeSince = null;
-      }
-      void flush();
+      pause();
     }
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [flush]);
+  }, [pause, resume]);
 
   // Leaving the reader ends the session.
   useEffect(() => {
