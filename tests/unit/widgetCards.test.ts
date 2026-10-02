@@ -102,6 +102,17 @@ describe('resolveWidgetCard', () => {
     expect(seen.has('everyday')).toBe(true);
   });
 
+  it('names the moment over an everyday dua, so the words are recognisable', () => {
+    let everyday;
+    for (let hour = 7; hour < 13 && !everyday; hour += 1) {
+      const card = resolveWidgetCard(input({ now: at(hour, 5) }));
+      if (card.kind === 'everyday') everyday = card;
+    }
+    expect(everyday).toBeDefined();
+    expect(everyday!.title).toMatch(/^.+\? Say this$/);
+    expect(everyday!.title).not.toBe('Say this');
+  });
+
   it('shows Friday from Thursday sunset to Friday sunset', () => {
     // 2026-09-18 is a Friday; offset 1 is Thursday the 17th.
     expect(resolveWidgetCard(input({ now: at(9, 5, 2), times: null })).kind).toBe('friday');

@@ -9,6 +9,7 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
 
+import { Pressable } from '@/components/ui/Pressable';
 import { Text } from '@/components/ui/Text';
 import {
   addLocalDays,
@@ -32,9 +33,17 @@ export interface ReadingCalendarProps {
   today: LocalDate;
   /** Short weekday initials, Monday first. */
   weekdayLabels: readonly string[];
+  /** Tapping a day (up to today) opens its summary. */
+  onSelectDate?: (date: LocalDate) => void;
 }
 
-export function ReadingCalendar({ month, entries, today, weekdayLabels }: ReadingCalendarProps) {
+export function ReadingCalendar({
+  month,
+  entries,
+  today,
+  weekdayLabels,
+  onSelectDate,
+}: ReadingCalendarProps) {
   const { cells, lookup } = useMemo(() => {
     const first = startOfLocalMonth(month);
     const last = endOfLocalMonth(month);
@@ -78,7 +87,15 @@ export function ReadingCalendar({ month, entries, today, weekdayLabels }: Readin
           const dayNumber = Number(date.slice(-2));
 
           return (
-            <View key={date} className="aspect-square w-[14.28%] p-1">
+            <Pressable
+              key={date}
+              className="aspect-square w-[14.28%] p-1"
+              onPress={onSelectDate && !isFuture ? () => onSelectDate(date) : undefined}
+              disabled={!onSelectDate || isFuture}
+              enforceMinTapTarget={false}
+              accessibilityRole="button"
+              accessibilityLabel={entry?.minimumMet ? `${date}, complete` : `${date}, no reading`}
+            >
               <View
                 className={`flex-1 items-center justify-center rounded-lg ${
                   entry?.goalMet
@@ -89,8 +106,6 @@ export function ReadingCalendar({ month, entries, today, weekdayLabels }: Readin
                         ? 'border border-border-strong'
                         : ''
                 }`}
-                accessible
-                accessibilityLabel={entry?.minimumMet ? `${date}, complete` : `${date}, no reading`}
               >
                 <Text
                   variant="caption"
@@ -107,7 +122,7 @@ export function ReadingCalendar({ month, entries, today, weekdayLabels }: Readin
                   {dayNumber}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           );
         })}
       </View>

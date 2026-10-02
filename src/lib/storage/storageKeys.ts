@@ -47,7 +47,11 @@ export const storageKeys = {
    * being offline — a counter that pauses for a round trip is unusable.
    */
   tasbeeh: `${prefix}.tasbeeh`,
+  /** Each dhikr's count per day, for the calendar's day summary. */
+  tasbeehHistory: `${prefix}.tasbeeh.history`,
   reminderPreferences: `${prefix}.reminders.preferences`,
+  /** Which surahs' recitation is downloaded for offline listening. */
+  audioDownloads: `${prefix}.audio.downloads`,
   /** Which round of default changes this device's reminder settings have had. */
   reminderDefaultsVersion: `${prefix}.reminders.defaultsVersion`,
   notificationPermissionAsked: `${prefix}.notifications.permissionAsked`,

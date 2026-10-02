@@ -14,12 +14,13 @@ import { Screen } from '@/components/layout/Screen';
 import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { Text } from '@/components/ui/Text';
+import { DaySummarySheet } from '@/features/streak/components/DaySummarySheet';
 import { ReadingCalendar } from '@/features/streak/components/ReadingCalendar';
 import { StatTile } from '@/features/streak/components/StatTile';
 import { useHabitState } from '@/features/streak/hooks/useHabitState';
 import { useAchievements } from '@/features/streak/hooks/useAchievements';
 import { useProgressCalendar } from '@/features/streak/hooks/useProgressCalendar';
-import { addLocalDays, startOfLocalMonth } from '@/lib/datetime/localDate';
+import { addLocalDays, startOfLocalMonth, type LocalDate } from '@/lib/datetime/localDate';
 import { useLocalDate } from '@/lib/datetime/useLocalDate';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { usePullToRefresh } from '@/lib/api/usePullToRefresh';
@@ -32,6 +33,7 @@ export default function ProgressScreen() {
 
   const [month, setMonth] = useState(() => startOfLocalMonth(today));
   const calendar = useProgressCalendar(month);
+  const [selectedDate, setSelectedDate] = useState<LocalDate | null>(null);
   const refresh = usePullToRefresh([queryKeys.habit.all]);
 
   const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -125,6 +127,7 @@ export default function ProgressScreen() {
               month={month}
               today={today}
               weekdayLabels={weekdayLabels}
+              onSelectDate={setSelectedDate}
               entries={(calendar.data ?? []).map((day) => ({
                 date: day.date,
                 minimumMet: day.minimumMet,
@@ -183,6 +186,11 @@ export default function ProgressScreen() {
           </Text>
         </Card>
       </ScrollView>
+      <DaySummarySheet
+        date={selectedDate}
+        summary={calendar.data?.find((day) => day.date === selectedDate)}
+        onClose={() => setSelectedDate(null)}
+      />
     </Screen>
   );
 }

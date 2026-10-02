@@ -7,7 +7,7 @@
  * service stays ignorant of playback.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { queryKeys } from '@/lib/api/queryKeys';
 import { parseVerseKey } from '@/features/quran/utils/verseKey';
@@ -18,6 +18,15 @@ import {
 import type { VerseKey } from '@/features/quran/types/quran.types';
 
 import { useAudio } from './AudioPlayerProvider';
+import {
+  cancelDownload,
+  downloadChapter,
+  downloadState,
+  downloadedTracks,
+  removeDownload,
+  subscribeToDownload,
+  type DownloadState,
+} from '../services/audioDownloads';
 import { noRepeat, type RepeatOptions } from '../services/audioQueue';
 import type { AudioTrack } from '../types/audio.types';
 
@@ -87,10 +96,12 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
   const audio = useAudio();
   const queryClient = useQueryClient();
 
-  // Through the query cache, so pressing play again — or repeating a passage
-  // — reuses the list already fetched instead of waiting on the network.
+  // A downloaded surah plays from the device, with no network at all.
+  // Otherwise through the query cache, so pressing play again — or repeating
+  // a passage — reuses the list already fetched instead of waiting on it.
   const chapterTracks = useCallback(
-    (chapterId: number) =>
+    async (chapterId: number) =>
+      (await downloadedTracks(recitationId, chapterId)) ??
       queryClient.fetchQuery({
         queryKey: queryKeys.audio.chapterRecitation(recitationId, chapterId),
         queryFn: () => loadChapterTracks(recitationId, chapterId),
@@ -101,6 +112,14 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
 
   const playAyah = useCallback(
     async (verseKey: VerseKey) => {
+      const address = parseVerseKey(verseKey);
+      const local = address ? await downloadedTracks(recitationId, address.chapterId) : null;
+      const downloaded = local?.find((track) => track.verseKey === verseKey);
+      if (downloaded) {
+        audio.playTrack(downloaded);
+        return;
+      }
+
       // Single-ayah playback fetches just that file, so tapping the play icon
       // on one ayah does not pull the whole surah's audio list.
       const file = await fetchAyahRecitation(recitationId, verseKey);
@@ -146,4 +165,57 @@ export function useAyahPlayback(recitationId: number): UseAyahPlaybackResult {
   );
 
   return { playAyah, playFrom, playRange, isPlayingVerse };
+}
+
+export interface ChapterDownload {
+  state: DownloadState;
+  start: () => Promise<void>;
+  cancel: () => void;
+  remove: () => Promise<void>;
+}
+
+/**
+ * A surah's recitation as an offline download: where it stands, and the
+ * buttons to fetch, stop or delete it. Follows a download already running,
+ * so reopening the reader mid-download shows its progress.
+ */
+export function useChapterDownload(
+  recitationId: number,
+  chapterId: number | null,
+): ChapterDownload {
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<DownloadState>({ status: 'none' });
+
+  useEffect(() => {
+    if (chapterId === null) return;
+    let cancelled = false;
+    void downloadState(recitationId, chapterId).then((initial) => {
+      if (!cancelled) setState(initial);
+    });
+    const unsubscribe = subscribeToDownload(recitationId, chapterId, setState);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [recitationId, chapterId]);
+
+  const start = useCallback(async () => {
+    if (chapterId === null) return;
+    const tracks = await queryClient.fetchQuery({
+      queryKey: queryKeys.audio.chapterRecitation(recitationId, chapterId),
+      queryFn: () => loadChapterTracks(recitationId, chapterId),
+      staleTime: CHAPTER_AUDIO_STALE_MS,
+    });
+    await downloadChapter(recitationId, chapterId, tracks);
+  }, [queryClient, recitationId, chapterId]);
+
+  const cancel = useCallback(() => {
+    if (chapterId !== null) cancelDownload(recitationId, chapterId);
+  }, [recitationId, chapterId]);
+
+  const remove = useCallback(async () => {
+    if (chapterId !== null) await removeDownload(recitationId, chapterId);
+  }, [recitationId, chapterId]);
+
+  return { state, start, cancel, remove };
 }

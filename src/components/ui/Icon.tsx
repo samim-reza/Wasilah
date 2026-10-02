@@ -37,6 +37,7 @@ const iconMap = {
   stop: 'stop',
   speed: 'speedometer-outline',
   repeat: 'repeat',
+  download: 'cloud-download-outline',
   autoScroll: 'arrow-down-circle-outline',
   autoScrollOn: 'arrow-down-circle',
   volume: 'volume-medium-outline',

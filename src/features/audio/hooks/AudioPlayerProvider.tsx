@@ -92,6 +92,33 @@ function applyPlaybackRate(
   player.setPlaybackRate(rate, 'high');
 }
 
+type MediaSessionPlayer = {
+  setActiveForLockScreen: (active: boolean, metadata?: { title?: string; artist?: string }) => void;
+};
+
+/**
+ * Makes the player Android's active media session, with lock-screen controls.
+ *
+ * This is what keeps a long recitation alive. Without it Android stops
+ * background audio after about three minutes — a surah played with the
+ * screen off went quiet a few ayahs in, before the end of the range.
+ */
+function holdMediaSession(player: MediaSessionPlayer, track: AudioTrack): void {
+  try {
+    player.setActiveForLockScreen(true, { title: `Quran ${track.verseKey}`, artist: 'Wasilah' });
+  } catch (error) {
+    logger.debug('audio.mediaSessionFailed', { error });
+  }
+}
+
+function releaseMediaSession(player: MediaSessionPlayer): void {
+  try {
+    player.setActiveForLockScreen(false);
+  } catch (error) {
+    logger.debug('audio.mediaSessionFailed', { error });
+  }
+}
+
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const player = useAudioPlayer(undefined, { updateInterval: STATUS_UPDATE_INTERVAL_MS });
   const status = useAudioPlayerStatus(player);
@@ -124,13 +151,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     queueRef.current = queue;
   }, [queue]);
 
-  // Recitation should keep playing when the screen locks, and should duck
-  // rather than kill whatever else is playing.
+  // Recitation keeps playing when the screen locks. `doNotMix` because the
+  // lock-screen session below requires it: with `duckOthers`, Android did not
+  // tie the controls to this player.
   useEffect(() => {
     void setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: true,
-      interruptionMode: 'duckOthers',
+      interruptionMode: 'doNotMix',
     }).catch((audioModeError: unknown) => {
       logger.warn('audio.modeSetupFailed', { error: audioModeError });
     });
@@ -144,7 +172,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       try {
         player.replace({ uri: track.url });
         applyPlaybackRate(player, playbackRate);
-        if (autoPlay) player.play();
+        if (autoPlay) {
+          player.play();
+          holdMediaSession(player, track);
+        }
         setError(null);
         setHasEnded(false);
       } catch (replaceError) {
@@ -216,6 +247,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const stop = useCallback(() => {
     player.pause();
     player.seekTo(0);
+    releaseMediaSession(player);
     setQueue(emptyQueue);
     setQueueId(null);
     setHasEnded(false);
@@ -267,24 +299,45 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     [player],
   );
 
-  // Advance when a track finishes. `didJustFinish` fires once per completion,
-  // so this cannot double-advance.
+  /**
+   * Moves on when an ayah finishes.
+   *
+   * Driven by the player's own event, not by a render. It used to be an
+   * effect on `status.didJustFinish`, which only runs if React renders while
+   * that flag is true — and when the finish and the next status arrived
+   * together, or the app was in the background, that render never happened,
+   * so a long recitation simply stopped partway through its range.
+   */
+  const handleFinished = useCallback(
+    (durationSeconds: number) => {
+      const following = stepAfterCompletion(queueRef.current);
+      if (following === null) {
+        setHasEnded(true);
+        releaseMediaSession(player);
+        trackEvent('audio_completed', { duration_seconds: Math.round(durationSeconds) });
+        return;
+      }
+
+      // The ref moves now, so a second completion before the re-render still
+      // counts from the right place.
+      queueRef.current = following;
+      setQueue(following);
+      loadIndex(following.currentIndex, following.tracks, true);
+    },
+    [player, loadIndex],
+  );
+
+  const handleFinishedRef = useRef(handleFinished);
   useEffect(() => {
-    if (!status.didJustFinish) return;
+    handleFinishedRef.current = handleFinished;
+  }, [handleFinished]);
 
-    const following = stepAfterCompletion(queueRef.current);
-    if (following === null) {
-      setHasEnded(true);
-      trackEvent('audio_completed', { duration_seconds: Math.round(status.duration ?? 0) });
-      return;
-    }
-
-    // The ref is updated here as well as in its effect, so a second completion
-    // arriving before the re-render still counts from the right place.
-    queueRef.current = following;
-    setQueue(following);
-    loadIndex(following.currentIndex, following.tracks, true);
-  }, [status.didJustFinish, status.duration, loadIndex]);
+  useEffect(() => {
+    const subscription = player.addListener('playbackStatusUpdate', (update) => {
+      if (update.didJustFinish) handleFinishedRef.current(update.duration ?? 0);
+    });
+    return () => subscription.remove();
+  }, [player]);
 
   // Warm the next ayah's audio while the current one plays, so the transition
   // between ayahs has no audible gap.

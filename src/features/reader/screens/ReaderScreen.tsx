@@ -19,7 +19,8 @@ import { Skeleton } from '@/components/feedback/Skeleton';
 import { useToast } from '@/components/feedback/Toast';
 import { Screen } from '@/components/layout/Screen';
 import { useAudio } from '@/features/audio/hooks/AudioPlayerProvider';
-import { useAyahPlayback } from '@/features/audio/hooks/useAyahAudio';
+import { useAyahPlayback, useChapterDownload } from '@/features/audio/hooks/useAyahAudio';
+import { downloadsSupported } from '@/features/audio/services/audioDownloads';
 import { useWordAudio } from '@/features/audio/hooks/useWordAudio';
 import { useBookmarks } from '@/features/bookmarks/hooks/useBookmarks';
 import { NoteEditorSheet } from '@/features/notes/components/NoteEditorSheet';
@@ -45,6 +46,7 @@ import { useTranslation } from '@/lib/i18n/I18nProvider';
 import { logger } from '@/lib/monitoring/logger';
 import { useStableCallback } from '@/lib/ui/useStableCallback';
 
+import { OfflineAudioRow } from '../components/OfflineAudioRow';
 import { PlayOptionsSheet, type PlayRange } from '../components/PlayOptionsSheet';
 import { READER_BAR_HEIGHT, ReaderBottomBar } from '../components/ReaderBottomBar';
 import { ReaderHeader } from '../components/ReaderHeader';
@@ -153,6 +155,7 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
   // one the reader is currently in.
   const barChapterId = chapterId ?? topVerse?.chapterId ?? verses[0]?.chapterId ?? null;
   const isThisChapterLoaded = barChapterId !== null && audio.queueId === `chapter:${barChapterId}`;
+  const chapterDownload = useChapterDownload(preferences.recitationId, barChapterId);
   const isReciting = audio.state === 'playing' || audio.state === 'loading';
 
   /**
@@ -409,6 +412,7 @@ export function ReaderScreen({ source, initialVerseNumber }: ReaderScreenProps) 
         verseCount={verseCount}
         initial={{ fromVerse: playStart, toVerse: verseCount, ...repeatChoice }}
         onPlay={handlePlayRange}
+        footer={downloadsSupported ? <OfflineAudioRow download={chapterDownload} /> : null}
       />
 
       <ReaderPreferencesSheet

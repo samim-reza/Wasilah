@@ -31,6 +31,8 @@ export interface PlayOptionsSheetProps {
   /** Where the sheet opens: usually the ayah on screen, to the surah's end. */
   initial: PlayRange;
   onPlay: (range: PlayRange) => void;
+  /** Shown under the play button: the surah's offline download. */
+  footer?: React.ReactNode;
 }
 
 const repeatEachChoices = [1, 2, 3, 5, 10] as const;
@@ -43,6 +45,7 @@ export function PlayOptionsSheet({
   verseCount,
   initial,
   onPlay,
+  footer,
 }: PlayOptionsSheetProps) {
   const { t } = useTranslation();
 
@@ -55,7 +58,14 @@ export function PlayOptionsSheet({
     >
       {/* Remounted on every open, so it starts from the ayah on screen now
           rather than wherever it was left last time. */}
-      {visible && <PlayOptionsForm verseCount={verseCount} initial={initial} onPlay={onPlay} />}
+      {visible && (
+        <PlayOptionsForm
+          verseCount={verseCount}
+          initial={initial}
+          onPlay={onPlay}
+          footer={footer}
+        />
+      )}
     </BottomSheet>
   );
 }
@@ -64,7 +74,8 @@ function PlayOptionsForm({
   verseCount,
   initial,
   onPlay,
-}: Pick<PlayOptionsSheetProps, 'verseCount' | 'initial' | 'onPlay'>) {
+  footer,
+}: Pick<PlayOptionsSheetProps, 'verseCount' | 'initial' | 'onPlay' | 'footer'>) {
   const { t } = useTranslation();
   const last = Math.max(1, verseCount);
   const clamp = (value: number) => Math.min(last, Math.max(1, Math.round(value)));
@@ -128,6 +139,8 @@ function PlayOptionsForm({
         fullWidth
         onPress={() => onPlay({ fromVerse, toVerse, repeatEach, repeatRange })}
       />
+
+      {footer}
     </ScrollView>
   );
 }

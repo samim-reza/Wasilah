@@ -40,6 +40,7 @@ import {
   increment as incrementCounter,
   reset as resetCounter,
 } from '../utils/tasbeehProgress';
+import { noteTasbeehCount } from '../services/tasbeehHistory';
 import type { Tasbeeh, TasbeehDraft } from '../types/tasbeeh.types';
 
 export interface UseTasbeehResult {
@@ -102,6 +103,7 @@ function useTasbeehState(): UseTasbeehResult {
         void saveLocal(next);
 
         const updated = next.find((entry) => entry.id === id);
+        if (updated) noteTasbeehCount(updated);
         if (userId && updated) void queueUpsert(userId, updated);
 
         return next;

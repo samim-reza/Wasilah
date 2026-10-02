@@ -536,7 +536,10 @@ function rotationCard(input: CardInput): Omit<WidgetCard, 'until'> {
     return {
       kind: 'everyday',
       scene: 'quran',
-      title: localised('widget.everyday.title', locale),
+      // Names the moment, so the words under it are recognisable: "Leaving the
+      // washroom? Say this" — not a bare "Say this" over Arabic the reader
+      // may not know.
+      title: localised('widget.everyday.titleFor', locale, { occasion: occasion.title }),
       // The cue, as in the notification: "Say this when you leave the house."
       line: occasion.prompt,
       arabic: glanceArabic(occasion),

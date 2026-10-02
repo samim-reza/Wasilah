@@ -166,6 +166,14 @@ export const en = {
     repeatPassage: 'Repeat the whole passage',
     playAyahNumber: 'Play ayah {{ayah}}',
     playAyahRange: 'Play ayahs {{from}}–{{to}}',
+    offlineTitle: 'Available offline',
+    offlineHint: "Download this surah's recitation to listen without internet.",
+    offlineDownload: 'Download',
+    offlineProgress: 'Downloading {{done}} of {{total}} ayahs',
+    offlineReady: 'Downloaded · {{size}} MB',
+    offlineFailed: 'The download stopped. Check the connection and try again.',
+    offlineRemoveTitle: 'Remove the download?',
+    offlineRemoveBody: "This surah's recitation will stream again, which needs internet.",
     sessionSaved: 'Reading saved',
   },
 
@@ -224,6 +232,12 @@ export const en = {
   },
 
   progress: {
+    dayQuran: 'Quran',
+    dayQuranValue: '{{minutes}} min · {{ayahs}} ayahs',
+    dayNothing: 'Nothing recorded',
+    dayTargetMet: 'Daily target reached',
+    dayDhikr: 'Dhikr',
+    dayDhikrCount: { one: '{{count}} time', other: '{{count}} times' },
     title: 'Progress',
     ayahsRead: 'Ayahs read',
     readingTime: 'Reading time',
@@ -396,6 +410,7 @@ export const en = {
     },
     everyday: {
       title: 'Say this',
+      titleFor: '{{occasion}}? Say this',
       prompt: 'Say this when {{occasion}}.',
     },
     nudge: {

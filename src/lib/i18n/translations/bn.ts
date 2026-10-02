@@ -165,6 +165,14 @@ export const bn: Translation = {
     repeatPassage: 'পুরো অংশ পুনরাবৃত্তি',
     playAyahNumber: 'আয়াত {{ayah}} শুনুন',
     playAyahRange: 'আয়াত {{from}}–{{to}} শুনুন',
+    offlineTitle: 'অফলাইনে শুনুন',
+    offlineHint: 'ইন্টারনেট ছাড়া শুনতে এই সূরার তিলাওয়াত ডাউনলোড করুন।',
+    offlineDownload: 'ডাউনলোড',
+    offlineProgress: '{{total}}টির মধ্যে {{done}}টি আয়াত ডাউনলোড হচ্ছে',
+    offlineReady: 'ডাউনলোড হয়েছে · {{size}} MB',
+    offlineFailed: 'ডাউনলোড থেমে গেছে। সংযোগ দেখে আবার চেষ্টা করুন।',
+    offlineRemoveTitle: 'ডাউনলোড মুছে ফেলবেন?',
+    offlineRemoveBody: 'এই সূরার তিলাওয়াত আবার ইন্টারনেট থেকে চলবে।',
     sessionSaved: 'পড়া সংরক্ষিত হয়েছে',
   },
 
@@ -223,6 +231,12 @@ export const bn: Translation = {
   },
 
   progress: {
+    dayQuran: 'কুরআন',
+    dayQuranValue: '{{minutes}} মিনিট · {{ayahs}}টি আয়াত',
+    dayNothing: 'কিছু রেকর্ড হয়নি',
+    dayTargetMet: 'দৈনিক লক্ষ্য পূর্ণ',
+    dayDhikr: 'যিকির',
+    dayDhikrCount: { one: '{{count}} বার', other: '{{count}} বার' },
     title: 'অগ্রগতি',
     ayahsRead: 'পঠিত আয়াত',
     readingTime: 'পড়ার সময়',
@@ -395,6 +409,7 @@ export const bn: Translation = {
     },
     everyday: {
       title: 'এটি বলুন',
+      titleFor: '{{occasion}}? এটি বলুন',
       prompt: '{{occasion}} — তখন এটি বলুন।',
     },
     nudge: {
